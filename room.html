@@ -12,10 +12,10 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap">
 <link rel="stylesheet" href="assets/css/style.css">
 <script>
-(function(h){try{var s=sessionStorage;
-  if(!matchMedia('(prefers-reduced-motion: reduce)').matches&&!/[?&]edit\b/.test(location.search)){
+(function(h){var s=null;try{s=sessionStorage;s.getItem('x');}catch(e){s=null;}
+  try{if(!matchMedia('(prefers-reduced-motion: reduce)').matches&&!/[?&]edit\b/.test(location.search)){
     h.classList.add('motion');
-    if(s.getItem('dolkar-nav')==='1')h.classList.add('is-arriving');
+    if(s&&s.getItem('dolkar-nav')==='1')h.classList.add('is-arriving');
   }}catch(e){}
   setTimeout(function(){if(!h.classList.contains('motion-ready'))h.classList.remove('motion','is-arriving');},5000);
 })(document.documentElement);

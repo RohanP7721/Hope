@@ -16,11 +16,11 @@
 <link rel="preload" as="image" href="assets/images/hero/facade.jpg">
 <link rel="stylesheet" href="assets/css/style.css">
 <script>
-(function(h){try{var s=sessionStorage;
-  if(!matchMedia('(prefers-reduced-motion: reduce)').matches&&!/[?&]edit\b/.test(location.search)){
+(function(h){var s=null;try{s=sessionStorage;s.getItem('x');}catch(e){s=null;}
+  try{if(!matchMedia('(prefers-reduced-motion: reduce)').matches&&!/[?&]edit\b/.test(location.search)){
     h.classList.add('motion');
-    if(s.getItem('dolkar-nav')==='1')h.classList.add('is-arriving');
-    else if(h.getAttribute('data-page')==='home'&&!s.getItem('dolkar-seen'))h.classList.add('is-preloading');
+    if(s&&s.getItem('dolkar-nav')==='1')h.classList.add('is-arriving');
+    else if(h.getAttribute('data-page')==='home'&&!(s&&s.getItem('dolkar-seen')))h.classList.add('is-preloading');
   }}catch(e){}
   setTimeout(function(){if(!h.classList.contains('motion-ready'))h.classList.remove('motion','is-arriving','is-preloading');},5000);
 })(document.documentElement);
