@@ -23,53 +23,57 @@
     '<span class="rp-from">From</span><b>' + S.inr(r.price) + '</b><span class="rp-per">per night</span>';
 
   /* ---------- gallery ---------- */
-  var imgs = S.roomImages(r).map(function (src, i) { return { src: src, alt: title + ' — photo ' + (i + 1) }; });
-  var gal = $('.rp-gallery');
-  gal.classList.toggle('is-single', imgs.length < 2);
-  var trackEl = $('#rpTrack');
-  trackEl.innerHTML = imgs.map(function (im, i) {
-    return '<button class="rp-slide" data-i="' + i + '" data-cursor="Expand" aria-label="View photo ' + (i + 1) + ' full screen">' +
-      '<img src="' + esc(im.src) + '" alt="' + esc(im.alt) + '"' + (i > 1 ? ' loading="lazy"' : '') + '></button>';
-  }).join('');
-  $('#rpThumbs').innerHTML = imgs.map(function (im, i) {
-    return '<button class="rp-thumb' + (i === 0 ? ' is-active' : '') + '" data-i="' + i + '" aria-label="Show photo ' + (i + 1) + '"><img src="' + esc(im.src) + '" alt="" loading="lazy"></button>';
-  }).join('');
-  $('#rpAll').textContent = pad(imgs.length);
   $('#rpPrev').innerHTML = icon('arrow-left');
   $('#rpNext').innerHTML = icon('arrow');
   $('#rpExpand').insertAdjacentHTML('beforeend', icon('expand'));
-  function edges(i) {
-    $('#rpPrev').disabled = i <= 0;
-    $('#rpNext').disabled = i >= imgs.length - 1;
-  }
   $('.rp-back-ico').innerHTML = icon('arrow-left');
 
-  var thumbs = $$('.rp-thumb');
-  function onChange(i) {
-    $('#rpNow').textContent = pad(i + 1);
-    $('#rpBarFill').style.transform = 'scaleX(' + (i + 1) / imgs.length + ')';
-    thumbs.forEach(function (t, n) { t.classList.toggle('is-active', n === i); });
-    edges(i);
-    var t = thumbs[i];
-    if (t) t.parentNode.scrollTo({ left: t.offsetLeft - t.parentNode.clientWidth / 2 + t.clientWidth / 2, behavior: 'smooth' });
+  function buildGallery(files) {
+    var imgs = files.map(function (src, i) { return { src: src, alt: title + ' — photo ' + (i + 1) }; });
+    var gal = $('.rp-gallery');
+    gal.hidden = !imgs.length;
+    gal.classList.toggle('is-single', imgs.length < 2);
+    var trackEl = $('#rpTrack');
+    trackEl.innerHTML = imgs.map(function (im, i) {
+      return '<button class="rp-slide" data-i="' + i + '" data-cursor="Expand" aria-label="View photo ' + (i + 1) + ' full screen">' +
+        '<img src="' + esc(im.src) + '" alt="' + esc(im.alt) + '"' + (i > 1 ? ' loading="lazy"' : '') + '></button>';
+    }).join('');
+    $('#rpThumbs').innerHTML = imgs.map(function (im, i) {
+      return '<button class="rp-thumb' + (i === 0 ? ' is-active' : '') + '" data-i="' + i + '" aria-label="Show photo ' + (i + 1) + '"><img src="' + esc(im.src) + '" alt="" loading="lazy"></button>';
+    }).join('');
+    $('#rpAll').textContent = pad(imgs.length);
+    function edges(i) {
+      $('#rpPrev').disabled = i <= 0;
+      $('#rpNext').disabled = i >= imgs.length - 1;
+    }
+
+    var thumbs = $$('.rp-thumb');
+    function onChange(i) {
+      $('#rpNow').textContent = pad(i + 1);
+      $('#rpBarFill').style.transform = 'scaleX(' + (i + 1) / imgs.length + ')';
+      thumbs.forEach(function (t, n) { t.classList.toggle('is-active', n === i); });
+      edges(i);
+      var t = thumbs[i];
+      if (t) t.parentNode.scrollTo({ left: t.offsetLeft - t.parentNode.clientWidth / 2 + t.clientWidth / 2, behavior: 'smooth' });
+    }
+    var sl = S.slider(trackEl, { onChange: onChange });
+    onChange(0);
+    $('#rpPrev').addEventListener('click', sl.prev);
+    $('#rpNext').addEventListener('click', sl.next);
+    $('#rpExpand').addEventListener('click', function () { S.lightbox(imgs, sl.index); });
+    trackEl.addEventListener('click', function (e) {
+      var s = e.target.closest('.rp-slide');
+      if (s) S.lightbox(imgs, +s.getAttribute('data-i'));
+    });
+    $('#rpThumbs').addEventListener('click', function (e) {
+      var t = e.target.closest('.rp-thumb');
+      if (t) sl.goTo(+t.getAttribute('data-i'));
+    });
+    gal.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowRight') { e.preventDefault(); sl.next(); }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); sl.prev(); }
+    });
   }
-  var sl = S.slider(trackEl, { onChange: onChange });
-  onChange(0);
-  $('#rpPrev').addEventListener('click', sl.prev);
-  $('#rpNext').addEventListener('click', sl.next);
-  $('#rpExpand').addEventListener('click', function () { S.lightbox(imgs, sl.index); });
-  trackEl.addEventListener('click', function (e) {
-    var s = e.target.closest('.rp-slide');
-    if (s) S.lightbox(imgs, +s.getAttribute('data-i'));
-  });
-  $('#rpThumbs').addEventListener('click', function (e) {
-    var t = e.target.closest('.rp-thumb');
-    if (t) sl.goTo(+t.getAttribute('data-i'));
-  });
-  gal.addEventListener('keydown', function (e) {
-    if (e.key === 'ArrowRight') { e.preventDefault(); sl.next(); }
-    if (e.key === 'ArrowLeft') { e.preventDefault(); sl.prev(); }
-  });
 
   /* ---------- details ---------- */
   $('#rpSpecs').innerHTML = [
@@ -104,6 +108,7 @@
   /* ---------- other rooms ---------- */
   var others = $('#othersTrack');
   others.innerHTML = D.rooms.map(function (o, i) { return o.slug === r.slug ? '' : S.roomCard(o, i); }).join('');
+  S.hydrateRoomCards(others);
   $('#oPrev').innerHTML = icon('arrow-left');
   $('#oNext').innerHTML = icon('arrow');
   function step(dir) {
@@ -135,5 +140,8 @@
       .fromTo(['.rp-ui', '.rp-thumbs'], { autoAlpha: 0, y: 20 }, { autoAlpha: 1, y: 0, duration: 1, ease: 'expo.out', stagger: 0.08 }, 0.6);
   }
 
-  S.start(intro);
+  S.roomPhotos(r).then(function (p) {
+    buildGallery(p.all);
+    S.start(intro);
+  }, function () { buildGallery([]); S.start(intro); });
 })();

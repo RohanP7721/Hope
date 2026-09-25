@@ -1,47 +1,67 @@
-# The Dolkar Hotel — how to update the site
+# The Dolkar Hotel website: how to add photos
 
-Everything is plain files, with no build step. Upload the whole folder to Netlify, Vercel or GitHub Pages and it works.
+No coding needed. Drop photos into the right folder and the website shows them automatically.
 
-```
-index.html              home page
-room.html               one page for every room (room.html?r=family-suite, etc.)
-assets/js/data.js       ← rooms, prices, photos, menu, gallery, contact details
-assets/js/content.js    ← text edits made in Edit Mode
-assets/images/rooms/    ← one folder per room
-```
+## The only rule: number your photos
 
-## Add more photos to a room
+Name them **01, 02, 03, 04 …** (two digits, no gaps).
 
-1. Put the photos in that room's folder, e.g. `assets/images/rooms/family-suite/02.jpg`, `03.jpg` …
-   (JPG, about 2000px on the long side, under ~400 KB each keeps the site fast.)
-2. Open `assets/js/data.js`, find the room, and add each file to its `images` list:
+- ✅ `01.jpg`, `02.jpg`, `03.jpg`
+- ❌ `IMG_4521.jpg`, `room photo.jpg`, `1.jpg`
+- ❌ Skipping a number (01, 02, **04**): the site stops at the gap and won't show 04.
 
-```js
-images: [
-  'assets/images/rooms/family-suite/01.jpg',
-  'assets/images/rooms/family-suite/02.jpg',
-  'assets/images/rooms/family-suite/03.jpg'
-],
-```
+`.jpg`, `.jpeg`, `.png` and `.webp` all work, in upper or lower case.
 
-The first image is the cover on the home page. The room page gallery, thumbnails, photo count and full-screen viewer all update automatically.
+## Where each photo goes
 
-`sharedRoomImages` (near the top of `data.js`) adds the same photos to the end of every room's gallery, which is useful while a room only has one photo. Remove them once each room has enough of its own.
+Open the `assets` folder, then `images`:
 
-## Change prices, room details, menu or gallery
+| I want to add photos to… | Put them in this folder |
+|---|---|
+| Deluxe Room (Non-View) | `rooms/deluxe-non-view` |
+| Deluxe Room (Nature View) | `rooms/deluxe-nature-view` |
+| Deluxe Room (Mountain View) | `rooms/deluxe-mountain-view` |
+| Twin Bed Quad Sharing | `rooms/twin-quad` |
+| Family Suite | `rooms/family-suite` |
+| **Every** room (e.g. the bathroom) | `rooms/every-room` |
+| The gallery on the home page | `gallery` |
 
-All of it lives in `assets/js/data.js`: `price`, `size`, `guests`, `beds`, `amenities`, `menu`, `gallery`, `testimonials`, `policies`, phone numbers and the WhatsApp number.
+- Photo `01` in a room folder is that room's cover picture on the home page.
+- Photos in `every-room` appear at the end of every room's slideshow. Delete them once each room has enough photos of its own.
+- To remove a photo, delete the file and renumber the ones after it so there's no gap.
+- To change the order, rename the files.
 
-## Edit text without touching code (Edit Mode)
+## Before you add photos from a phone
 
-1. Open any page with `?edit` at the end, e.g. `https://yoursite.com/index.html?edit` or `room.html?r=twin-quad&edit`.
-2. Click any outlined text and type. Drafts save in your browser as you go.
-3. Click **Download content.js** and replace `assets/js/content.js` on your host with that file.
+Phone photos are huge (4–8 MB) and will make the site slow. Shrink each one first:
 
-Visitors only see your edits after step 3. Edit Mode handles text; photos and prices go in `data.js`.
+1. Go to **squoosh.app** in your browser and drop the photo in.
+2. On the right, set **Resize** to width **2000**, and **Quality** to about **75**.
+3. Download it. It should now be under ~400 KB.
+4. Rename it to the next number (`02.jpg`, `03.jpg` …) and put it in the folder.
 
-## Before going live, confirm with the hotel
+iPhone tip: iPhones save photos as `.HEIC`, which websites can't show. Either set *Settings → Camera → Formats → Most Compatible*, or convert them to JPG in squoosh.
 
-- `policies` in `data.js` (check-in/out times, cancellation wording) are sensible placeholders.
-- In-room `amenities` per room (TV etc.) are based on the photos. Confirm each one.
+Landscape (wide) photos look best in the room slideshows.
+
+## Putting the update online
+
+- **Netlify:** open your site in Netlify, go to **Deploys**, and drag the whole website folder onto the page. Same link, updated in a few seconds.
+- **Preview first on your laptop:** double-click `index.html`. It opens in your browser, no internet needed except for the fonts.
+
+## Moving the website to another laptop
+
+The website is just this folder. Copy it or the zip anywhere (USB drive, Google Drive, email) and it works exactly the same. Nothing to install.
+
+---
+
+### Other things you can change
+
+- **Prices, room details, menu, phone numbers:** in `assets/js/data.js` (open it with Notepad or TextEdit).
+- **Any text on the page:** open the site with `?edit` at the end of the address (e.g. `index.html?edit`), click the text and type, then press **Download content.js** and replace the file `assets/js/content.js` with the downloaded one.
+- **Gallery captions** (the text under a photo in full-screen view): the `galleryCaptions` list in `data.js`, in photo-number order. Optional.
+
+### Before going live, confirm with the hotel
+- House policies (check-in/out times, cancellations) in `data.js` are placeholders.
+- In-room amenity lists per room are based on the photos.
 - Deluxe Nature View and Deluxe Mountain View currently use the same photo.

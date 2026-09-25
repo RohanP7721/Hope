@@ -1,7 +1,11 @@
 /* ============================================================
    THE DOLKAR HOTEL — SITE DATA
-   This is the one file to edit for rooms, photos, prices and menu.
-   See HOW-TO-UPDATE.md for step-by-step instructions.
+   Prices, room details, menu and contact details live here.
+   PHOTOS DO NOT — just drop numbered photos into the folders:
+     assets/images/rooms/<room>/     01.jpg, 02.jpg, 03.jpg ...
+     assets/images/rooms/every-room/ shown at the end of every room
+     assets/images/gallery/          01.jpg, 02.jpg, 03.jpg ...
+   See HOW-TO-UPDATE.md.
    ============================================================ */
 
 window.DOLKAR = {
@@ -17,17 +21,10 @@ window.DOLKAR = {
     dinnerClose: 23
   },
 
-  /* Photos shown at the end of EVERY room's gallery (things all rooms share).
-     Remove lines here once each room has enough of its own photos. */
-  sharedRoomImages: [
-    'assets/images/gallery/05.jpg',
-    'assets/images/gallery/07.jpg'
-  ],
 
   /* ---------- ROOMS ----------
-     To add photos to a room: put the files in its folder
-     (e.g. assets/images/rooms/family-suite/02.jpg) and add the path to `images`.
-     The first image is the cover used on the home page. */
+     Each room's photos are read automatically from assets/images/rooms/<slug>/
+     (slug = the folder name). Photo 01 is the cover on the home page. */
   rooms: [
     {
       slug: 'deluxe-non-view',
@@ -42,9 +39,6 @@ window.DOLKAR = {
       view: 'Interior-facing',
       summary: 'Everything our Deluxe rooms offer, at our gentlest nightly rate.',
       description: 'A comfortable, well-appointed room on the interior side of the property — the same comfort and amenities as our Nature View category, at a gentler nightly rate.',
-      images: [
-        'assets/images/rooms/deluxe-non-view/01.jpg'
-      ],
       amenities: ['bed:King bed, pressed linen', 'shower:Rain shower', 'water:Filtered mountain-source water', 'wifi:Complimentary Wi-Fi', 'tv:Flat-screen TV', 'service:Room service from Taste of Tibet', 'housekeeping:Daily housekeeping', 'toiletries:Bath amenities']
     },
     {
@@ -60,9 +54,6 @@ window.DOLKAR = {
       view: 'Garden & greenery',
       summary: 'Windows onto greenery, and a quiet, leafy start to the morning.',
       description: 'The same room, with windows opening onto greenery rather than the courtyard. A quiet, leafy start to the morning.',
-      images: [
-        'assets/images/rooms/deluxe-nature-view/01.jpg'
-      ],
       amenities: ['view:Garden-facing windows', 'bed:King bed, pressed linen', 'shower:Rain shower', 'water:Filtered mountain-source water', 'wifi:Complimentary Wi-Fi', 'tv:Flat-screen TV', 'service:Room service from Taste of Tibet', 'housekeeping:Daily housekeeping']
     },
     {
@@ -78,9 +69,6 @@ window.DOLKAR = {
       view: 'Kanchenjunga range',
       summary: 'Windows facing the Kanchenjunga range, best with morning tea.',
       description: "Windows facing the Kanchenjunga range, best caught with your morning tea. The room guests ask for by name once they've seen it.",
-      images: [
-        'assets/images/rooms/deluxe-mountain-view/01.jpg'
-      ],
       amenities: ['view:Kanchenjunga-facing windows', 'bed:King bed, pressed linen', 'shower:Rain shower', 'water:Filtered mountain-source water', 'wifi:Complimentary Wi-Fi', 'tv:Flat-screen TV', 'service:Room service from Taste of Tibet', 'housekeeping:Daily housekeeping']
     },
     {
@@ -96,9 +84,6 @@ window.DOLKAR = {
       view: 'Varies by room',
       summary: 'Built for four travelling together — one room, not two.',
       description: "Two twin beds arranged for four guests travelling together — built for friends or colleagues who'd rather share a room than split into two.",
-      images: [
-        'assets/images/rooms/twin-quad/01.jpg'
-      ],
       amenities: ['bed:Two beds, pressed linen', 'guests:Sleeps four', 'shower:Rain shower', 'water:Filtered mountain-source water', 'wifi:Complimentary Wi-Fi', 'tv:Flat-screen TV', 'service:Room service from Taste of Tibet', 'housekeeping:Daily housekeeping']
     },
     {
@@ -114,9 +99,6 @@ window.DOLKAR = {
       view: 'Varies by room',
       summary: 'Two king beds and genuine space to spread out.',
       description: 'Two king beds and genuine space to spread out. Built for families who want to stay together without feeling cramped.',
-      images: [
-        'assets/images/rooms/family-suite/01.jpg'
-      ],
       amenities: ['bed:Two king beds, pressed linen', 'guests:Sleeps four', 'size:Our most generous floor space', 'shower:Rain shower', 'water:Filtered mountain-source water', 'wifi:Complimentary Wi-Fi', 'tv:Flat-screen TV', 'service:Room service from Taste of Tibet']
     }
   ],
@@ -160,15 +142,16 @@ window.DOLKAR = {
     ]}
   ],
 
-  /* Gallery — add as many as you like. */
-  gallery: [
-    { src: 'assets/images/gallery/08.jpg', alt: 'Lobby lounge' },
-    { src: 'assets/images/gallery/01.jpg', alt: 'Reading corner in a guest room' },
-    { src: 'assets/images/gallery/06.jpg', alt: 'Taste of Tibet dining room with valley views' },
-    { src: 'assets/images/gallery/02.jpg', alt: 'A guest at dinner' },
-    { src: 'assets/images/gallery/03.jpg', alt: 'The bar' },
-    { src: 'assets/images/gallery/04.jpg', alt: 'Lounge seating' },
-    { src: 'assets/images/gallery/05.jpg', alt: 'Rain shower' }
+  /* Optional captions for gallery photos, in number order (01, 02, 03 ...).
+     Photos without a caption here still show — they just get a generic caption. */
+  galleryCaptions: [
+    'Lobby lounge',
+    'Reading corner in a guest room',
+    'Taste of Tibet dining room with valley views',
+    'A guest at dinner',
+    'The bar',
+    'Lounge seating',
+    'Rain shower'
   ],
 
   testimonials: [

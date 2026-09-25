@@ -31,18 +31,26 @@
       '<h3 data-edit="amen.' + i + '.title">' + esc(a.title) + '</h3><p data-edit="amen.' + i + '.text">' + esc(a.text) + '</p></div>';
   }).join('');
 
-  var cols = [[], [], []];
-  D.gallery.forEach(function (g, i) { cols[i % 3].push({ g: g, i: i }); });
-  $('#galleryCols').innerHTML = cols.map(function (col, ci) {
-    return '<div class="g-col g-col' + (ci + 1) + '">' + col.map(function (o) {
-      return '<button class="g-item" data-index="' + o.i + '" data-cursor="Open" aria-label="Open photo: ' + esc(o.g.alt) + '"><img src="' + esc(o.g.src) + '" alt="' + esc(o.g.alt) + '" loading="lazy"></button>';
-    }).join('') + '</div>';
-  }).join('');
+  S.hydrateRoomCards(track);
+
+  var gallery = [];
+  function renderGallery(files) {
+    var caps = D.galleryCaptions || [];
+    gallery = files.map(function (src, i) { return { src: src, alt: caps[i] || 'The Dolkar Hotel — photo ' + (i + 1) }; });
+    var cols = [[], [], []];
+    gallery.forEach(function (g, i) { cols[i % 3].push({ g: g, i: i }); });
+    $('#galleryCols').innerHTML = cols.map(function (col, ci) {
+      return '<div class="g-col g-col' + (ci + 1) + '">' + col.map(function (o) {
+        return '<button class="g-item" data-index="' + o.i + '" data-cursor="Open" aria-label="Open photo: ' + esc(o.g.alt) + '"><img src="' + esc(o.g.src) + '" alt="' + esc(o.g.alt) + '" loading="lazy"></button>';
+      }).join('') + '</div>';
+    }).join('');
+    $('#gallery').hidden = !gallery.length;
+  }
   $('#galleryCols').addEventListener('click', function (e) {
     var b = e.target.closest('.g-item');
-    if (b) S.lightbox(D.gallery, +b.getAttribute('data-index'));
+    if (b) S.lightbox(gallery, +b.getAttribute('data-index'));
   });
-  $('#galleryAll').addEventListener('click', function () { S.lightbox(D.gallery, 0); });
+  $('#galleryAll').addEventListener('click', function () { if (gallery.length) S.lightbox(gallery, 0); });
 
   var H = D.hotel;
   $('#contactList').innerHTML = [
@@ -224,5 +232,8 @@
       .fromTo(['.hero-meta', '.hero-side', '.hero-scroll', '.ticker'], { autoAlpha: 0, y: 26 }, { autoAlpha: 1, y: 0, duration: 1.3, ease: 'expo.out', stagger: 0.1 }, 0.7);
   }
 
-  S.start(intro);
+  S.discover('assets/images/gallery').then(function (files) {
+    renderGallery(files);
+    S.start(intro);
+  }, function () { S.start(intro); });
 })();

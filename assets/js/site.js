@@ -61,13 +61,75 @@
     return '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICONS[name] || ICONS.arrow) + '</svg>';
   }
 
-  function roomImages(r) { return r.images.concat(D.sharedRoomImages || []); }
+  /* ---------- photo folders: find 01.jpg, 02.jpg, 03.jpg ... automatically ---------- */
+  var EXTS = ['jpg', 'jpeg', 'png', 'webp', 'JPG', 'JPEG', 'PNG', 'WEBP'];
+  function probeImg(url) {
+    return new Promise(function (res) {
+      var i = new Image();
+      i.onload = function () { res(true); };
+      i.onerror = function () { res(false); };
+      i.src = url;
+    });
+  }
+  function exists(url) {
+    if (location.protocol === 'file:' || !window.fetch) return probeImg(url);
+    return fetch(url, { method: 'HEAD', cache: 'no-cache' }).then(function (r) {
+      return r.ok && /^image\//.test(r.headers.get('content-type') || '');
+    }, function () { return probeImg(url); });
+  }
+  function findOtherExt(base) {
+    return Promise.all(EXTS.slice(1).map(function (e) {
+      return exists(base + e).then(function (ok) { return ok ? base + e : null; });
+    })).then(function (r) { return r.filter(Boolean)[0] || null; });
+  }
+  var found = {};
+  function discover(folder) {
+    if (found[folder]) return found[folder];
+    var list = [], BATCH = 8, MAX = 99;
+    function run(start) {
+      var nums = [];
+      for (var n = start; n < start + BATCH && n <= MAX; n++) nums.push(n);
+      return Promise.all(nums.map(function (n) {
+        var u = folder + '/' + pad(n) + '.jpg';
+        return exists(u).then(function (ok) { return ok ? u : null; });
+      })).then(function (hits) {
+        var i = 0;
+        function walk() {
+          if (i >= hits.length) return nums.length === BATCH ? run(start + BATCH) : list;
+          if (hits[i]) { list.push(hits[i]); i++; return walk(); }
+          return findOtherExt(folder + '/' + pad(nums[i]) + '.').then(function (alt) {
+            if (!alt) return list;
+            list.push(alt); i++; return walk();
+          });
+        }
+        return walk();
+      });
+    }
+    found[folder] = run(1);
+    return found[folder];
+  }
+  function roomFolder(r) { return 'assets/images/rooms/' + r.slug; }
+  function roomPhotos(r) {
+    return Promise.all([discover(roomFolder(r)), discover('assets/images/rooms/every-room')])
+      .then(function (a) { return { own: a[0], all: a[0].concat(a[1]) }; });
+  }
+  function hydrateRoomCards(root) {
+    $$('.room-card[data-room]', root).forEach(function (card) {
+      var r = D.rooms.filter(function (x) { return x.slug === card.getAttribute('data-room'); })[0];
+      if (!r) return;
+      roomPhotos(r).then(function (p) {
+        var img = $('.rc-zoom img', card), badge = $('.rc-count', card);
+        if (p.own[0] && img.getAttribute('src') !== p.own[0]) img.src = p.own[0];
+        if (p.all.length) { badge.textContent = p.all.length + ' photo' + (p.all.length > 1 ? 's' : ''); badge.hidden = false; }
+      });
+    });
+  }
+
   function roomCard(r, i) {
-    var n = roomImages(r).length;
-    return '<a class="room-card" href="room.html?r=' + encodeURIComponent(r.slug) + '" data-cursor="View">' +
-      '<div class="rc-media"><div class="rc-zoom"><img src="' + esc(r.images[0]) + '" alt="' + esc(roomTitle(r)) + '" loading="lazy"></div>' +
+    return '<a class="room-card" href="room.html?r=' + encodeURIComponent(r.slug) + '" data-room="' + esc(r.slug) + '" data-cursor="View">' +
+      '<div class="rc-media"><div class="rc-zoom"><img src="' + roomFolder(r) + '/01.jpg" alt="' + esc(roomTitle(r)) + '" loading="lazy"></div>' +
       (r.badge ? '<span class="rc-badge">' + esc(r.badge) + '</span>' : '') +
-      '<span class="rc-count">' + n + ' photo' + (n > 1 ? 's' : '') + '</span></div>' +
+      '<span class="rc-count" hidden></span></div>' +
       '<div class="rc-meta"><span>' + pad(i + 1) + '</span><span>' + esc(r.tier) + '</span></div>' +
       '<h3 class="rc-title">' + esc(r.name) + ' <em>' + esc(r.variant) + '</em></h3>' +
       '<div class="rc-foot"><span>From <b>' + inr(r.price) + '</b> / night</span>' +
@@ -609,7 +671,7 @@
   window.Site = {
     data: D, motion: motion, editing: editing,
     $: $, $$: $$, esc: esc, inr: inr, wa: wa, icon: icon, pad: pad, roomTitle: roomTitle,
-    roomCard: roomCard, roomImages: roomImages,
+    roomCard: roomCard, roomPhotos: roomPhotos, hydrateRoomCards: hydrateRoomCards, discover: discover,
     split: split, slider: slider, lightbox: lightbox, booking: booking,
     applyText: applyText, scrollTo: scrollTo, start: start,
     get lenis() { return lenis; }
