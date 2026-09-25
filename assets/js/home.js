@@ -31,8 +31,6 @@
       '<h3 data-edit="amen.' + i + '.title">' + esc(a.title) + '</h3><p data-edit="amen.' + i + '.text">' + esc(a.text) + '</p></div>';
   }).join('');
 
-  S.hydrateRoomCards(track);
-
   var gallery = [];
   function renderGallery(files) {
     var caps = D.galleryCaptions || [];
@@ -222,6 +220,7 @@
 
   /* ---------- hero intro ---------- */
   function intro(tl) {
+    popup();
     if (!tl) return;
     var chars = S.split($('.ht-name'), true);
     var the = S.split($('.ht-the'), false);
@@ -232,8 +231,58 @@
       .fromTo(['.hero-meta', '.hero-side', '.hero-scroll', '.ticker'], { autoAlpha: 0, y: 26 }, { autoAlpha: 1, y: 0, duration: 1.3, ease: 'expo.out', stagger: 0.1 }, 0.7);
   }
 
+  /* ---------- pop-up: shows assets/images/pop-up/01.jpg once per visit ---------- */
+  function popup() {
+    if (S.editing) return;
+    var KEY = 'dolkar-popup-seen';
+    try { if (sessionStorage.getItem(KEY)) return; } catch (e) {}
+    S.discover('assets/images/pop-up').then(function (files) {
+      if (!files.length) return;
+      var img = new Image();
+      img.onload = function () { setTimeout(show, 2000); };
+      img.src = files[0];
+      function busy() {
+        return document.documentElement.classList.contains('menu-open') ||
+          document.querySelector('.drawer.is-open, .lb.is-open, .preloader');
+      }
+      function show() {
+        if (busy()) { setTimeout(show, 2000); return; }
+        try { sessionStorage.setItem(KEY, '1'); } catch (e) {}
+        var link = S.wa("Hi, I saw the offer on your website and I'd like to know more.");
+        var el = document.createElement('div');
+        el.className = 'popup';
+        el.setAttribute('role', 'dialog');
+        el.setAttribute('aria-modal', 'true');
+        el.setAttribute('aria-label', 'Announcement');
+        el.innerHTML =
+          '<div class="popup-scrim"></div>' +
+          '<div class="popup-card">' +
+            '<button class="popup-close icon-btn" aria-label="Close">' + icon('close') + '</button>' +
+            '<a class="popup-img" href="' + link + '" target="_blank" rel="noopener"><img src="' + esc(files[0]) + '" alt="Current offer at The Dolkar Hotel"></a>' +
+            '<a class="btn btn--gold btn--block" href="' + link + '" target="_blank" rel="noopener"><span>Message us on WhatsApp</span>' + icon('arrow-up-right') + '</a>' +
+          '</div>';
+        document.body.appendChild(el);
+        var last = document.activeElement;
+        function close() {
+          el.classList.remove('is-open');
+          document.removeEventListener('keydown', onKey);
+          if (S.lenis) S.lenis.start();
+          setTimeout(function () { el.remove(); if (last && last.focus) last.focus(); }, 500);
+        }
+        function onKey(e) { if (e.key === 'Escape') close(); }
+        $('.popup-close', el).addEventListener('click', close);
+        $('.popup-scrim', el).addEventListener('click', close);
+        $$('a', el).forEach(function (a) { a.addEventListener('click', close); });
+        document.addEventListener('keydown', onKey);
+        if (S.lenis) S.lenis.stop();
+        requestAnimationFrame(function () { el.classList.add('is-open'); $('.popup-close', el).focus(); });
+      }
+    });
+  }
+
   S.discover('assets/images/gallery').then(function (files) {
     renderGallery(files);
     S.start(intro);
-  }, function () { S.start(intro); });
+    S.hydrateRoomCards(track);
+  }, function () { S.start(intro); S.hydrateRoomCards(track); });
 })();

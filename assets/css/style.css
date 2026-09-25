@@ -723,6 +723,29 @@ html:not(.motion-ready) .ticker-track { animation: tick 40s linear infinite; }
 .bk-status.is-error { color: var(--red); }
 
 /* ============================================================
+   POP-UP (image from assets/images/pop-up/)
+   ============================================================ */
+.popup { position: fixed; inset: 0; z-index: 9200; display: grid; place-items: center; padding: 20px; pointer-events: none; }
+.popup-scrim { position: absolute; inset: 0; background: rgba(12, 11, 9, .72); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); opacity: 0; transition: opacity .5s var(--ease); }
+.popup-card {
+  position: relative; width: min(520px, 100%); max-height: calc(100vh - 40px); display: flex; flex-direction: column; gap: 14px;
+  padding: 12px 12px 14px; border-radius: 22px; background: var(--paper); box-shadow: 0 40px 90px -30px rgba(0, 0, 0, .6);
+  opacity: 0; transform: translateY(30px) scale(.94); transition: opacity .6s var(--ease), transform .8s var(--ease);
+}
+.popup.is-open { pointer-events: auto; }
+.popup.is-open .popup-scrim { opacity: 1; }
+.popup.is-open .popup-card { opacity: 1; transform: none; }
+.popup-img { display: block; overflow: hidden; border-radius: 14px; min-height: 0; }
+.popup-img img { width: 100%; height: auto; max-height: calc(100vh - 150px); object-fit: contain; background: var(--paper-2); transition: transform 1.2s var(--ease); }
+.popup-img:hover img { transform: scale(1.03); }
+.popup-close {
+  position: absolute; top: -14px; right: -14px; z-index: 2; width: 44px; height: 44px;
+  background: var(--ink); color: var(--paper); box-shadow: 0 8px 20px rgba(0, 0, 0, .3);
+}
+.popup-close:hover { background: var(--gold); color: var(--ink); }
+@media (max-width: 560px) { .popup-close { top: 8px; right: 8px; } }
+
+/* ============================================================
    LIGHTBOX
    ============================================================ */
 .lb {

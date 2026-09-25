@@ -1,0 +1,12 @@
+POP-UP IMAGE
+
+Put ONE image in this folder and name it 01.jpg
+(01.png or 01.jpeg also work).
+
+- Visitors see it on the home page, 2 seconds after they arrive, once per visit.
+- Tapping it opens WhatsApp to the hotel.
+- To change it: replace 01.jpg with your new image (same name).
+- To switch the pop-up OFF: delete the image. Leave this text file here.
+
+Tip: a portrait or square image looks best (e.g. 1080 x 1350, like an Instagram post).
+Keep it under ~400 KB so it loads fast (use squoosh.app to shrink it).

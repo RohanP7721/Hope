@@ -62,7 +62,7 @@
   }
 
   /* ---------- photo folders: find 01.jpg, 02.jpg, 03.jpg ... automatically ---------- */
-  var EXTS = ['jpg', 'jpeg', 'png', 'webp', 'JPG', 'JPEG', 'PNG', 'WEBP'];
+  var EXTS = ['jpg', 'jpeg', 'png', 'JPG', 'JPEG', 'PNG', 'webp'];
   function probeImg(url) {
     return new Promise(function (res) {
       var i = new Image();
@@ -77,41 +77,32 @@
       return r.ok && /^image\//.test(r.headers.get('content-type') || '');
     }, function () { return probeImg(url); });
   }
-  function findOtherExt(base) {
-    return Promise.all(EXTS.slice(1).map(function (e) {
+  function findNumber(folder, n) {
+    var base = folder + '/' + pad(n) + '.';
+    return Promise.all(EXTS.map(function (e) {
       return exists(base + e).then(function (ok) { return ok ? base + e : null; });
     })).then(function (r) { return r.filter(Boolean)[0] || null; });
   }
+  // Scans 01, 02, 03 ... and stops after GAP missing numbers in a row,
+  // so deleting a photo in the middle doesn't hide the ones after it.
   var found = {};
   function discover(folder) {
     if (found[folder]) return found[folder];
-    var list = [], BATCH = 8, MAX = 99;
-    function run(start) {
+    var list = [], BATCH = 6, GAP = 3, MAX = 99;
+    function run(start, misses) {
       var nums = [];
       for (var n = start; n < start + BATCH && n <= MAX; n++) nums.push(n);
-      return Promise.all(nums.map(function (n) {
-        var u = folder + '/' + pad(n) + '.jpg';
-        return exists(u).then(function (ok) { return ok ? u : null; });
-      })).then(function (hits) {
-        var i = 0;
-        function walk() {
-          if (i >= hits.length) return nums.length === BATCH ? run(start + BATCH) : list;
-          if (hits[i]) { list.push(hits[i]); i++; return walk(); }
-          return findOtherExt(folder + '/' + pad(nums[i]) + '.').then(function (alt) {
-            if (!alt) return list;
-            list.push(alt); i++; return walk();
-          });
-        }
-        return walk();
+      return Promise.all(nums.map(function (n) { return findNumber(folder, n); })).then(function (hits) {
+        hits.forEach(function (h) { if (h) { list.push(h); misses = 0; } else misses++; });
+        return misses >= GAP || start + BATCH > MAX ? list : run(start + BATCH, misses);
       });
     }
-    found[folder] = run(1);
+    found[folder] = run(1, 0);
     return found[folder];
   }
   function roomFolder(r) { return 'assets/images/rooms/' + r.slug; }
   function roomPhotos(r) {
-    return Promise.all([discover(roomFolder(r)), discover('assets/images/rooms/every-room')])
-      .then(function (a) { return { own: a[0], all: a[0].concat(a[1]) }; });
+    return discover(roomFolder(r)).then(function (own) { return { own: own, all: own }; });
   }
   function hydrateRoomCards(root) {
     $$('.room-card[data-room]', root).forEach(function (card) {

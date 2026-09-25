@@ -1,10 +1,9 @@
 /* ============================================================
    THE DOLKAR HOTEL — SITE DATA
    Prices, room details, menu and contact details live here.
-   PHOTOS DO NOT — just drop numbered photos into the folders:
-     assets/images/rooms/<room>/     01.jpg, 02.jpg, 03.jpg ...
-     assets/images/rooms/every-room/ shown at the end of every room
-     assets/images/gallery/          01.jpg, 02.jpg, 03.jpg ...
+   PHOTOS DO NOT — just add or delete numbered photos in the folders:
+     assets/images/rooms/<room>/   01.jpg, 02.jpg, 03.jpg ...
+     assets/images/gallery/        01.jpg, 02.jpg, 03.jpg ...
    See HOW-TO-UPDATE.md.
    ============================================================ */
 
@@ -24,7 +23,7 @@ window.DOLKAR = {
 
   /* ---------- ROOMS ----------
      Each room's photos are read automatically from assets/images/rooms/<slug>/
-     (slug = the folder name). Photo 01 is the cover on the home page. */
+     (slug = the folder name). The lowest-numbered photo is the cover on the home page. */
   rooms: [
     {
       slug: 'deluxe-non-view',
