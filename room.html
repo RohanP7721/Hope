@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en" data-page="room">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Rooms — The Dolkar Hotel, Gangtok</title>
+<meta name="description" content="Rooms at The Dolkar Hotel, Gangtok.">
+<meta name="theme-color" content="#f7f2e8">
+<link rel="icon" type="image/png" href="assets/images/brand/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap">
+<link rel="stylesheet" href="assets/css/style.css">
+<script>
+(function(h){try{var s=sessionStorage;
+  if(!matchMedia('(prefers-reduced-motion: reduce)').matches&&!/[?&]edit\b/.test(location.search)){
+    h.classList.add('motion');
+    if(s.getItem('dolkar-nav')==='1')h.classList.add('is-arriving');
+  }}catch(e){}
+  setTimeout(function(){if(!h.classList.contains('motion-ready'))h.classList.remove('motion','is-arriving');},5000);
+})(document.documentElement);
+</script>
+</head>
+<body class="page-room">
+
+<a class="skip" href="#main">Skip to content</a>
+<div class="curtain" aria-hidden="true"><img src="assets/images/brand/logo-light.png" alt=""></div>
+
+<header class="nav is-solid" id="nav">
+  <a href="index.html" class="nav-logo" aria-label="The Dolkar Hotel — home">
+    <img class="logo-light" src="assets/images/brand/logo-light.png" alt="" aria-hidden="true">
+    <img class="logo-dark" src="assets/images/brand/logo.png" alt="The Dolkar Hotel">
+  </a>
+  <nav class="nav-links" aria-label="Primary">
+    <a href="index.html#rooms">Rooms</a>
+    <a href="index.html#restaurant">Taste of Tibet</a>
+    <a href="index.html#about">Our Story</a>
+    <a href="index.html#gallery">Gallery</a>
+    <a href="index.html#contact">Contact</a>
+  </nav>
+  <div class="nav-actions">
+    <button class="btn-pill" data-open-booking data-magnetic><span>Book this room</span></button>
+    <button class="menu-btn" aria-label="Open menu" aria-expanded="false" aria-controls="menu"><span></span><span></span></button>
+  </div>
+</header>
+
+<div class="menu" id="menu" aria-hidden="true">
+  <nav class="menu-links" aria-label="Menu">
+    <a href="index.html#rooms" class="menu-link"><span><em>01</em>Rooms</span></a>
+    <a href="index.html#restaurant" class="menu-link"><span><em>02</em>Taste of Tibet</span></a>
+    <a href="index.html#about" class="menu-link"><span><em>03</em>Our Story</span></a>
+    <a href="index.html#gallery" class="menu-link"><span><em>04</em>Gallery</span></a>
+    <a href="index.html#contact" class="menu-link"><span><em>05</em>Contact</span></a>
+  </nav>
+  <div class="menu-foot">
+    <a href="tel:+919151153030">+91 91511 53030</a>
+    <a href="mailto:stay@thedolkarhotel.com">stay@thedolkarhotel.com</a>
+    <button class="btn btn--gold" data-open-booking><span>Book this room</span></button>
+  </div>
+</div>
+
+<main id="main" class="rp">
+
+  <section class="wrap rp-top">
+    <a href="index.html#rooms" class="rp-back" data-reveal><span class="rp-back-ico"></span>All rooms</a>
+    <div class="rp-head">
+      <div>
+        <span class="label" id="rpLabel" data-reveal></span>
+        <h1 class="rp-title" id="rpTitle"></h1>
+      </div>
+      <div class="rp-price" id="rpPrice" data-reveal></div>
+    </div>
+  </section>
+
+  <section class="rp-gallery" aria-roledescription="carousel" aria-label="Room photos">
+    <div class="rp-stage">
+      <div class="rp-track" id="rpTrack"></div>
+      <button class="icon-btn rp-ov rp-ov--prev" id="rpPrev" aria-label="Previous photo"></button>
+      <button class="icon-btn rp-ov rp-ov--next" id="rpNext" aria-label="Next photo"></button>
+    </div>
+    <div class="wrap rp-ui">
+      <div class="rp-counter"><span id="rpNow">01</span><i></i><span id="rpAll">01</span></div>
+      <div class="rp-bar"><i id="rpBarFill"></i></div>
+      <div class="rp-arrows">
+        <button class="btn btn--dark btn--sm" id="rpExpand"><span>View full screen</span></button>
+      </div>
+    </div>
+    <div class="wrap"><div class="rp-thumbs" id="rpThumbs"></div></div>
+  </section>
+
+  <section class="wrap rp-body">
+    <div class="rp-main">
+      <div class="rp-specs" id="rpSpecs" data-stagger></div>
+      <p class="rp-lede" id="rpLede" data-reveal></p>
+      <p class="rp-desc" id="rpDesc" data-reveal></p>
+
+      <h2 class="rp-h" data-split>In the <em>room</em></h2>
+      <ul class="rp-amen" id="rpAmen" data-stagger></ul>
+
+      <h2 class="rp-h" data-split>Good to <em>know</em></h2>
+      <div class="rp-policies" id="rpPolicies" data-reveal></div>
+    </div>
+    <aside class="rp-aside" data-hide-stickybar>
+      <div class="booking-card" id="bookingCard">
+        <div class="bc-head">
+          <span class="label">Book direct</span>
+          <p class="bc-price" id="bcPrice"></p>
+        </div>
+        <div id="bcForm"></div>
+        <p class="bc-alt">Prefer to talk? <a id="bcCall" href="tel:+919151153030">Call the front desk</a></p>
+      </div>
+    </aside>
+  </section>
+
+  <section class="rp-others">
+    <div class="wrap rp-others-head">
+      <div>
+        <span class="label" data-reveal>Keep exploring</span>
+        <h2 data-split>Other ways <em>to stay.</em></h2>
+      </div>
+      <div class="rp-arrows">
+        <button class="icon-btn icon-btn--line" id="oPrev" aria-label="Scroll rooms left"></button>
+        <button class="icon-btn icon-btn--line" id="oNext" aria-label="Scroll rooms right"></button>
+      </div>
+    </div>
+    <div class="rooms-track rooms-track--others" id="othersTrack"></div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="f-cta">
+      <h2 data-split data-edit="footer.cta">Come up <em>the hill.</em></h2>
+      <button class="btn btn--gold" data-open-booking data-magnetic><span>Book this room</span></button>
+    </div>
+    <div class="f-cols">
+      <div><h4>Visit</h4><p data-edit="footer.address">Tashi View Point, Bojoghari,<br>Gangtok, Sikkim 737101</p></div>
+      <div><h4>Talk</h4><p><a href="tel:+919151153030">+91 91511 53030</a><br><a href="tel:+919151163030">+91 91511 63030</a><br><a href="mailto:stay@thedolkarhotel.com">stay@thedolkarhotel.com</a></p></div>
+      <div><h4>Explore</h4><p><a href="index.html#rooms">Rooms</a><br><a href="index.html#restaurant">Taste of Tibet</a><br><a href="index.html#gallery">Gallery</a></p></div>
+      <div><h4>Dinner</h4><p data-edit="footer.hours">Taste of Tibet<br>6 PM – 11 PM, daily</p></div>
+    </div>
+  </div>
+  <div class="f-word" aria-hidden="true"><span>Dolkar</span></div>
+  <div class="wrap f-bottom">
+    <span>© <span data-year>2026</span> The Dolkar Hotel, Gangtok.</span>
+    <a href="#main" class="f-top">Back to top ↑</a>
+  </div>
+</footer>
+
+<div class="stickybar">
+  <span id="sbPrice">From <b>₹3,000</b> / night</span>
+  <button class="btn btn--gold btn--sm" data-open-booking><span>Book</span></button>
+</div>
+
+<script src="assets/vendor/gsap.min.js"></script>
+<script src="assets/vendor/ScrollTrigger.min.js"></script>
+<script src="assets/vendor/lenis.min.js"></script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/content.js"></script>
+<script src="assets/js/site.js"></script>
+<script src="assets/js/room.js"></script>
+</body>
+</html>
