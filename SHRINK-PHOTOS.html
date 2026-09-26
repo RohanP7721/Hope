@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Shrink Photos — The Dolkar Hotel website</title>
+<style>
+  :root { --ink: #15130f; --paper: #f7f2e8; --paper-2: #efe6d5; --gold: #b89258; --gold-3: #8c6d3c; --muted: #7a6d5e; --line: rgba(21,19,15,.13); --red: #7d1d1b; --pine: #21443a; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 56px 24px 80px; }
+  h1 { font: 400 44px/1.05 Georgia, "Times New Roman", serif; margin: 0 0 12px; }
+  h1 em { color: var(--gold-3); }
+  .lede { color: var(--muted); margin: 0 0 32px; }
+  .card { background: #fffdf8; border: 1px solid var(--line); border-radius: 18px; padding: 24px; margin-bottom: 18px; }
+  .steps { margin: 0; padding-left: 20px; } .steps li { margin: 6px 0; }
+  button { font: 600 14px/1 system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; border: 0; border-radius: 999px; padding: 18px 28px; cursor: pointer; }
+  .primary { background: var(--ink); color: var(--paper); } .primary:hover { background: var(--pine); }
+  .gold { background: var(--gold); color: var(--ink); } .gold:hover { background: #cba86f; }
+  button:disabled { opacity: .45; cursor: default; }
+  .note { font-size: 14px; color: var(--muted); margin-top: 12px; }
+  .warn { color: var(--red); }
+  .ok { color: var(--pine); }
+  .big { font: 400 30px/1.2 Georgia, serif; margin: 0 0 6px; }
+  .bar { height: 8px; background: var(--paper-2); border-radius: 99px; overflow: hidden; margin: 16px 0 8px; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--gold); transition: width .3s; }
+  ul.list { list-style: none; margin: 12px 0 0; padding: 0; max-height: 320px; overflow: auto; border-top: 1px solid var(--line); font-size: 14px; }
+  ul.list li { display: flex; justify-content: space-between; gap: 12px; padding: 8px 2px; border-bottom: 1px solid var(--line); }
+  ul.list li span:first-child { overflow-wrap: anywhere; }
+  ul.list li span:last-child { white-space: nowrap; color: var(--muted); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Shrink <em>photos</em></h1>
+  <p class="lede">Phone photos are 4–10 MB each and make the website slow. This tool makes every photo in your website folder web-sized (about 200–400 KB) while keeping the same names and folders. They look the same on screen.</p>
+
+  <div class="card" id="stepPick">
+    <ol class="steps">
+      <li>Optional but wise: keep a copy of your <b>dolkar-site</b> folder as a backup (the originals get replaced).</li>
+      <li>Click the button and choose your <b>dolkar-site</b> folder, the one with <b>index.html</b> inside.</li>
+      <li>If the browser asks for permission to <b>view</b> and then <b>edit</b> files, click <b>Allow</b> / <b>Save changes</b>.</li>
+    </ol>
+    <p style="margin:22px 0 0"><button class="primary" id="pickBtn">Choose the dolkar-site folder</button></p>
+    <p class="note warn" id="noSupport" hidden>This browser can't do this. Please open this file in <b>Google Chrome</b> or <b>Microsoft Edge</b> on a laptop or desktop.</p>
+    <p class="note warn" id="pickError" hidden></p>
+  </div>
+
+  <div class="card" id="stepPlan" hidden>
+    <p class="big" id="planHead"></p>
+    <p class="note" id="planSub"></p>
+    <p style="margin:20px 0 0"><button class="gold" id="runBtn">Shrink them now</button></p>
+    <ul class="list" id="planList"></ul>
+  </div>
+
+  <div class="card" id="stepExtra" hidden>
+    <p class="big">Not part of the website</p>
+    <p class="note">These are inside your dolkar-site folder but the website doesn't use them, so they only make the upload bigger. Move them somewhere else (e.g. your Desktop) before uploading to Netlify.</p>
+    <ul class="list" id="extraList"></ul>
+  </div>
+
+  <div class="card" id="stepHeic" hidden>
+    <p class="big warn">iPhone photos that websites can't show</p>
+    <p class="note">These are in <b>.HEIC</b> format. Websites can't display them. Convert them to JPG (e.g. drop them on squoosh.app, or on iPhone: Settings → Camera → Formats → Most Compatible) and put the JPG back with the same number.</p>
+    <ul class="list" id="heicList"></ul>
+  </div>
+
+  <div class="card" id="stepRun" hidden>
+    <p class="big" id="runHead">Shrinking…</p>
+    <div class="bar"><i id="runBar"></i></div>
+    <p class="note" id="runSub"></p>
+    <ul class="list" id="runList"></ul>
+  </div>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  var PHOTO = /\.(jpe?g|png|webp)$/i, HEIC = /\.(heic|heif)$/i;
+  var KNOWN_ROOT = ['index.html', 'room.html', 'EDIT-TEXT.html', 'SHRINK-PHOTOS.html', 'HOW-TO-UPDATE.md', 'assets', '.DS_Store', 'desktop.ini', 'Thumbs.db'];
+  var SKIP_DIRS = ['brand'];                      // logo files keep their transparency
+  var MAX_EDGE = { 'pop-up': 1400, welcome: 1400, hero: 2400 };
+  var KEEP_UNDER = 450 * 1024;                    // photos already smaller than this are left alone
+
+  function mb(n) { return n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB'; }
+  function $(id) { return document.getElementById(id); }
+  function li(a, b) { var el = document.createElement('li'); el.innerHTML = '<span></span><span></span>'; el.firstChild.textContent = a; el.lastChild.textContent = b; return el; }
+
+  async function entries(dir) { var out = []; for await (var h of dir.values()) out.push(h); return out; }
+  async function sizeOf(h) {
+    if (h.kind === 'file') return (await h.getFile()).size;
+    var t = 0; for (var c of await entries(h)) t += await sizeOf(c); return t;
+  }
+
+  async function scan(root) {
+    var names = (await entries(root)).map(function (h) { return h.name; });
+    if (names.indexOf('index.html') < 0 || names.indexOf('assets') < 0) throw new Error('wrong-folder');
+    var assets = await root.getDirectoryHandle('assets');
+    var images = await assets.getDirectoryHandle('images');
+    var plan = { todo: [], heic: [], extra: [], total: 0, keep: 0 };
+    async function walk(dir, path, top) {
+      for (var h of await entries(dir)) {
+        if (h.kind === 'directory') {
+          if (!path && SKIP_DIRS.indexOf(h.name) > -1) continue;
+          await walk(h, path + h.name + '/', top || h.name);
+        } else if (HEIC.test(h.name)) {
+          plan.heic.push({ path: path + h.name, size: (await h.getFile()).size });
+        } else if (PHOTO.test(h.name)) {
+          var f = await h.getFile();
+          plan.total += f.size;
+          var item = { dir: dir, handle: h, name: h.name, path: path + h.name, size: f.size, edge: MAX_EDGE[top] || 2000 };
+          if (f.size > KEEP_UNDER) plan.todo.push(item); else plan.keep += f.size;
+        }
+      }
+    }
+    await walk(images, '', '');
+    for (var h of await entries(root)) {
+      if (KNOWN_ROOT.indexOf(h.name) > -1) continue;
+      plan.extra.push({ path: h.name + (h.kind === 'directory' ? '/' : ''), size: await sizeOf(h) });
+    }
+    return plan;
+  }
+
+  async function hasFile(dir, name) { try { await dir.getFileHandle(name); return true; } catch (e) { return false; } }
+
+  async function shrinkOne(it) {
+    var file = await it.handle.getFile();
+    var bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
+    var scale = Math.min(1, it.edge / Math.max(bmp.width, bmp.height));
+    var w = Math.round(bmp.width * scale), h = Math.round(bmp.height * scale);
+    var c = document.createElement('canvas'); c.width = w; c.height = h;
+    var ctx = c.getContext('2d');
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(bmp, 0, 0, w, h);
+    if (bmp.close) bmp.close();
+    var base = it.name.replace(/\.[^.]+$/, ''), isJpg = /\.jpe?g$/i.test(it.name);
+    var target = it.name, type = 'image/jpeg';
+    if (!isJpg) {
+      if (await hasFile(it.dir, base + '.jpg')) type = /\.png$/i.test(it.name) ? 'image/png' : 'image/webp';
+      else target = base + '.jpg';
+    }
+    var blob = await new Promise(function (r) { c.toBlob(r, type, 0.82); });
+    if (!blob || blob.size >= file.size) return { path: it.path, before: file.size, after: file.size, note: 'already small' };
+    var out = await it.dir.getFileHandle(target, { create: true });
+    var wr = await out.createWritable();
+    await wr.write(blob); await wr.close();
+    if (target !== it.name) await it.dir.removeEntry(it.name);
+    return { path: it.path.replace(it.name, target), before: file.size, after: blob.size };
+  }
+
+  async function run(plan, onStep) {
+    var saved = 0, after = plan.keep;
+    for (var i = 0; i < plan.todo.length; i++) {
+      var r;
+      try { r = await shrinkOne(plan.todo[i]); }
+      catch (e) { r = { path: plan.todo[i].path, before: plan.todo[i].size, after: plan.todo[i].size, note: 'could not read — left as is' }; }
+      saved += r.before - r.after; after += r.after;
+      onStep && onStep(i + 1, plan.todo.length, r);
+    }
+    return { saved: saved, total: after };
+  }
+  window.Shrinker = { scan: scan, run: run };
+
+  /* ---------- page wiring ---------- */
+  var plan = null, root = null;
+  if (!window.showDirectoryPicker) { $('noSupport').hidden = false; $('pickBtn').disabled = true; }
+
+  $('pickBtn').addEventListener('click', async function () {
+    $('pickError').hidden = true;
+    try { root = await window.showDirectoryPicker({ mode: 'readwrite' }); }
+    catch (e) { return; }
+    $('pickBtn').disabled = true; $('pickBtn').textContent = 'Checking photos…';
+    try { plan = await scan(root); }
+    catch (e) {
+      $('pickError').textContent = e.message === 'wrong-folder'
+        ? 'That doesn’t look like the website folder. Choose the dolkar-site folder, the one that has index.html inside.'
+        : 'Could not read that folder (' + e.message + ').';
+      $('pickError').hidden = false; $('pickBtn').disabled = false; $('pickBtn').textContent = 'Choose the dolkar-site folder'; return;
+    }
+    $('pickBtn').textContent = 'Folder checked ✓';
+    var heavy = plan.todo.reduce(function (s, x) { return s + x.size; }, 0);
+    $('stepPlan').hidden = false;
+    if (plan.todo.length) {
+      $('planHead').textContent = plan.todo.length + ' photo' + (plan.todo.length > 1 ? 's are' : ' is') + ' too heavy (' + mb(heavy) + ')';
+      $('planSub').textContent = 'After shrinking they’ll be roughly ' + mb(plan.todo.length * 320 * 1024) + ' in total. Photos that are already web-sized are left alone.';
+      plan.todo.forEach(function (x) { $('planList').appendChild(li(x.path, mb(x.size))); });
+    } else {
+      $('planHead').innerHTML = '<span class="ok">All photos are already web-sized ✓</span>';
+      $('planSub').textContent = 'Nothing to shrink. Your photos total ' + mb(plan.total) + '.';
+      $('runBtn').hidden = true;
+    }
+    if (plan.extra.length) {
+      $('stepExtra').hidden = false;
+      plan.extra.sort(function (a, b) { return b.size - a.size; }).forEach(function (x) { $('extraList').appendChild(li(x.path, mb(x.size))); });
+    }
+    if (plan.heic.length) {
+      $('stepHeic').hidden = false;
+      plan.heic.forEach(function (x) { $('heicList').appendChild(li(x.path, mb(x.size))); });
+    }
+  });
+
+  $('runBtn').addEventListener('click', async function () {
+    $('runBtn').disabled = true; $('runBtn').textContent = 'Working…';
+    $('stepRun').hidden = false;
+    var res = await run(plan, function (i, n, r) {
+      $('runBar').style.width = Math.round(i / n * 100) + '%';
+      $('runSub').textContent = i + ' of ' + n + ' done';
+      $('runList').appendChild(li(r.path, r.note ? r.note : mb(r.before) + ' → ' + mb(r.after)));
+    });
+    $('runBar').style.width = '100%';
+    $('runHead').innerHTML = '<span class="ok">Done — saved ' + mb(res.saved) + ' ✓</span>';
+    $('runSub').textContent = 'Your website photos now total about ' + mb(res.total) + '. Double-click index.html to check, then upload the dolkar-site folder to Netlify.';
+    $('runBtn').textContent = 'Finished ✓';
+  });
+})();
+</script>
+</body>
+</html>

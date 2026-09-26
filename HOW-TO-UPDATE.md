@@ -59,7 +59,15 @@ The "Open now" badge next to the restaurant hours follows whatever hours you typ
 
 Phone numbers, email, address, room amenities and house policies are in `assets/js/data.js`. Open it with Notepad or TextEdit.
 
-## Before adding photos from a phone
+## Photos too big? Use SHRINK-PHOTOS.html (one click)
+
+1. Open **`SHRINK-PHOTOS.html`** in **Chrome or Edge** (double-click; if it opens in another browser, right-click → Open with → Edge/Chrome).
+2. Click **Choose the dolkar-site folder** → select your `dolkar-site` folder → **Allow** / **Save changes** when asked.
+3. It shows which photos are too heavy → click **Shrink them now**.
+
+Every oversized photo is resized in place (same name, same folder). It also lists files that don't belong in the website (old zips, backup folders) and iPhone `.HEIC` photos that need converting. Run it before every Netlify upload. The whole website should be well under 50 MB.
+
+## Before adding photos from a phone (manual way)
 
 Phone photos are huge (4–8 MB) and make the site slow. Shrink each one first:
 1. Open **squoosh.app** and drop the photo in.
