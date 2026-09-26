@@ -35,11 +35,11 @@
 <body>
 <main>
   <h1>Shrink <em>photos</em></h1>
-  <p class="lede">Phone photos are 4–10 MB each and make the website slow. This tool makes every photo in your website folder web-sized (about 200–400 KB) while keeping the same names and folders. They look the same on screen.</p>
+  <p class="lede">Phone photos are 4–10 MB each and make the website slow. This tool makes every photo in your website folder web-sized (about 200–400 KB). It never deletes or renames a photo: same files, same names, same folders, just lighter. They look the same on screen.</p>
 
   <div class="card" id="stepPick">
     <ol class="steps">
-      <li>Optional but wise: keep a copy of your <b>dolkar-site</b> folder as a backup (the originals get replaced).</li>
+      <li>Nothing gets deleted or renamed: each photo is made smaller under its same name, and a copy of every original is kept in a <b>_original-photos</b> folder.</li>
       <li>Click the button and choose your <b>dolkar-site</b> folder, the one with <b>index.html</b> inside.</li>
       <li>If the browser asks for permission to <b>view</b> and then <b>edit</b> files, click <b>Allow</b> / <b>Save changes</b>.</li>
     </ol>
@@ -65,6 +65,12 @@
     <p class="big warn">iPhone photos that websites can't show</p>
     <p class="note">These are in <b>.HEIC</b> format. Websites can't display them. Convert them to JPG (e.g. drop them on squoosh.app, or on iPhone: Settings → Camera → Formats → Most Compatible) and put the JPG back with the same number.</p>
     <ul class="list" id="heicList"></ul>
+  </div>
+
+  <div class="card" id="stepPng" hidden>
+    <p class="big">Heavy PNG photos</p>
+    <p class="note">These photos are saved as <b>PNG</b>, a format meant for graphics, so they stay heavy even at the right size. This tool won't change their format (so nothing gets renamed). To make them light yourself: open the photo, <b>save / export it as JPG with the same number</b> (e.g. <b>02.jpg</b>), then delete the old <b>02.png</b>. squoosh.app can do this too.</p>
+    <ul class="list" id="pngList"></ul>
   </div>
 
   <div class="card" id="stepRun" hidden>
@@ -99,7 +105,7 @@
     if (names.indexOf('index.html') < 0 || names.indexOf('assets') < 0) throw new Error('wrong-folder');
     var assets = await root.getDirectoryHandle('assets');
     var images = await assets.getDirectoryHandle('images');
-    var plan = { todo: [], heic: [], extra: [], total: 0, keep: 0 };
+    var plan = { root: root, todo: [], heic: [], pngs: [], extra: [], total: 0, keep: 0 };
     async function walk(dir, path, top) {
       for (var h of await entries(dir)) {
         if (h.kind === 'directory') {
@@ -111,7 +117,13 @@
           var f = await h.getFile();
           plan.total += f.size;
           var item = { dir: dir, handle: h, name: h.name, path: path + h.name, size: f.size, edge: MAX_EDGE[top] || 2000 };
-          if (f.size > KEEP_UNDER) plan.todo.push(item); else plan.keep += f.size;
+          if (f.size <= KEEP_UNDER) { plan.keep += f.size; continue; }
+          if (/\.png$/i.test(h.name)) {
+            var edge = 0;
+            try { var bm = await createImageBitmap(f); edge = Math.max(bm.width, bm.height); if (bm.close) bm.close(); } catch (e) {}
+            if (edge && edge <= item.edge) { plan.pngs.push(item); plan.keep += f.size; continue; }
+          }
+          plan.todo.push(item);
         }
       }
     }
@@ -123,39 +135,51 @@
     return plan;
   }
 
-  async function hasFile(dir, name) { try { await dir.getFileHandle(name); return true; } catch (e) { return false; } }
+  // SAFETY RULES: this tool never deletes, renames or creates photos.
+  // It only makes an existing photo smaller under its exact same name,
+  // after saving a copy of the original in _original-photos/.
+  var BACKUP = '_original-photos';
+  async function backup(root, it, file) {
+    var d = await root.getDirectoryHandle(BACKUP, { create: true });
+    var parts = ('assets/images/' + it.path).split('/');
+    for (var i = 0; i < parts.length - 1; i++) d = await d.getDirectoryHandle(parts[i], { create: true });
+    var name = parts[parts.length - 1];
+    try { await d.getFileHandle(name); return; } catch (e) {}   // keep the very first original if run again
+    var fh = await d.getFileHandle(name, { create: true });
+    var w = await fh.createWritable();
+    await w.write(file); await w.close();
+    if ((await fh.getFile()).size !== file.size) throw new Error('backup-failed');
+  }
 
-  async function shrinkOne(it) {
+  async function shrinkOne(it, root) {
     var file = await it.handle.getFile();
     var bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
     var scale = Math.min(1, it.edge / Math.max(bmp.width, bmp.height));
     var w = Math.round(bmp.width * scale), h = Math.round(bmp.height * scale);
     var c = document.createElement('canvas'); c.width = w; c.height = h;
     var ctx = c.getContext('2d');
-    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
+    var type = /\.png$/i.test(it.name) ? 'image/png' : /\.webp$/i.test(it.name) ? 'image/webp' : 'image/jpeg';
+    if (type === 'image/jpeg') { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h); }
     ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(bmp, 0, 0, w, h);
     if (bmp.close) bmp.close();
-    var base = it.name.replace(/\.[^.]+$/, ''), isJpg = /\.jpe?g$/i.test(it.name);
-    var target = it.name, type = 'image/jpeg';
-    if (!isJpg) {
-      if (await hasFile(it.dir, base + '.jpg')) type = /\.png$/i.test(it.name) ? 'image/png' : 'image/webp';
-      else target = base + '.jpg';
-    }
     var blob = await new Promise(function (r) { c.toBlob(r, type, 0.82); });
-    if (!blob || blob.size >= file.size) return { path: it.path, before: file.size, after: file.size, note: 'already small' };
-    var out = await it.dir.getFileHandle(target, { create: true });
-    var wr = await out.createWritable();
+    if (!blob || blob.size < 2048 || blob.size >= file.size) return { path: it.path, before: file.size, after: file.size, note: 'left as is' };
+    var check = await createImageBitmap(blob);                      // make sure the new file is a valid picture
+    var ok = check.width === w && check.height === h;
+    if (check.close) check.close();
+    if (!ok) return { path: it.path, before: file.size, after: file.size, note: 'left as is' };
+    await backup(root, it, file);                                   // original is safe before we touch anything
+    var wr = await it.handle.createWritable();                     // same file, same name
     await wr.write(blob); await wr.close();
-    if (target !== it.name) await it.dir.removeEntry(it.name);
-    return { path: it.path.replace(it.name, target), before: file.size, after: blob.size };
+    return { path: it.path, before: file.size, after: blob.size, png: type === 'image/png' && blob.size > 1048576 };
   }
 
   async function run(plan, onStep) {
     var saved = 0, after = plan.keep;
     for (var i = 0; i < plan.todo.length; i++) {
       var r;
-      try { r = await shrinkOne(plan.todo[i]); }
+      try { r = await shrinkOne(plan.todo[i], plan.root); }
       catch (e) { r = { path: plan.todo[i].path, before: plan.todo[i].size, after: plan.todo[i].size, note: 'could not read — left as is' }; }
       saved += r.before - r.after; after += r.after;
       onStep && onStep(i + 1, plan.todo.length, r);
@@ -185,7 +209,7 @@
     $('stepPlan').hidden = false;
     if (plan.todo.length) {
       $('planHead').textContent = plan.todo.length + ' photo' + (plan.todo.length > 1 ? 's are' : ' is') + ' too heavy (' + mb(heavy) + ')';
-      $('planSub').textContent = 'After shrinking they’ll be roughly ' + mb(plan.todo.length * 320 * 1024) + ' in total. Photos that are already web-sized are left alone.';
+      $('planSub').textContent = 'After shrinking they’ll be roughly ' + mb(plan.todo.length * 320 * 1024) + ' in total. Photos that are already web-sized are left alone. Originals are copied to _original-photos first.';
       plan.todo.forEach(function (x) { $('planList').appendChild(li(x.path, mb(x.size))); });
     } else {
       $('planHead').innerHTML = '<span class="ok">All photos are already web-sized ✓</span>';
@@ -195,6 +219,10 @@
     if (plan.extra.length) {
       $('stepExtra').hidden = false;
       plan.extra.sort(function (a, b) { return b.size - a.size; }).forEach(function (x) { $('extraList').appendChild(li(x.path, mb(x.size))); });
+    }
+    if (plan.pngs.length) {
+      $('stepPng').hidden = false;
+      plan.pngs.forEach(function (x) { $('pngList').appendChild(li(x.path, mb(x.size))); });
     }
     if (plan.heic.length) {
       $('stepHeic').hidden = false;
@@ -208,11 +236,13 @@
     var res = await run(plan, function (i, n, r) {
       $('runBar').style.width = Math.round(i / n * 100) + '%';
       $('runSub').textContent = i + ' of ' + n + ' done';
-      $('runList').appendChild(li(r.path, r.note ? r.note : mb(r.before) + ' → ' + mb(r.after)));
+      $('runList').appendChild(li(r.path, r.note ? r.note : mb(r.before) + ' → ' + mb(r.after) + (r.png ? ' — see “Heavy PNG photos”' : '')));
     });
     $('runBar').style.width = '100%';
     $('runHead').innerHTML = '<span class="ok">Done — saved ' + mb(res.saved) + ' ✓</span>';
-    $('runSub').textContent = 'Your website photos now total about ' + mb(res.total) + '. Double-click index.html to check, then upload the dolkar-site folder to Netlify.';
+    $('runSub').innerHTML = 'Your website photos now total about ' + mb(res.total) + '. No photo was deleted or renamed.<br><br>' +
+      '<b>Next:</b> double-click index.html and check the photos. The untouched originals are in the <b>_original-photos</b> folder inside dolkar-site. ' +
+      'When you’re happy, <b>move _original-photos out of dolkar-site</b> (e.g. to your Desktop) before uploading to Netlify.';
     $('runBtn').textContent = 'Finished ✓';
   });
 })();

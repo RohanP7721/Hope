@@ -65,7 +65,9 @@ Phone numbers, email, address, room amenities and house policies are in `assets/
 2. Click **Choose the dolkar-site folder** → select your `dolkar-site` folder → **Allow** / **Save changes** when asked.
 3. It shows which photos are too heavy → click **Shrink them now**.
 
-Every oversized photo is resized in place (same name, same folder). It also lists files that don't belong in the website (old zips, backup folders) and iPhone `.HEIC` photos that need converting. Run it before every Netlify upload. The whole website should be well under 50 MB.
+Every oversized photo is made smaller **under its same name, in the same folder**. The tool never deletes, renames or adds photos, and it keeps a copy of every original in a `_original-photos` folder. Check the site, then **move `_original-photos` out of `dolkar-site`** (e.g. to your Desktop) before uploading.
+
+It also lists files that don't belong in the website (old zips, backup folders), iPhone `.HEIC` photos that need converting, and heavy **PNG** photos (re-save those as JPG with the same number yourself). Run it before every Netlify upload. The whole website should be well under 50 MB.
 
 ## Before adding photos from a phone (manual way)
 
