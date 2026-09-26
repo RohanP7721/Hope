@@ -9,6 +9,18 @@
   function save() { try { localStorage.setItem(KEY, JSON.stringify(draft)); } catch (e) {} update(); }
 
   document.documentElement.classList.add('is-editing');
+
+  function pages() {
+    var here = location.pathname.split('/').pop() + location.search;
+    var list = [['index.html?edit', 'Home page']];
+    ((window.DOLKAR && window.DOLKAR.rooms) || []).forEach(function (r) {
+      list.push(['room.html?r=' + r.slug + '&edit', 'Room: ' + (window.Site ? Site.roomTitle(r) : r.name)]);
+    });
+    return list.map(function (o) {
+      var sel = here === o[0] || (o[0] === 'index.html?edit' && /^(index\.html)?\?edit/.test(here)) ? ' selected' : '';
+      return '<option value="' + o[0] + '"' + sel + '>' + o[1] + '</option>';
+    }).join('');
+  }
   var els = Array.prototype.slice.call(document.querySelectorAll('[data-edit]'));
   els.forEach(function (el) {
     var key = el.getAttribute('data-edit');
@@ -34,14 +46,16 @@
   var panel = document.createElement('div');
   panel.className = 'edit-panel';
   panel.innerHTML =
-    '<strong>Edit Mode</strong>' +
+    '<button type="button" class="edit-title" data-act="toggle" aria-expanded="true">Edit Mode <span>— tap to hide</span></button>' +
     '<p>Click any outlined text to change it. Changes are saved as drafts in this browser.</p>' +
+    '<label class="edit-page">Page to edit<select data-act="page">' + pages() + '</select></label>' +
     '<p class="edit-count"></p>' +
     '<button type="button" class="edit-primary" data-act="download">Download content.js</button>' +
     '<button type="button" data-act="discard">Discard my drafts</button>' +
     '<button type="button" data-act="exit">Exit Edit Mode</button>' +
-    '<p class="edit-help">To publish: replace <code>assets/js/content.js</code> on your host with the downloaded file. Photos, prices and rooms live in <code>assets/js/data.js</code>.</p>';
+    '<p class="edit-help">To publish: put the downloaded <code>content.js</code> into <code>assets/js/</code> (replace the old one), then upload the folder again. Prices live in <code>assets/js/data.js</code>; photos live in the image folders.</p>';
   document.body.appendChild(panel);
+  panel.querySelector('select').addEventListener('change', function (e) { location.href = e.target.value; });
 
   function update() {
     var n = Object.keys(draft).length;
@@ -50,7 +64,13 @@
   update();
 
   panel.addEventListener('click', function (e) {
-    var act = e.target.getAttribute('data-act');
+    var act = e.target.closest('[data-act]') && e.target.closest('[data-act]').getAttribute('data-act');
+    if (act === 'toggle') {
+      var min = panel.classList.toggle('is-min');
+      var t = panel.querySelector('.edit-title');
+      t.setAttribute('aria-expanded', !min);
+      t.querySelector('span').textContent = min ? '— tap to show' : '— tap to hide';
+    }
     if (act === 'download') {
       var merged = Object.assign({}, window.DOLKAR_TEXT || {}, draft);
       var body = '/* Text edits made in Edit Mode (open any page with ?edit at the end of the URL).\n' +
@@ -66,7 +86,8 @@
       location.reload();
     }
     if (act === 'exit') {
-      location.href = location.pathname + location.search.replace(/[?&]edit\b(=[^&]*)?/, '').replace(/^&/, '?') + location.hash;
+      var hash = location.hash === '#edit' ? '' : location.hash;
+      location.href = location.pathname + location.search.replace(/[?&]edit\b(=[^&]*)?/, '').replace(/^&/, '?') + hash;
     }
   });
 })();

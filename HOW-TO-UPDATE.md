@@ -36,10 +36,16 @@ A portrait or square image works best, e.g. 1080 × 1350 like an Instagram post.
 
 ## Text
 
-1. Open the website with `?edit` at the end of the address, e.g. `index.html?edit`.
-2. Click any outlined text and type.
-3. Click **Download content.js** (bottom-right box).
+1. Double-click **`EDIT-TEXT.html`** in the website folder. It opens the site in Edit Mode.
+   (On the live site, add `?edit` to the end of the address instead: `https://your-site.netlify.app/?edit`.)
+2. Click any outlined text and type. Use **Page to edit** in the dark box to switch to a room page.
+   Tap the box's title to hide it if it's covering something.
+3. Click **Download content.js**.
 4. Put that file into `assets/js/`, replacing the old `content.js`.
+   (If your computer saved it as `content (1).js`, rename it to `content.js`.)
+5. Upload the folder to Netlify again.
+
+Room names you change here also update the WhatsApp booking messages.
 
 Prices, room details (size, beds, guests), the menu and phone numbers are in `assets/js/data.js`. Open it with Notepad or TextEdit.
 

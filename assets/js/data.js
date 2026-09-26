@@ -128,19 +128,6 @@ window.DOLKAR = {
     'assets/images/restaurant/04.jpg'
   ],
 
-  menu: [
-    { group: 'Savory', items: [
-      { name: 'Steamed Momo', note: 'Hand-folded Tibetan dumplings', price: 130 },
-      { name: 'Thenthuk', note: 'Hand-pulled noodle soup', price: 210 },
-      { name: 'Gyathuk', note: 'Tibetan noodle soup', price: 210 }
-    ]},
-    { group: 'Starters', items: [
-      { name: 'Spring Roll', note: 'Crisp, golden, made to share', price: 190 },
-      { name: 'Lafing', note: 'Chilled mung-bean noodles, spiced', price: 90 },
-      { name: 'Thali', note: 'A full plate, the house way', price: 490 }
-    ]}
-  ],
-
   /* Optional captions for gallery photos, in number order (01, 02, 03 ...).
      Photos without a caption here still show — they just get a generic caption. */
   galleryCaptions: [

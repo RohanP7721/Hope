@@ -8,11 +8,14 @@
 
   var D = window.DOLKAR;
   var html = document.documentElement;
-  var editing = /[?&]edit\b/.test(location.search);
+  var editing = /[?&]edit\b/.test(location.search) || location.hash === '#edit';
   var hasGsap = !!(window.gsap && window.ScrollTrigger);
   var motion = html.classList.contains('motion') && hasGsap && !editing;
+  // "lite": the visitor's device asks for reduced motion — keep soft fades, drop big movement.
+  var lite = motion && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var finePointer = window.matchMedia('(pointer: fine)').matches;
   if (!motion) html.classList.remove('motion', 'is-arriving', 'is-preloading');
+  if (lite) html.classList.remove('is-arriving', 'is-preloading');
   if (hasGsap) gsap.registerPlugin(ScrollTrigger);
 
   function store(fn) { try { return fn(sessionStorage); } catch (e) { return null; } }
@@ -27,7 +30,16 @@
   }
   function inr(n) { return '₹' + Number(n).toLocaleString('en-IN'); }
   function wa(text) { return 'https://wa.me/' + D.hotel.whatsapp + '?text=' + encodeURIComponent(text); }
-  function roomTitle(r) { return r.name + ' (' + r.variant + ')'; }
+  function txt(key, fallback) {
+    var t = window.DOLKAR_TEXT || {};
+    if (!Object.prototype.hasOwnProperty.call(t, key)) return fallback;
+    var d = document.createElement('div');
+    d.innerHTML = t[key];
+    return d.textContent.trim() || fallback;
+  }
+  function roomTitle(r) {
+    return txt('room.' + r.slug + '.name', r.name) + ' (' + txt('room.' + r.slug + '.variant', r.variant) + ')';
+  }
   function pad(n) { return (n < 10 ? '0' : '') + n; }
 
   var ICONS = {
@@ -118,11 +130,11 @@
 
   function roomCard(r, i) {
     return '<a class="room-card" href="room.html?r=' + encodeURIComponent(r.slug) + '" data-room="' + esc(r.slug) + '" data-cursor="View">' +
-      '<div class="rc-media"><div class="rc-zoom"><img src="' + roomFolder(r) + '/01.jpg" alt="' + esc(roomTitle(r)) + '" loading="lazy"></div>' +
-      (r.badge ? '<span class="rc-badge">' + esc(r.badge) + '</span>' : '') +
+      '<div class="rc-media" data-tilt><div class="rc-zoom"><img src="' + roomFolder(r) + '/01.jpg" alt="' + esc(roomTitle(r)) + '" loading="lazy"></div>' +
+      (r.badge ? '<span class="rc-badge" data-edit="room.' + r.slug + '.badge">' + esc(r.badge) + '</span>' : '') +
       '<span class="rc-count" hidden></span></div>' +
-      '<div class="rc-meta"><span>' + pad(i + 1) + '</span><span>' + esc(r.tier) + '</span></div>' +
-      '<h3 class="rc-title">' + esc(r.name) + ' <em>' + esc(r.variant) + '</em></h3>' +
+      '<div class="rc-meta"><span>' + pad(i + 1) + '</span><span data-edit="room.' + r.slug + '.tier">' + esc(r.tier) + '</span></div>' +
+      '<h3 class="rc-title"><span data-edit="room.' + r.slug + '.name">' + esc(r.name) + '</span> <em data-edit="room.' + r.slug + '.variant">' + esc(r.variant) + '</em></h3>' +
       '<div class="rc-foot"><span>From <b>' + inr(r.price) + '</b> / night</span>' +
       '<span class="rc-specs">' + r.size + ' ft² · ' + r.guests + ' guests</span>' +
       '<span class="rc-arrow">' + icon('arrow') + '</span></div></a>';
@@ -140,7 +152,7 @@
   /* ---------- smooth scroll ---------- */
   var lenis = null;
   function initLenis() {
-    if (!motion || !window.Lenis) return;
+    if (!motion || lite || !window.Lenis) return;
     lenis = new Lenis({ lerp: 0.09, smoothWheel: true, wheelMultiplier: 1 });
     lenis.on('scroll', ScrollTrigger.update);
     gsap.ticker.add(function (t) { lenis.raf(t * 1000); });
@@ -190,6 +202,14 @@
   function initReveals(root) {
     if (!motion) return;
     root = root || document;
+
+    if (lite) {
+      $$('[data-reveal="clip"]', root).forEach(function (el) { gsap.set(el, { clipPath: 'inset(0% 0% 0% 0%)' }); });
+      $$('[data-split]:not([data-intro]), [data-reveal]:not([data-intro]), [data-stagger] > *', root).forEach(function (el) {
+        gsap.fromTo(el, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.9, ease: 'power1.out', scrollTrigger: { trigger: el, start: 'top 94%' } });
+      });
+      return;
+    }
 
     $$('[data-split]', root).forEach(function (el) {
       if (el.hasAttribute('data-intro')) return;
@@ -264,7 +284,7 @@
     var last = 0;
     function onScroll(y) {
       nav.classList.toggle('is-solid', y > 40);
-      if (!html.classList.contains('menu-open')) {
+      if (!html.classList.contains('menu-open') && !editing) {
         if (y > 320 && y > last + 4) nav.classList.add('is-hidden');
         else if (y < last - 4 || y < 320) nav.classList.remove('is-hidden');
       }
@@ -311,7 +331,7 @@
         return;
       }
       if (samePage) return;
-      if (!motion || !curtain) return;
+      if (!motion || lite || !curtain) return;
       e.preventDefault();
       store(function (s) { s.setItem('dolkar-nav', '1'); });
       gsap.fromTo(curtain, { yPercent: 100 }, {
@@ -326,7 +346,7 @@
 
   /* ---------- cursor follower + magnetic buttons ---------- */
   function initCursor() {
-    if (!motion || !finePointer) return;
+    if (!motion || lite || !finePointer) return;
     var c = document.createElement('div');
     c.className = 'cursor';
     c.innerHTML = '<span class="cursor-label"></span>';
@@ -580,6 +600,7 @@
       lockScroll(false);
     }
     document.addEventListener('click', function (e) {
+      if (editing && e.target.closest('[contenteditable="true"]')) return;
       var t = e.target.closest('[data-open-booking]');
       if (t) {
         e.preventDefault();
@@ -606,10 +627,69 @@
     $$('[data-hide-stickybar]').forEach(function (el) { io.observe(el); });
   }
 
+  /* ---------- contact details from data.js ---------- */
+  function fillHotel() {
+    var H = D.hotel;
+    $$('[data-hotel]').forEach(function (a) {
+      var k = a.getAttribute('data-hotel'), m = /^phone(\d)$/.exec(k);
+      if (k === 'email') { a.href = 'mailto:' + H.email; a.textContent = H.email; }
+      else if (k === 'call') { a.href = 'tel:' + H.phones[0].replace(/\s/g, ''); }
+      else if (m) {
+        var n = H.phones[+m[1]];
+        if (!n) { if (a.previousSibling && a.previousSibling.nodeName === 'BR') a.previousSibling.remove(); a.remove(); return; }
+        a.href = 'tel:' + n.replace(/\s/g, ''); a.textContent = n;
+      }
+    });
+  }
+
+  /* ---------- hover: rolling button text, 3D tilt on photos ---------- */
+  function rollText() {
+    if (!motion || lite) return;
+    $$('.btn > span, .btn-pill > span, .nav-links a, .link > span').forEach(function (el) {
+      if (el.querySelector('.roll')) return;
+      var t = el.innerHTML;
+      el.innerHTML = '<span class="roll"><i>' + t + '</i><i aria-hidden="true">' + t + '</i></span>';
+    });
+  }
+  function initTilt(root) {
+    if (!motion || lite || !finePointer) return;
+    $$('[data-tilt]', root).forEach(function (el) {
+      if (el._tilt) return;
+      el._tilt = true;
+      gsap.set(el, { transformPerspective: 900 });
+      var rx = gsap.quickTo(el, 'rotationX', { duration: 0.7, ease: 'power3' });
+      var ry = gsap.quickTo(el, 'rotationY', { duration: 0.7, ease: 'power3' });
+      el.addEventListener('pointermove', function (e) {
+        var r = el.getBoundingClientRect();
+        ry(((e.clientX - r.left) / r.width - 0.5) * 9);
+        rx(-((e.clientY - r.top) / r.height - 0.5) * 9);
+      });
+      el.addEventListener('pointerleave', function () { rx(0); ry(0); });
+    });
+  }
+
+  /* ---------- thin scroll progress bar ---------- */
+  function initProgress() {
+    if (editing) return;
+    var bar = document.createElement('div');
+    bar.className = 'scroll-progress';
+    bar.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(bar);
+    function upd(y) {
+      var max = document.documentElement.scrollHeight - window.innerHeight;
+      bar.style.transform = 'scaleX(' + (max > 0 ? Math.min(1, y / max) : 0) + ')';
+    }
+    if (lenis) lenis.on('scroll', function (e) { upd(e.scroll); });
+    else window.addEventListener('scroll', function () { upd(window.scrollY); }, { passive: true });
+    upd(window.scrollY);
+  }
+
   /* ---------- boot sequence ---------- */
   function start(intro) {
     applyText();
+    fillHotel();
     initLenis();
+    initProgress();
     initNav();
     initLinks();
     initDrawer();
@@ -625,6 +705,8 @@
 
     if (!motion) { intro && intro(null); return; }
 
+    rollText();
+    initTilt();
     initReveals();
     Site.afterReveals && Site.afterReveals();
     html.classList.add('motion-ready');
@@ -660,7 +742,7 @@
   }
 
   window.Site = {
-    data: D, motion: motion, editing: editing,
+    data: D, motion: motion, lite: lite, editing: editing, txt: txt, initTilt: initTilt,
     $: $, $$: $$, esc: esc, inr: inr, wa: wa, icon: icon, pad: pad, roomTitle: roomTitle,
     roomCard: roomCard, roomPhotos: roomPhotos, hydrateRoomCards: hydrateRoomCards, discover: discover,
     split: split, slider: slider, lightbox: lightbox, booking: booking,

@@ -17,9 +17,9 @@
   /* ---------- header ---------- */
   $('#rpLabel').innerHTML = 'Room ' + pad(idx + 1) + ' / ' + pad(D.rooms.length) + ' · <span data-edit="' + k + 'tier">' + esc(r.tier) + '</span>';
   var h1 = $('#rpTitle');
-  h1.innerHTML = esc(r.name) + ' <em>' + esc(r.variant) + '</em>';
+  h1.innerHTML = '<span data-edit="' + k + 'name">' + esc(r.name) + '</span> <em data-edit="' + k + 'variant">' + esc(r.variant) + '</em>';
   h1.setAttribute('data-intro', '');
-  $('#rpPrice').innerHTML = (r.badge ? '<span class="rp-badge">' + esc(r.badge) + '</span>' : '') +
+  $('#rpPrice').innerHTML = (r.badge ? '<span class="rp-badge" data-edit="' + k + 'badge">' + esc(r.badge) + '</span>' : '') +
     '<span class="rp-from">From</span><b>' + S.inr(r.price) + '</b><span class="rp-per">per night</span>';
 
   /* ---------- gallery ---------- */
@@ -77,12 +77,13 @@
 
   /* ---------- details ---------- */
   $('#rpSpecs').innerHTML = [
-    ['size', r.size + '<small> ft²</small>', 'Floor space'],
-    ['guests', r.guests + '', 'Guests'],
-    ['bed', esc(r.beds), 'Bedding'],
-    ['view', esc(r.view), 'Outlook']
+    ['size', r.size + '<small> ft²</small>', 'Floor space', ''],
+    ['guests', r.guests + '', 'Guests', ''],
+    ['bed', esc(r.beds), 'Bedding', 'beds'],
+    ['view', esc(r.view), 'Outlook', 'view']
   ].map(function (s) {
-    return '<div class="spec"><span class="spec-icon">' + icon(s[0]) + '</span><strong>' + s[1] + '</strong><small>' + s[2] + '</small></div>';
+    return '<div class="spec"><span class="spec-icon">' + icon(s[0]) + '</span><strong' + (s[3] ? ' data-edit="' + k + s[3] + '"' : '') + '>' + s[1] + '</strong>' +
+      '<small data-edit="room.spec.' + s[0] + '">' + s[2] + '</small></div>';
   }).join('');
   $('#rpLede').innerHTML = esc(r.summary);
   $('#rpLede').setAttribute('data-edit', k + 'summary');
@@ -120,6 +121,7 @@
 
   /* ---------- motion ---------- */
   S.afterReveals = function () {
+    if (S.lite) return;
     gsap.fromTo('.rp-others .room-card', { x: 120, autoAlpha: 0 }, {
       x: 0, autoAlpha: 1, duration: 1.2, ease: 'expo.out', stagger: 0.08,
       scrollTrigger: { trigger: '#othersTrack', start: 'top 85%' }
@@ -132,6 +134,11 @@
 
   function intro(tl) {
     if (!tl) return;
+    if (S.lite) {
+      gsap.set(h1, { autoAlpha: 1 });
+      tl.fromTo([h1, '.rp-slide', '.rp-ui', '.rp-thumbs'], { autoAlpha: 0 }, { autoAlpha: 1, duration: 1, ease: 'power1.out', stagger: 0.08 });
+      return;
+    }
     var words = S.split(h1, false);
     gsap.set(h1, { autoAlpha: 1 });
     tl.fromTo(words, { yPercent: 115 }, { yPercent: 0, duration: 1.3, ease: 'expo.out', stagger: 0.07 }, 0.05)

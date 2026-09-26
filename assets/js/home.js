@@ -14,16 +14,7 @@
 
   var speeds = [0.06, 0.1, 0.08, 0.11];
   $('#diningCollage').innerHTML = D.restaurantImages.slice(0, 4).map(function (src, i) {
-    return '<figure class="dc dc' + (i + 1) + '" data-reveal="clip"><img src="' + esc(src) + '" alt="Dishes at Taste of Tibet" loading="lazy" data-parallax="' + speeds[i] + '"></figure>';
-  }).join('');
-
-  $('#menuBoard').innerHTML = D.menu.map(function (g, gi) {
-    return '<div class="mb-group" data-reveal><h3>' + esc(g.group) + '</h3><ul>' + g.items.map(function (it, ii) {
-      var k = 'menu.' + gi + '.' + ii;
-      return '<li class="mb-item"><div class="mb-text"><span class="mb-name" data-edit="' + k + '.name">' + esc(it.name) + '</span>' +
-        '<span class="mb-note" data-edit="' + k + '.note">' + esc(it.note || '') + '</span></div><span class="mb-lead"></span>' +
-        '<span class="mb-price" data-edit="' + k + '.price">' + S.inr(it.price) + '</span></li>';
-    }).join('') + '</ul></div>';
+    return '<figure class="dc dc' + (i + 1) + '" data-reveal="clip" data-tilt><img src="' + esc(src) + '" alt="Dishes at Taste of Tibet" loading="lazy" data-parallax="' + speeds[i] + '"></figure>';
   }).join('');
 
   $('#amenGrid').innerHTML = D.amenities.map(function (a, i) {
@@ -39,7 +30,8 @@
     gallery.forEach(function (g, i) { cols[i % 3].push({ g: g, i: i }); });
     $('#galleryCols').innerHTML = cols.map(function (col, ci) {
       return '<div class="g-col g-col' + (ci + 1) + '">' + col.map(function (o) {
-        return '<button class="g-item" data-index="' + o.i + '" data-cursor="Open" aria-label="Open photo: ' + esc(o.g.alt) + '"><img src="' + esc(o.g.src) + '" alt="' + esc(o.g.alt) + '" loading="lazy"></button>';
+        return '<button class="g-item" data-index="' + o.i + '" data-cursor="Open" data-reveal data-tilt aria-label="Open photo: ' + esc(o.g.alt) + '">' +
+          '<img src="' + esc(o.g.src) + '" alt="' + esc(o.g.alt) + '" loading="lazy"><span class="g-cap">' + esc(o.g.alt) + '</span></button>';
       }).join('') + '</div>';
     }).join('');
     $('#gallery').hidden = !gallery.length;
@@ -140,6 +132,7 @@
 
   /* ---------- motion-only scroll choreography ---------- */
   S.afterReveals = function () {
+    if (S.lite) return;
     var mm = gsap.matchMedia();
 
     mm.add('(min-width: 1025px)', function () {
@@ -222,6 +215,11 @@
   function intro(tl) {
     popup();
     if (!tl) return;
+    if (S.lite) {
+      gsap.set('.hero-title', { autoAlpha: 1 });
+      tl.fromTo(['.hero-title', '.hero-meta', '.hero-side', '.hero-scroll', '.ticker'], { autoAlpha: 0 }, { autoAlpha: 1, duration: 1, ease: 'power1.out', stagger: 0.1 });
+      return;
+    }
     var chars = S.split($('.ht-name'), true);
     var the = S.split($('.ht-the'), false);
     gsap.set('.hero-title', { autoAlpha: 1 });
