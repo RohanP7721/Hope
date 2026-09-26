@@ -166,7 +166,11 @@
     var t = window.DOLKAR_TEXT || {};
     $$('[data-edit]', root).forEach(function (el) {
       var k = el.getAttribute('data-edit');
-      if (Object.prototype.hasOwnProperty.call(t, k)) el.innerHTML = t[k];
+      if (!Object.prototype.hasOwnProperty.call(t, k)) return;
+      // an emptied button/link label would make the button invisible — keep the original wording
+      var probe = document.createElement('div'); probe.innerHTML = t[k];
+      if (!probe.textContent.replace(/\u00a0/g, ' ').trim() && el.closest('a, button')) return;
+      el.innerHTML = t[k];
     });
   }
 

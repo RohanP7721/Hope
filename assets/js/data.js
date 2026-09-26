@@ -17,7 +17,7 @@ window.DOLKAR = {
     email: 'stay@thedolkarhotel.com',
     address: 'Tashi View Point, Bojoghari, Gangtok, Sikkim 737101',
     mapsUrl: 'https://www.google.com/maps/search/?api=1&query=The+Dolkar+Hotel+Tashi+View+Point+Gangtok',
-    menuPdf: 'https://drive.google.com/file/d/1G9oGoJc1GYaVoJ8S8600_5xPds9bFYq3/view?usp=sharing',
+    menuPdf: 'https://drive.google.com/file/d/1W7xew2o_gHTLo900D_iXKX4oQNpKONtO/view?usp=sharing',   /* "View full menu (PDF)" button */
     dinnerOpen: 18,   /* backup only: the "Open now" badge reads the hours you type in Edit Mode */
     dinnerClose: 23
   },
