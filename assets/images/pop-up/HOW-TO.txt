@@ -7,6 +7,10 @@ Put ONE image in this folder and name it 01.jpg
 - Tapping it opens WhatsApp to the hotel.
 - To change it: replace 01.jpg with your new image (same name).
 - To switch the pop-up OFF: delete the image. Leave this text file here.
+- To preview it any time: open index.html?popup (normally it shows only once per visit).
+- It never shows in Edit Mode (EDIT-TEXT.html), so it doesn't get in your way.
+- Windows tip: if you renamed the file yourself, check it isn't secretly "01.jpg.jpg"
+  (turn on View > File name extensions in File Explorer to see the real name).
 
 Tip: a portrait or square image looks best (e.g. 1080 x 1350, like an Instagram post).
 Keep it under ~400 KB so it loads fast (use squoosh.app to shrink it).

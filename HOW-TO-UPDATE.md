@@ -32,6 +32,7 @@ Put one image in the `pop-up` folder, named `01.jpg`.
 - Tapping it opens WhatsApp to the hotel.
 - **Change it:** replace `01.jpg` with a new image of the same name.
 - **Turn it off:** delete the image.
+- **Preview it:** open `index.html?popup`. It normally shows only once per visit, and never in Edit Mode.
 
 A portrait or square image works best, e.g. 1080 × 1350 like an Instagram post.
 

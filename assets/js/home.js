@@ -240,15 +240,23 @@
   function popup() {
     if (S.editing) return;
     var KEY = 'dolkar-popup-seen';
-    try { if (sessionStorage.getItem(KEY)) return; } catch (e) {}
+    var force = /[?&]popup\b/.test(location.search);
+    try { if (!force && sessionStorage.getItem(KEY)) return; } catch (e) {}
     S.discover('assets/images/pop-up').then(function (files) {
+      if (files.length) return files;
+      // forgiving about common names, incl. Windows hiding a doubled extension
+      var extra = ['popup.jpg', 'popup.png', 'pop-up.jpg', '1.jpg', '01.jpg.jpg', '01.png.png'].map(function (n) { return 'assets/images/pop-up/' + n; });
+      return Promise.all(extra.map(function (u) { return S.exists(u).then(function (ok) { return ok ? u : null; }); }))
+        .then(function (r) { return r.filter(Boolean); });
+    }).then(function (files) {
       if (!files.length) return;
       var img = new Image();
       img.onload = function () { setTimeout(show, 2000); };
       img.src = files[0];
       function busy() {
-        return document.documentElement.classList.contains('menu-open') ||
-          document.querySelector('.drawer.is-open, .lb.is-open, .preloader');
+        var h = document.documentElement;
+        return h.classList.contains('menu-open') || h.classList.contains('is-preloading') ||
+          document.querySelector('.drawer.is-open, .lb.is-open');
       }
       function show() {
         if (busy()) { setTimeout(show, 2000); return; }

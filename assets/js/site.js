@@ -784,6 +784,7 @@
         .to(pre, { yPercent: -100, duration: 1, ease: 'expo.inOut', onStart: function () { lockScroll(false); go(); } }, '+=0.15')
         .add(function () { html.classList.remove('is-preloading'); pre.remove(); });
     } else {
+      if (pre) pre.remove();
       go();
     }
   }
@@ -791,7 +792,7 @@
   window.Site = {
     data: D, motion: motion, lite: lite, editing: editing, txt: txt, initTilt: initTilt,
     $: $, $$: $$, esc: esc, inr: inr, wa: wa, icon: icon, pad: pad, roomTitle: roomTitle,
-    price: price, guestsOf: guestsOf, plans: plans, planRate: planRate,
+    price: price, guestsOf: guestsOf, plans: plans, planRate: planRate, exists: exists,
     roomCard: roomCard, roomPhotos: roomPhotos, hydrateRoomCards: hydrateRoomCards, discover: discover,
     split: split, slider: slider, lightbox: lightbox, booking: booking,
     applyText: applyText, scrollTo: scrollTo, start: start,
