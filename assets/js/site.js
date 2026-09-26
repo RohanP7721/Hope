@@ -42,6 +42,19 @@
     return isNaN(v) ? fallback : v;
   }
   function price(r) { return num('room.' + r.slug + '.price', r.price); }
+  function plans() { return D.mealPlans || [{ id: 'room', name: 'Room Only', note: '' }]; }
+  function planRate(r, id) {
+    if (!id || id === 'room') return price(r);
+    return num('room.' + r.slug + '.rate.' + id, (r.rates || {})[id] || price(r));
+  }
+  function planName(id) {
+    var p = plans().filter(function (x) { return x.id === id; })[0] || plans()[0];
+    return txt('plan.' + p.id + '.name', p.name);
+  }
+  function planNote(id) {
+    var p = plans().filter(function (x) { return x.id === id; })[0] || plans()[0];
+    return txt('plan.' + p.id + '.note', p.note);
+  }
   function guestsOf(r) { return Math.max(1, Math.round(num('room.' + r.slug + '.guests', r.guests))); }
   function roomTitle(r) {
     return txt('room.' + r.slug + '.name', r.name) + ' (' + txt('room.' + r.slug + '.variant', r.variant) + ')';
@@ -73,7 +86,9 @@
     phone: '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2"/>',
     mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
     chat: '<path d="M20 12a8 8 0 01-11.6 7.1L4 20l1-4.2A8 8 0 1120 12z"/>',
-    expand: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>'
+    expand: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
+    check: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.6 2.6L16 9.5"/>',
+    bell: '<path d="M6 16V11a6 6 0 0112 0v5l1.5 2h-15zM10 20a2 2 0 004 0"/>'
   };
   function icon(name) {
     return '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICONS[name] || ICONS.arrow) + '</svg>';
@@ -245,7 +260,7 @@
     $$('[data-stagger]', root).forEach(function (el) {
       var kids = Array.prototype.slice.call(el.children);
       gsap.fromTo(kids, { autoAlpha: 0, y: 40 }, {
-        autoAlpha: 1, y: 0, duration: 1.1, ease: 'expo.out', stagger: 0.08,
+        autoAlpha: 1, y: 0, duration: 1.1, ease: 'expo.out', stagger: 0.08, clearProps: 'transform',
         scrollTrigger: { trigger: el, start: 'top 88%' }
       });
     });
@@ -517,6 +532,7 @@
       '<div class="bk-field"><label for="' + uid + '-in">Check-in</label><input id="' + uid + '-in" type="date" name="in" min="' + today + '" required></div>' +
       '<div class="bk-field"><label for="' + uid + '-out">Check-out</label><input id="' + uid + '-out" type="date" name="out" min="' + today + '" required></div>' +
       '</div>' +
+      '<div class="bk-field"><label for="' + uid + '-plan">Meal plan</label><select id="' + uid + '-plan" name="plan"></select></div>' +
       '<div class="bk-field bk-guests"><span class="bk-label" id="' + uid + '-gl">Guests</span>' +
       '<div class="stepper" role="group" aria-labelledby="' + uid + '-gl"><button type="button" class="icon-btn" data-step="-1" aria-label="Fewer guests">' + icon('minus') + '</button>' +
       '<output name="guests" aria-live="polite">2</output>' +
@@ -531,6 +547,8 @@
     var inEl = f.elements['in'], outEl = f.elements['out'], nameEl = f.elements['name'];
     var gOut = $('output', f), status = $('.bk-status', f), summary = $('.bk-summary', f);
     var guests = 2;
+    var planEl = f.elements['plan'];
+    planEl.value = 'room';
 
     function room() { return fixed || D.rooms.filter(function (r) { return r.slug === f.elements['room'].value; })[0]; }
     function nights() {
@@ -540,16 +558,23 @@
     }
     function render() {
       var r = room();
-      var cap = guestsOf(r), rate = price(r);
+      var chosen = planEl.value || 'room';
+      planEl.innerHTML = plans().map(function (p) {
+        return '<option value="' + p.id + '">' + esc(planName(p.id)) + ' (' + guestsOf(r) + ' Pax) — ' + inr(planRate(r, p.id)) + ' / night</option>';
+      }).join('');
+      planEl.value = chosen;
+      var cap = guestsOf(r), rate = planRate(r, planEl.value);
       guests = Math.max(1, Math.min(cap, guests));
       gOut.textContent = guests;
       $('[data-step="-1"]', f).disabled = guests <= 1;
       $('[data-step="1"]', f).disabled = guests >= cap;
       var n = nights();
       summary.innerHTML = n > 0
-        ? '<div class="bk-line"><span>' + inr(rate) + ' × ' + n + ' night' + (n > 1 ? 's' : '') + '</span><strong>' + inr(rate * n) + '</strong></div><small>Indicative starting rate — the team confirms your final price on WhatsApp.</small>'
-        : '<div class="bk-line"><span>From</span><strong>' + inr(rate) + ' <em>/ night</em></strong></div><small>Choose your dates to see an estimate.</small>';
+        ? '<div class="bk-line"><span>' + inr(rate) + ' × ' + n + ' night' + (n > 1 ? 's' : '') + '</span><strong>' + inr(rate * n) + '</strong></div><small>' + esc(planName(planEl.value)) + ' · ' + esc(planNote(planEl.value)) + '. The team confirms your final price on WhatsApp.</small>'
+        : '<div class="bk-line"><span>' + esc(planName(planEl.value)) + '</span><strong>' + inr(rate) + ' <em>/ night</em></strong></div><small>Choose your dates to see an estimate.</small>';
+      opts.onPlan && opts.onPlan(planEl.value);
     }
+    planEl.addEventListener('change', render);
     inEl.addEventListener('change', function () {
       var a = parseDate(inEl.value);
       if (a) {
@@ -581,6 +606,8 @@
         'Room: ' + roomTitle(r),
         'Check-in: ' + fmtDate(parseDate(inEl.value)),
         'Check-out: ' + fmtDate(parseDate(outEl.value)) + ' (' + n + ' night' + (n > 1 ? 's' : '') + ')',
+        'Meal plan: ' + planName(planEl.value) + ' (' + guestsOf(r) + ' Pax) — ' + planNote(planEl.value),
+        'Rate: ' + inr(planRate(r, planEl.value)) + ' / night',
         'Guests: ' + guests
       ];
       if (nameEl.value.trim()) lines.push('Name: ' + nameEl.value.trim());
@@ -589,7 +616,10 @@
       status.classList.add('is-ok');
     });
     render();
-    return { setRoom: function (slug) { if (!fixed) { f.elements['room'].value = slug; render(); } } };
+    return {
+      setRoom: function (slug) { if (!fixed) { f.elements['room'].value = slug; render(); } },
+      setPlan: function (id) { planEl.value = id; render(); }
+    };
   }
 
   /* ---------- booking drawer (home) ---------- */
@@ -761,7 +791,7 @@
   window.Site = {
     data: D, motion: motion, lite: lite, editing: editing, txt: txt, initTilt: initTilt,
     $: $, $$: $$, esc: esc, inr: inr, wa: wa, icon: icon, pad: pad, roomTitle: roomTitle,
-    price: price, guestsOf: guestsOf,
+    price: price, guestsOf: guestsOf, plans: plans, planRate: planRate,
     roomCard: roomCard, roomPhotos: roomPhotos, hydrateRoomCards: hydrateRoomCards, discover: discover,
     split: split, slider: slider, lightbox: lightbox, booking: booking,
     applyText: applyText, scrollTo: scrollTo, start: start,

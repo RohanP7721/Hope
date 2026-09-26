@@ -33,7 +33,8 @@ window.DOLKAR = {
       variant: 'Non-View',
       tier: 'Deluxe · interior-facing',
       badge: '',
-      price: 3000,
+      price: 2000,          /* = Room Only rate, shown as "From" */
+      rates: { cp: 2600, map: 3900, ap: 5200 },
       size: 208,
       guests: 2,
       beds: '1 King Bed',
@@ -48,7 +49,8 @@ window.DOLKAR = {
       variant: 'Nature View',
       tier: 'Deluxe · garden-facing',
       badge: '',
-      price: 3500,
+      price: 2500,          /* = Room Only rate, shown as "From" */
+      rates: { cp: 3100, map: 4400, ap: 5700 },
       size: 208,
       guests: 2,
       beds: '1 King Bed',
@@ -63,7 +65,8 @@ window.DOLKAR = {
       variant: 'Mountain View',
       tier: 'Deluxe · our most requested view',
       badge: 'Most requested',
-      price: 4500,
+      price: 3500,          /* = Room Only rate, shown as "From" */
+      rates: { cp: 4100, map: 5400, ap: 6700 },
       size: 208,
       guests: 2,
       beds: '1 King Bed',
@@ -78,7 +81,8 @@ window.DOLKAR = {
       variant: 'Quad Sharing',
       tier: 'For groups & families',
       badge: '',
-      price: 5500,
+      price: 4500,          /* = Room Only rate, shown as "From" */
+      rates: { cp: 5700, map: 8300, ap: 10900 },
       size: 288,
       guests: 4,
       beds: '2 Twin Beds',
@@ -93,7 +97,8 @@ window.DOLKAR = {
       variant: 'Quad Sharing',
       tier: 'Our largest room',
       badge: 'Largest room',
-      price: 6500,
+      price: 5500,          /* = Room Only rate, shown as "From" */
+      rates: { cp: 6700, map: 9300, ap: 11900 },
       size: 288,
       guests: 4,
       beds: '2 King Beds',
@@ -102,6 +107,22 @@ window.DOLKAR = {
       description: 'Two king beds and genuine space to spread out. Built for families who want to stay together without feeling cramped.',
       amenities: ['bed:Two king beds, pressed linen', 'guests:Sleeps four', 'size:Our most generous floor space', 'shower:Rain shower', 'water:Filtered mountain-source water', 'wifi:Complimentary Wi-Fi', 'tv:Flat-screen TV', 'service:Room service from Taste of Tibet']
     }
+  ],
+
+  /* Meal plans shown on every room page (names and descriptions are editable in Edit Mode). */
+  mealPlans: [
+    { id: 'room', name: 'Room Only', note: 'Stay only, no meals included' },
+    { id: 'cp', name: 'CP Plan', note: 'Breakfast included (Continental Plan)' },
+    { id: 'map', name: 'MAP Plan', note: 'Breakfast + lunch or dinner (Modified American Plan)' },
+    { id: 'ap', name: 'AP Plan', note: 'Breakfast, lunch & dinner (American Plan)' }
+  ],
+
+  /* Remarks shown under the rates on every room page. */
+  rateNotes: [
+    { icon: 'check', text: 'Prices are inclusive of taxes.' },
+    { icon: 'bell', text: 'Special requests (early check-in or anything else) can be arranged upon request.' },
+    { icon: 'bed', text: 'Extra bed at ₹1,000.' },
+    { icon: 'service', text: 'Extra meal charge per person: CP ₹300 · MAP ₹950 · AP ₹1,600.' }
   ],
 
   /* Shown on every room page under "Good to know".

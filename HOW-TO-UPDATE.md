@@ -50,6 +50,8 @@ Numbers are editable too: the big numbers under the Welcome text (they still cou
 Type a price like `₹5,200`. The new price is used everywhere: room cards, room page, booking estimate and WhatsApp message.
 Changing a room's guests number also changes how many guests the booking form allows.
 
+**Rates & meal plans (room pages):** every price in the four plan cards (Room Only, CP, MAP, AP), the plan names, what each plan includes, and the four remarks underneath (taxes, special requests, extra bed, extra meals) can be edited in Edit Mode. The Room Only price is also the "From" price shown on the home page. Guests pick a plan and it goes into the booking estimate and the WhatsApp message.
+
 Room names you change here also update the WhatsApp booking messages.
 
 The "Open now" badge next to the restaurant hours follows whatever hours you type, e.g. `10 AM – 10 PM`.

@@ -101,10 +101,48 @@
       '<div class="acc-body"><p data-edit="policy.' + i + '.text">' + esc(p.text) + '</p></div></details>';
   }).join('');
 
+  /* ---------- rates & meal plans ---------- */
+  var pax = ' (' + S.guestsOf(r) + ' Pax)';
+  $('#rpRateGrid').innerHTML = S.plans().map(function (p, i) {
+    var priceKey = p.id === 'room' ? k + 'price' : k + 'rate.' + p.id;
+    var value = p.id === 'room' ? r.price : (r.rates || {})[p.id];
+    return '<div class="rate' + (i === 0 ? ' is-selected' : '') + '" role="radio" tabindex="' + (i === 0 ? 0 : -1) + '" aria-checked="' + (i === 0) + '" data-plan="' + p.id + '">' +
+      '<span class="rate-top"><span class="rate-name"><span data-edit="plan.' + p.id + '.name">' + esc(p.name) + '</span><small>' + pax + '</small></span><span class="rate-tick">' + icon('check') + '</span></span>' +
+      '<span class="rate-note" data-edit="plan.' + p.id + '.note">' + esc(p.note) + '</span>' +
+      '<span class="rate-price"><b data-edit="' + priceKey + '">' + S.inr(value || r.price) + '</b><small>/ night</small></span></div>';
+  }).join('');
+  $('#rpRateNotes').innerHTML = (D.rateNotes || []).map(function (n, i) {
+    return '<li><span class="rn-icon">' + icon(n.icon) + '</span><span data-edit="rates.note.' + i + '">' + esc(n.text) + '</span></li>';
+  }).join('');
+  var rateCards = $$('#rpRateGrid .rate');
+  function markPlan(id) {
+    rateCards.forEach(function (c) {
+      var on = c.getAttribute('data-plan') === id;
+      c.classList.toggle('is-selected', on);
+      c.setAttribute('aria-checked', on);
+      c.tabIndex = on ? 0 : -1;
+    });
+  }
+
   /* ---------- booking ---------- */
   $('#bcPrice').innerHTML = '<b data-edit="' + k + 'price">' + S.inr(r.price) + '</b> <span>/ night, starting</span>';
   $('#sbPrice').innerHTML = '<span data-edit="' + k + 'variant">' + esc(r.variant) + '</span> · <b data-edit="' + k + 'price">' + S.inr(r.price) + '</b>';
-  S.booking($('#bcForm'), { room: r });
+  var bk = S.booking($('#bcForm'), { room: r, onPlan: markPlan });
+  function choose(card) {
+    if (S.editing) return;
+    bk.setPlan(card.getAttribute('data-plan'));
+    card.classList.remove('is-pulse'); void card.offsetWidth; card.classList.add('is-pulse');
+    var bc = $('#bookingCard');
+    bc.classList.remove('is-flash'); void bc.offsetWidth; bc.classList.add('is-flash');
+  }
+  rateCards.forEach(function (c, i) {
+    c.addEventListener('click', function () { choose(c); });
+    c.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); choose(c); }
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); var n = rateCards[(i + 1) % rateCards.length]; n.focus(); choose(n); }
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); var pv = rateCards[(i - 1 + rateCards.length) % rateCards.length]; pv.focus(); choose(pv); }
+    });
+  });
 
   /* ---------- other rooms ---------- */
   var others = $('#othersTrack');

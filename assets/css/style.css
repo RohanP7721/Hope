@@ -844,6 +844,43 @@ html:not(.motion-ready) .ticker-track { animation: tick 40s linear infinite; }
 .rp-lede { font: 400 clamp(28px, 2.8vw, 42px)/1.15 var(--serif); color: var(--ink); margin: 44px 0 20px; letter-spacing: -.01em; }
 .rp-desc { font-size: 17px; line-height: 1.75; max-width: 620px; }
 .rp-h { font-size: clamp(38px, 4vw, 60px); line-height: 1; color: var(--ink); margin: clamp(60px, 7vw, 90px) 0 26px; }
+/* rates & meal plans */
+.rp-rates .rp-h { margin-bottom: 12px; }
+.rates-sub { color: var(--muted); font-size: 15px; margin-bottom: 26px; }
+.rate-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.rate {
+  position: relative; display: flex; flex-direction: column; gap: 10px; padding: 22px 22px 20px;
+  border: 1px solid var(--line); border-radius: 18px; background: #fffdf8; cursor: pointer; overflow: hidden;
+  transition: border-color .4s, box-shadow .6s var(--ease), transform .6s var(--ease), background .4s;
+}
+.rate::before {
+  content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(184, 146, 88, .14), transparent 60%);
+  opacity: 0; transition: opacity .5s;
+}
+.rate:hover { transform: translateY(-4px); box-shadow: 0 24px 40px -28px rgba(21, 19, 15, .45); border-color: rgba(184, 146, 88, .6); }
+.rate:hover::before, .rate.is-selected::before { opacity: 1; }
+.rate.is-selected { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold), 0 24px 40px -30px rgba(140, 109, 60, .6); }
+.rate > * { position: relative; }
+.rate-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.rate-name { font: 400 26px/1.1 var(--serif); color: var(--ink); }
+.rate-name small { font: 600 11px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--gold-3); margin-left: 8px; vertical-align: middle; }
+.rate-tick { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--line); display: grid; place-items: center; color: transparent; flex-shrink: 0; transition: background .4s, color .4s, border-color .4s, transform .6s var(--ease); }
+.rate-tick .icon { width: 18px; height: 18px; }
+.rate.is-selected .rate-tick { background: var(--ink); border-color: var(--ink); color: var(--gold-2); transform: rotate(-8deg) scale(1.05); }
+.rate-note { color: var(--muted); font-size: 14px; line-height: 1.5; min-height: 2.9em; }
+.rate-price { display: flex; align-items: baseline; gap: 6px; padding-top: 12px; border-top: 1px dashed var(--line); }
+.rate-price b { font: 400 34px/1 var(--serif); color: var(--ink); font-weight: 400; }
+.rate-price small { color: var(--muted); font-size: 13px; }
+.rate.is-pulse { animation: ratePulse .7s var(--ease); }
+@keyframes ratePulse { 40% { transform: scale(.97); } }
+.rate-notes { margin-top: 22px; display: grid; gap: 0; border-top: 1px solid var(--line); }
+.rate-notes li { display: flex; align-items: center; gap: 14px; padding: 13px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+.rn-icon { width: 36px; height: 36px; border-radius: 50%; background: var(--paper-2); color: var(--gold-3); display: grid; place-items: center; flex-shrink: 0; }
+.rn-icon .icon { width: 17px; height: 17px; }
+.booking-card.is-flash { animation: cardFlash 1s var(--ease); }
+@keyframes cardFlash { 30% { box-shadow: 0 0 0 3px rgba(184, 146, 88, .55), 0 40px 80px -50px rgba(21, 19, 15, .45); } }
+@media (max-width: 600px) { .rate-grid { grid-template-columns: 1fr; } .rate-note { min-height: 0; } }
+
 .rp-amen { display: grid; grid-template-columns: 1fr 1fr; gap: 0 30px; }
 .rp-amen li { display: flex; align-items: center; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--line); font-size: 15.5px; }
 .ra-icon { width: 42px; height: 42px; border-radius: 50%; background: var(--paper-2); color: var(--gold-3); display: grid; place-items: center; flex-shrink: 0; }
