@@ -12,7 +12,7 @@
 
   document.title = title + ' — The Dolkar Hotel, Gangtok';
   var md = $('meta[name="description"]');
-  if (md) md.setAttribute('content', r.summary + ' From ' + S.inr(r.price) + ' per night at The Dolkar Hotel, Gangtok.');
+  if (md) md.setAttribute('content', r.summary + ' From ' + S.inr(S.price(r)) + ' per night at The Dolkar Hotel, Gangtok.');
 
   /* ---------- header ---------- */
   $('#rpLabel').innerHTML = 'Room ' + pad(idx + 1) + ' / ' + pad(D.rooms.length) + ' · <span data-edit="' + k + 'tier">' + esc(r.tier) + '</span>';
@@ -20,7 +20,7 @@
   h1.innerHTML = '<span data-edit="' + k + 'name">' + esc(r.name) + '</span> <em data-edit="' + k + 'variant">' + esc(r.variant) + '</em>';
   h1.setAttribute('data-intro', '');
   $('#rpPrice').innerHTML = (r.badge ? '<span class="rp-badge" data-edit="' + k + 'badge">' + esc(r.badge) + '</span>' : '') +
-    '<span class="rp-from">From</span><b>' + S.inr(r.price) + '</b><span class="rp-per">per night</span>';
+    '<span class="rp-from">From</span><b data-edit="' + k + 'price">' + S.inr(r.price) + '</b><span class="rp-per">per night</span>';
 
   /* ---------- gallery ---------- */
   $('#rpPrev').innerHTML = icon('arrow-left');
@@ -77,8 +77,8 @@
 
   /* ---------- details ---------- */
   $('#rpSpecs').innerHTML = [
-    ['size', r.size + '<small> ft²</small>', 'Floor space', ''],
-    ['guests', r.guests + '', 'Guests', ''],
+    ['size', '<span data-edit="' + k + 'size">' + r.size + '</span><small> ft²</small>', 'Floor space', ''],
+    ['guests', r.guests + '', 'Guests', 'guests'],
     ['bed', esc(r.beds), 'Bedding', 'beds'],
     ['view', esc(r.view), 'Outlook', 'view']
   ].map(function (s) {
@@ -102,8 +102,8 @@
   }).join('');
 
   /* ---------- booking ---------- */
-  $('#bcPrice').innerHTML = '<b>' + S.inr(r.price) + '</b> <span>/ night, starting</span>';
-  $('#sbPrice').innerHTML = esc(r.variant) + ' · <b>' + S.inr(r.price) + '</b>';
+  $('#bcPrice').innerHTML = '<b data-edit="' + k + 'price">' + S.inr(r.price) + '</b> <span>/ night, starting</span>';
+  $('#sbPrice').innerHTML = '<span data-edit="' + k + 'variant">' + esc(r.variant) + '</span> · <b data-edit="' + k + 'price">' + S.inr(r.price) + '</b>';
   S.booking($('#bcForm'), { room: r });
 
   /* ---------- other rooms ---------- */

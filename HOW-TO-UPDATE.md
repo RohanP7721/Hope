@@ -14,6 +14,7 @@ Open `assets`, then `images`:
 | Twin Bed Quad Sharing | `rooms/twin-quad` |
 | Family Suite | `rooms/family-suite` |
 | Home page gallery | `gallery` |
+| Small picture in the Welcome sentence | `welcome` (just `01.jpg`) |
 | Pop-up (see below) | `pop-up` |
 
 - **Add a photo:** name it with the next number (`04.jpg`, `05.jpg` …) and drop it in.
@@ -45,7 +46,13 @@ A portrait or square image works best, e.g. 1080 × 1350 like an Instagram post.
    (If your computer saved it as `content (1).js`, rename it to `content.js`.)
 5. Upload the folder to Netlify again.
 
+Numbers are editable too: the big numbers under the Welcome text (they still count up), room **prices**, room size and number of guests.
+Type a price like `₹5,200`. The new price is used everywhere: room cards, room page, booking estimate and WhatsApp message.
+Changing a room's guests number also changes how many guests the booking form allows.
+
 Room names you change here also update the WhatsApp booking messages.
+
+The "Open now" badge next to the restaurant hours follows whatever hours you type, e.g. `10 AM – 10 PM`.
 
 Prices, room details (size, beds, guests), the menu and phone numbers are in `assets/js/data.js`. Open it with Notepad or TextEdit.
 

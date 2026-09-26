@@ -59,16 +59,23 @@
   $$('[data-close-drawer].icon-btn, #vPrev, #vNext').forEach(function (b) {
     b.innerHTML = icon(b.id === 'vPrev' ? 'arrow-left' : b.id === 'vNext' ? 'arrow' : 'close');
   });
-  var minPrice = Math.min.apply(null, D.rooms.map(function (r) { return r.price; }));
+  var minPrice = Math.min.apply(null, D.rooms.map(S.price));
   $('.stickybar b').textContent = S.inr(minPrice);
 
   /* ---------- live "open now" for dinner (IST) ---------- */
   (function () {
     var el = $('#openStatus');
-    var h = +new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', hour: 'numeric', hour12: false }).format(new Date());
-    var o = H.dinnerOpen, c = H.dinnerClose;
-    if (h >= o && h < c) { el.textContent = 'Open now'; el.classList.add('is-open'); }
-    else el.textContent = h < o ? 'Opens tonight' : 'Opens tomorrow';
+    var parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', hour: 'numeric', minute: 'numeric', hour12: false }).formatToParts(new Date());
+    var get = function (t) { return +parts.filter(function (p) { return p.type === t; })[0].value; };
+    var now = (get('hour') % 24) * 60 + get('minute');
+    var o = H.dinnerOpen * 60, c = H.dinnerClose * 60, openLabel = '';
+    var m = /(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)\s*[–—-]\s*(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)/i.exec(S.txt('home.dining.hours', ''));
+    function mins(hh, mm, ap) { hh = +hh % 12 + (/pm/i.test(ap) ? 12 : 0); return hh * 60 + (+mm || 0); }
+    if (m) { o = mins(m[1], m[2], m[3]); c = mins(m[4], m[5], m[6]); openLabel = m[1] + (m[2] ? ':' + m[2] : '') + ' ' + m[3].toUpperCase(); }
+    else { openLabel = (H.dinnerOpen % 12 || 12) + (H.dinnerOpen < 12 ? ' AM' : ' PM'); }
+    var isOpen = c > o ? now >= o && now < c : now >= o || now < c;
+    if (isOpen) { el.textContent = 'Open now'; el.classList.add('is-open'); }
+    else el.textContent = (now < o ? 'Opens today at ' : 'Opens tomorrow at ') + openLabel;
   })();
 
   /* ---------- testimonials ---------- */
@@ -278,9 +285,17 @@
     });
   }
 
+  function welcomeImage() {
+    S.discover('assets/images/welcome').then(function (files) {
+      if (!files.length) return;
+      $$('.intro-text .pill-img img').forEach(function (img) { img.src = files[0]; });
+    });
+  }
+
   S.discover('assets/images/gallery').then(function (files) {
     renderGallery(files);
     S.start(intro);
     S.hydrateRoomCards(track);
-  }, function () { S.start(intro); S.hydrateRoomCards(track); });
+    welcomeImage();
+  }, function () { S.start(intro); S.hydrateRoomCards(track); welcomeImage(); });
 })();

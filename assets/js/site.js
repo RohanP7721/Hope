@@ -37,6 +37,12 @@
     d.innerHTML = t[key];
     return d.textContent.trim() || fallback;
   }
+  function num(key, fallback) {
+    var v = parseFloat(txt(key, '').replace(/[^\d.]/g, ''));
+    return isNaN(v) ? fallback : v;
+  }
+  function price(r) { return num('room.' + r.slug + '.price', r.price); }
+  function guestsOf(r) { return Math.max(1, Math.round(num('room.' + r.slug + '.guests', r.guests))); }
   function roomTitle(r) {
     return txt('room.' + r.slug + '.name', r.name) + ' (' + txt('room.' + r.slug + '.variant', r.variant) + ')';
   }
@@ -135,8 +141,8 @@
       '<span class="rc-count" hidden></span></div>' +
       '<div class="rc-meta"><span>' + pad(i + 1) + '</span><span data-edit="room.' + r.slug + '.tier">' + esc(r.tier) + '</span></div>' +
       '<h3 class="rc-title"><span data-edit="room.' + r.slug + '.name">' + esc(r.name) + '</span> <em data-edit="room.' + r.slug + '.variant">' + esc(r.variant) + '</em></h3>' +
-      '<div class="rc-foot"><span>From <b>' + inr(r.price) + '</b> / night</span>' +
-      '<span class="rc-specs">' + r.size + ' ft² · ' + r.guests + ' guests</span>' +
+      '<div class="rc-foot"><span>From <b data-edit="room.' + r.slug + '.price">' + inr(r.price) + '</b> / night</span>' +
+      '<span class="rc-specs"><span data-edit="room.' + r.slug + '.size">' + r.size + '</span> ft² · <span data-edit="room.' + r.slug + '.guests">' + r.guests + '</span> guests</span>' +
       '<span class="rc-arrow">' + icon('arrow') + '</span></div></a>';
   }
 
@@ -261,15 +267,18 @@
     });
 
     $$('[data-count]', root).forEach(function (el) {
-      var to = parseFloat(el.getAttribute('data-count'));
-      var digits = el.getAttribute('data-pad') ? 2 : 0;
+      var raw = el.textContent.trim();
+      var to = parseFloat(raw.replace(/[^\d.]/g, ''));
+      if (isNaN(to) || /[^\d,.\s]/.test(raw)) return;
+      var digits = /^0\d/.test(raw) ? raw.length : 0;
+      var comma = raw.indexOf(',') > -1;
       var o = { v: 0 };
       gsap.to(o, {
         v: to, duration: 2, ease: 'power3.out',
         scrollTrigger: { trigger: el, start: 'top 90%' },
         onUpdate: function () {
           var v = Math.round(o.v);
-          el.textContent = digits ? pad(v) : v.toLocaleString('en-IN');
+          el.textContent = digits ? String(v).padStart(digits, '0') : comma ? v.toLocaleString('en-IN') : String(v);
         }
       });
     });
@@ -500,7 +509,7 @@
     var today = isoDate(new Date());
     var roomSelect = fixed ? '' :
       '<div class="bk-field bk-room"><label for="' + uid + '-room">Room</label><select id="' + uid + '-room" name="room">' +
-      D.rooms.map(function (r) { return '<option value="' + r.slug + '">' + esc(roomTitle(r)) + ' — from ' + inr(r.price) + '</option>'; }).join('') +
+      D.rooms.map(function (r) { return '<option value="' + r.slug + '">' + esc(roomTitle(r)) + ' — from ' + inr(price(r)) + '</option>'; }).join('') +
       '</select></div>';
     container.innerHTML =
       '<form class="bk" novalidate>' + roomSelect +
@@ -531,14 +540,15 @@
     }
     function render() {
       var r = room();
-      guests = Math.max(1, Math.min(r.guests, guests));
+      var cap = guestsOf(r), rate = price(r);
+      guests = Math.max(1, Math.min(cap, guests));
       gOut.textContent = guests;
       $('[data-step="-1"]', f).disabled = guests <= 1;
-      $('[data-step="1"]', f).disabled = guests >= r.guests;
+      $('[data-step="1"]', f).disabled = guests >= cap;
       var n = nights();
       summary.innerHTML = n > 0
-        ? '<div class="bk-line"><span>' + inr(r.price) + ' × ' + n + ' night' + (n > 1 ? 's' : '') + '</span><strong>' + inr(r.price * n) + '</strong></div><small>Indicative starting rate — the team confirms your final price on WhatsApp.</small>'
-        : '<div class="bk-line"><span>From</span><strong>' + inr(r.price) + ' <em>/ night</em></strong></div><small>Choose your dates to see an estimate.</small>';
+        ? '<div class="bk-line"><span>' + inr(rate) + ' × ' + n + ' night' + (n > 1 ? 's' : '') + '</span><strong>' + inr(rate * n) + '</strong></div><small>Indicative starting rate — the team confirms your final price on WhatsApp.</small>'
+        : '<div class="bk-line"><span>From</span><strong>' + inr(rate) + ' <em>/ night</em></strong></div><small>Choose your dates to see an estimate.</small>';
     }
     inEl.addEventListener('change', function () {
       var a = parseDate(inEl.value);
@@ -711,13 +721,20 @@
     Site.afterReveals && Site.afterReveals();
     html.classList.add('motion-ready');
 
+    function jumpToHash() {
+      var t = location.hash && document.getElementById(location.hash.slice(1));
+      if (t && Math.abs(t.getBoundingClientRect().top) > 40) scrollTo(t, { immediate: true });
+    }
     function go() {
       ScrollTrigger.refresh();
-      if (location.hash) {
-        var t = document.getElementById(location.hash.slice(1));
-        if (t) scrollTo(t, { immediate: true });
-      }
+      jumpToHash();
       intro && intro(gsap.timeline());
+      // images arriving late can shift the layout — land on the section again once they have
+      if (location.hash) {
+        var again = function () { ScrollTrigger.refresh(); jumpToHash(); };
+        if (document.readyState === 'complete') setTimeout(again, 300);
+        else window.addEventListener('load', function () { setTimeout(again, 100); });
+      }
     }
 
     var curtain = $('.curtain');
@@ -744,6 +761,7 @@
   window.Site = {
     data: D, motion: motion, lite: lite, editing: editing, txt: txt, initTilt: initTilt,
     $: $, $$: $$, esc: esc, inr: inr, wa: wa, icon: icon, pad: pad, roomTitle: roomTitle,
+    price: price, guestsOf: guestsOf,
     roomCard: roomCard, roomPhotos: roomPhotos, hydrateRoomCards: hydrateRoomCards, discover: discover,
     split: split, slider: slider, lightbox: lightbox, booking: booking,
     applyText: applyText, scrollTo: scrollTo, start: start,

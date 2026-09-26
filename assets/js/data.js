@@ -1,9 +1,11 @@
 /* ============================================================
    THE DOLKAR HOTEL — SITE DATA
-   Prices, room details, menu and contact details live here.
+   Room details and contact details live here. Prices, sizes and guest numbers
+   can also be changed in Edit Mode (EDIT-TEXT.html) — an Edit Mode change wins.
    PHOTOS DO NOT — just add or delete numbered photos in the folders:
      assets/images/rooms/<room>/   01.jpg, 02.jpg, 03.jpg ...
      assets/images/gallery/        01.jpg, 02.jpg, 03.jpg ...
+     assets/images/welcome/        01.jpg  (small picture in the Welcome sentence)
    See HOW-TO-UPDATE.md.
    ============================================================ */
 
@@ -16,7 +18,7 @@ window.DOLKAR = {
     address: 'Tashi View Point, Bojoghari, Gangtok, Sikkim 737101',
     mapsUrl: 'https://www.google.com/maps/search/?api=1&query=The+Dolkar+Hotel+Tashi+View+Point+Gangtok',
     menuPdf: 'https://drive.google.com/file/d/1G9oGoJc1GYaVoJ8S8600_5xPds9bFYq3/view?usp=sharing',
-    dinnerOpen: 18,   /* 24-hour clock, India time — drives the live "Open now" badge */
+    dinnerOpen: 18,   /* backup only: the "Open now" badge reads the hours you type in Edit Mode */
     dinnerClose: 23
   },
 
