@@ -54,7 +54,7 @@ Room names you change here also update the WhatsApp booking messages.
 
 The "Open now" badge next to the restaurant hours follows whatever hours you type, e.g. `10 AM – 10 PM`.
 
-Prices, room details (size, beds, guests), the menu and phone numbers are in `assets/js/data.js`. Open it with Notepad or TextEdit.
+Phone numbers, email, address, room amenities and house policies are in `assets/js/data.js`. Open it with Notepad or TextEdit.
 
 ## Before adding photos from a phone
 
