@@ -3,15 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Portfolio — Jupiter Texas Group</title>
+<title>Portfolio | Jupiter Texas Group</title>
 <meta name="description" content="Jupiter Texas helps investment in commercial real estate in USA. A balanced portfolio of commercial retail, day care centers, medical buildings, and single-family rental homes.">
-<meta name="theme-color" content="#040a2a">
-<meta property="og:title" content="Portfolio — Jupiter Texas Group">
+<meta name="theme-color" content="#ffffff">
+<meta property="og:title" content="Portfolio, Jupiter Texas Group">
 <meta property="og:description" content="Making commercial real estate accessible.">
 <link rel="canonical" href="https://www.jupitertexas.com/portfolios">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap">
+<link rel="preload" href="assets/fonts/instrument-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="assets/css/jt.css">
 <script>document.documentElement.classList.add('js');</script>
 </head>
@@ -21,39 +19,41 @@
 
 <!-- ============ NAV ============ -->
 <header class="nav" id="nav">
-  <nav class="nav-bar" aria-label="Main">
-    <a class="brand" href="index.html" aria-label="Jupiter Texas — home">
-      <span class="brand-mark" aria-hidden="true"></span>
-      <span>Jupiter<small>Texas</small></span>
+  <div class="wrap nav-bar">
+    <a class="brand" href="index.html" aria-label="Jupiter Texas, home">
+      <svg class="brand-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="10.25"/><path d="M2.2 9h19.6M1.9 13.5h20.2M3.4 17.5h17.2"/></svg>
+      <b>Jupiter</b><span>Texas</span>
     </a>
-    <ul class="nav-links">
-      <li><a href="index.html">Home</a></li>
-      <li><a data-link="whoWeAre" href="https://www.jupitertexas.com/who-we-are">Who We Are</a></li>
-      <li><a data-link="strategy" href="https://www.jupitertexas.com/strategy">Strategy</a></li>
-      <li><a href="portfolio.html" aria-current="page">Portfolio</a></li>
-      <li class="has-drop">
-        <button class="nav-drop-btn" type="button" aria-expanded="false" aria-controls="drop-opps">Opportunities
-          <svg class="chev" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 3.5 5 6.5 8 3.5"/></svg>
-        </button>
-        <div class="nav-drop" id="drop-opps">
-          <a data-link="current" href="https://www.jupitertexas.com/lead-collection">Current Opportunities</a>
-          <a data-link="previous" href="https://www.jupitertexas.com/copy-of-current-opportunities">Previous Opportunities</a>
-        </div>
-      </li>
-      <li><a data-link="investors" href="https://www.jupitertexas.com/who-are-our-investors">Investors</a></li>
-      <li><a data-link="insights" href="https://www.jupitertexas.com/blog">Insights</a></li>
-      <li><a data-link="careers" href="https://www.jupitertexas.com/job-board">Careers</a></li>
-      <span class="nav-glide" aria-hidden="true"></span>
-    </ul>
-    <div class="nav-cta">
-      <a class="btn" data-link="contact" href="https://www.jupitertexas.com/contactus">Contact Us <span class="arr">→</span></a>
-      <button class="burger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="menu"><i></i><i></i><i></i></button>
+    <nav aria-label="Main">
+      <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a data-link="whoWeAre" href="https://www.jupitertexas.com/who-we-are">Who We Are</a></li>
+        <li><a data-link="strategy" href="https://www.jupitertexas.com/strategy">Strategy</a></li>
+        <li><a href="portfolio.html" aria-current="page">Portfolio</a></li>
+        <li class="has-drop">
+          <button class="nav-drop-btn" type="button" aria-expanded="false" aria-controls="drop-opps">Opportunities
+            <svg class="chev" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M2 3.5 5 6.5 8 3.5"/></svg>
+          </button>
+          <div class="nav-drop" id="drop-opps">
+            <a data-link="current" href="https://www.jupitertexas.com/lead-collection">Current Opportunities</a>
+            <a data-link="previous" href="https://www.jupitertexas.com/copy-of-current-opportunities">Previous Opportunities</a>
+          </div>
+        </li>
+        <li><a data-link="investors" href="https://www.jupitertexas.com/who-are-our-investors">Investors</a></li>
+        <li><a data-link="insights" href="https://www.jupitertexas.com/blog">Insights</a></li>
+        <li><a data-link="careers" href="https://www.jupitertexas.com/job-board">Careers</a></li>
+        <li class="nav-rule" aria-hidden="true"></li>
+      </ul>
+    </nav>
+    <div class="nav-end">
+      <a class="btn btn-sm" data-link="contact" href="https://www.jupitertexas.com/contactus">Contact Us</a>
+      <button class="burger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="menu"><i></i><i></i></button>
     </div>
-  </nav>
+  </div>
 </header>
 
 <div class="menu" id="menu" aria-hidden="true">
-  <ol>
+  <ul>
     <li><a href="index.html">Home</a></li>
     <li><a data-link="whoWeAre" href="https://www.jupitertexas.com/who-we-are">Who We Are</a></li>
     <li><a data-link="strategy" href="https://www.jupitertexas.com/strategy">Strategy</a></li>
@@ -63,9 +63,9 @@
     <li><a data-link="investors" href="https://www.jupitertexas.com/who-are-our-investors">Investors</a></li>
     <li><a data-link="insights" href="https://www.jupitertexas.com/blog">Insights</a></li>
     <li><a data-link="careers" href="https://www.jupitertexas.com/job-board">Careers</a></li>
-  </ol>
+  </ul>
   <div class="menu-foot">
-    <a class="btn" data-link="contact" href="https://www.jupitertexas.com/contactus">Contact Us <span class="arr">→</span></a>
+    <a class="btn" data-link="contact" href="https://www.jupitertexas.com/contactus">Contact Us</a>
     <a data-link="email" href="mailto:info@jupitertexas.com">info@jupitertexas.com</a>
     <a data-link="phone" href="tel:+19403315175">+1 (940) 331-5175</a>
   </div>
@@ -75,127 +75,121 @@
 
   <!-- ============ HERO ============ -->
   <section class="p-hero" aria-labelledby="p-title">
-    <div class="mesh" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
-    <div class="gridlines" aria-hidden="true"></div>
-    <div class="grain" aria-hidden="true"></div>
-    <div class="wrap">
-      <span class="eyebrow intro-fade">Jupiter Texas Group</span>
-      <h1 id="p-title">
-        <span class="line"><span>Portfolio</span></span>
-      </h1>
-      <div class="p-hero-row">
-        <p class="intro-fade">Our portfolio is a balanced combination of commercial retail, day care centers, medical buildings, and single-family rental homes — picked by experts based on returns, stability and value to our investors.</p>
-        <div class="p-hero-meta intro-fade">
-          <div><b data-count="properties">08</b><span>Properties</span></div>
-          <div><b class="grad-text">1:200</b><span>Pick to reject ratio</span></div>
-          <div><b>15-20%</b><span>Jupiter Expected AAR</span></div>
-        </div>
+    <div class="wrap p-hero-grid">
+      <div class="p-hero-copy">
+        <h1 id="p-title">Portfolio</h1>
+        <p class="lead">Our portfolio is a balanced combination of commercial retail, day care centers, medical buildings, and single-family rental homes. Picked by experts based on returns, stability and value to our investors.</p>
+      </div>
+      <div class="p-hero-figs">
+        <div><span class="num" data-count="properties">08</span><span>Properties</span></div>
+        <div><span class="num">1:200</span><span>Pick to reject ratio</span></div>
+        <div><span class="num">15-20%</span><span>Jupiter Expected AAR</span></div>
       </div>
     </div>
   </section>
 
-  <!-- ============ FILTERS ============ -->
-  <div class="filters">
+  <!-- ============ FILTER BAR ============ -->
+  <div class="bar">
     <div class="wrap">
-      <div class="filter-list" role="toolbar" aria-label="Filter properties by type">
-        <span class="filter-glide" aria-hidden="true"></span>
-      </div>
-      <div class="view-toggle" role="group" aria-label="View">
-        <button type="button" data-view="gallery" aria-pressed="true" aria-label="Gallery view"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2.5" y="4" width="6.5" height="12" rx="2"/><rect x="11" y="4" width="6.5" height="12" rx="2"/></svg></button>
-        <button type="button" data-view="list" aria-pressed="false" aria-label="List view"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 5h14M3 10h14M3 15h14"/></svg></button>
+      <div class="seg" role="toolbar" aria-label="Filter properties by type"><span class="seg-thumb" aria-hidden="true"></span></div>
+      <div class="views" role="group" aria-label="View">
+        <button type="button" data-view="gallery" aria-pressed="true" aria-label="Gallery view"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="3.5" width="6" height="11" rx="1.5"/><rect x="10" y="3.5" width="6" height="11" rx="1.5"/></svg></button>
+        <button type="button" data-view="list" aria-pressed="false" aria-label="List view"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M3 5h12M3 9h12M3 13h12"/></svg></button>
       </div>
     </div>
   </div>
 
-  <!-- ============ GALLERY (horizontal) ============ -->
-  <section class="gallery" id="gallery" aria-label="Portfolio properties">
+  <!-- ============ GALLERY ============ -->
+  <section class="gallery" aria-label="Portfolio properties">
     <div class="gallery-pin">
       <div class="gallery-track" id="gallery-track">
-        <div class="gallery-intro">
-          <span class="eyebrow">Scroll to explore</span>
-          <h2>Each property is an independent joint venture</h2>
-          <p>where we and the investors own the property.</p>
-        </div>
         <!-- property cards are rendered here from assets/js/content.js -->
         <div class="gallery-end">
           <div>
-            <span class="eyebrow" style="color:#fff">Opportunities</span>
-            <h3 style="margin-top:18px">Current &amp; Previous Opportunities</h3>
+            <h3>Opportunities</h3>
+            <p>Each property is an independent joint venture where we and the investors own the property.</p>
           </div>
           <div class="stack">
-            <a class="btn btn-white" data-link="current" href="https://www.jupitertexas.com/lead-collection">Current Opportunities <span class="arr">→</span></a>
-            <a class="btn btn-ghost" style="color:#fff;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.5)" data-link="previous" href="https://www.jupitertexas.com/copy-of-current-opportunities">Previous Opportunities</a>
+            <a class="btn" data-link="current" href="https://www.jupitertexas.com/lead-collection">Current Opportunities</a>
+            <a class="btn btn-line" data-link="previous" href="https://www.jupitertexas.com/copy-of-current-opportunities">Previous Opportunities</a>
           </div>
         </div>
       </div>
-      <div class="gallery-hud" aria-hidden="true">
+      <div class="wrap hud" aria-hidden="true">
         <span><b id="hud-now">01</b> / <span id="hud-total">08</span></span>
-        <span class="bar-track"><i></i></span>
+        <span class="meter"><i></i></span>
         <span>* Projected</span>
       </div>
     </div>
-    <noscript><div class="wrap" style="padding:40px 0"><a class="btn" href="https://www.jupitertexas.com/portfolios">View the portfolio</a></div></noscript>
+    <noscript><div class="wrap" style="padding:48px 0"><a class="btn" href="https://www.jupitertexas.com/portfolios">View the portfolio</a></div></noscript>
   </section>
 
-  <!-- ============ LEDGER (list view) ============ -->
-  <section class="ledger" aria-label="Portfolio list">
+  <!-- ============ LIST VIEW ============ -->
+  <section class="list" aria-label="Portfolio list">
     <div class="wrap">
-      <div class="ledger-row is-head" aria-hidden="true">
-        <span>#</span><span>Property</span><span>Location</span><span class="ty">Type</span><span>Purchase Price</span><span>Forecasted Annual Return*</span><span></span>
+      <div class="row is-head" aria-hidden="true">
+        <span></span><span>Property</span><span>Location</span><span class="row-type">Type</span><span class="fig-cell">Purchase Price</span><span>Forecasted Annual Return*</span>
       </div>
-      <div id="ledger-rows"></div>
+      <div id="rows"></div>
     </div>
-    <div class="cursor-peek" aria-hidden="true"></div>
   </section>
 
   <!-- ============ CURRENT OPPORTUNITY ============ -->
-  <section class="section light" aria-labelledby="opp-title">
+  <section class="section cloud" aria-labelledby="opp-title">
     <div class="wrap">
-      <div class="section-head rv">
-        <span class="eyebrow">Opportunities</span>
-        <h2>Current Opportunities</h2>
+      <div class="head">
+        <h2 class="h2">Current Opportunities</h2>
       </div>
-      <article class="opp rv">
-        <div class="opp-art" data-art="homes" aria-hidden="true"></div>
+      <article class="opp">
+        <div class="opp-plate" data-plate="homes" aria-hidden="true"></div>
         <div class="opp-body">
-          <span class="pill"><i></i>Oklahoma City</span>
-          <h2 id="opp-title">26 newly built single-family homes</h2>
+          <span class="status"><i></i>Oklahoma City</span>
+          <h3 id="opp-title">26 newly built single-family homes</h3>
           <dl class="opp-stats">
             <div><dt>Total cost</dt><dd>$9.92M</dd></div>
             <div><dt>Average annual returns</dt><dd>20-24%</dd></div>
             <div><dt>Hold period</dt><dd>5-6 years</dd></div>
           </dl>
-          <div style="display:flex;flex-wrap:wrap;gap:12px">
-            <a class="btn btn-white" data-link="current" href="https://www.jupitertexas.com/lead-collection">View opportunity <span class="arr">→</span></a>
-            <a class="btn btn-ghost" style="color:#fff;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.5)" data-link="contact" href="https://www.jupitertexas.com/contactus">Contact Us</a>
+          <div class="actions">
+            <a class="btn" data-link="current" href="https://www.jupitertexas.com/lead-collection">View opportunity</a>
+            <a class="btn btn-line" data-link="contact" href="https://www.jupitertexas.com/contactus">Contact Us</a>
           </div>
         </div>
       </article>
 
-      <div class="split-links">
-        <a class="post-card rv" data-link="previous" href="https://www.jupitertexas.com/copy-of-current-opportunities" style="min-height:220px">
-          <span class="corner" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h12M11 5l5 5-5 5"/></svg></span>
-          <span class="tag">Opportunities</span>
-          <h3 style="font-size:clamp(26px,3vw,38px)">Previous Opportunities</h3>
+      <div class="more">
+        <a class="tile" data-link="previous" href="https://www.jupitertexas.com/copy-of-current-opportunities">
+          <div>
+            <span class="kicker">Opportunities</span>
+            <h3>Previous Opportunities</h3>
+          </div>
+          <span class="link">See previous deals</span>
         </a>
-        <a class="post-card blue rv" style="--d:.08s;min-height:220px" data-link="strategy" href="https://www.jupitertexas.com/strategy">
-          <span class="corner" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h12M11 5l5 5-5 5"/></svg></span>
-          <span class="tag">Strategy</span>
-          <h3 style="font-size:clamp(26px,3vw,38px)">2X S&amp;P average returns</h3>
+        <a class="tile" data-link="strategy" href="https://www.jupitertexas.com/strategy">
+          <div>
+            <span class="kicker">Strategy</span>
+            <h3>2X S&amp;P average returns</h3>
+          </div>
+          <span class="link">Read our strategy</span>
         </a>
       </div>
-      <p class="fine" style="margin-top:40px">* All returns are subject to market risk. Returns are not guaranteed. Testimonials may not be representative of the experience of other clients or investors.</p>
+      <p class="small" style="margin-top:32px">* All returns are subject to market risk. Returns are not guaranteed. Testimonials may not be representative of the experience of other clients or investors.</p>
     </div>
   </section>
 
-  <!-- ============ CTA ============ -->
-  <section class="section dark cta" aria-labelledby="cta-title">
-    <div class="wrap">
-      <span class="eyebrow rv">Contact Us</span>
-      <h2 id="cta-title" class="rv">Making commercial real estate <span class="grad-text">accessible.</span></h2>
-      <div class="cta-actions rv">
-        <a class="btn btn-white" data-link="contact" href="https://www.jupitertexas.com/contactus">Contact Us <span class="arr">→</span></a>
-        <a class="btn btn-ghost" data-link="phone" href="tel:+19403315175">+1 (940) 331-5175</a>
+  <!-- ============ CONTACT ============ -->
+  <section class="section" aria-labelledby="contact-title">
+    <div class="wrap contact">
+      <div>
+        <h2 id="contact-title">Contact Us</h2>
+        <p class="lead">Making commercial real estate accessible.</p>
+      </div>
+      <div>
+        <div class="contact-lines">
+          <a data-link="email" href="mailto:info@jupitertexas.com">info@jupitertexas.com</a>
+          <a data-link="phone" href="tel:+19403315175">+1 (940) 331-5175</a>
+        </div>
+        <a class="btn" data-link="contact" href="https://www.jupitertexas.com/contactus">Contact Us</a>
       </div>
     </div>
   </section>
@@ -204,24 +198,24 @@
 
 <!-- ============ PROPERTY SHEET ============ -->
 <dialog class="sheet" id="sheet" aria-labelledby="sheet-name">
-  <button class="sheet-close" type="button" aria-label="Close"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 5l10 10M15 5 5 15"/></svg></button>
+  <button class="sheet-close" type="button" aria-label="Close"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="m4 4 8 8M12 4l-8 8"/></svg></button>
   <div class="sheet-grid">
-    <div class="sheet-art" aria-hidden="true"></div>
+    <div class="sheet-plate" aria-hidden="true"></div>
     <div class="sheet-body">
-      <span class="eyebrow sheet-type" style="color:var(--cyan)"></span>
+      <span class="sheet-type"></span>
       <div>
         <h2 class="sheet-name" id="sheet-name"></h2>
-        <p class="card-place sheet-place" style="margin-top:12px"></p>
+        <span class="place sheet-place"></span>
       </div>
       <div class="sheet-stats"></div>
-      <p class="fine">* All returns are subject to market risk. Returns are not guaranteed.</p>
-      <div class="sheet-actions">
-        <a class="btn" data-link="contact" href="https://www.jupitertexas.com/contactus">Contact Us <span class="arr">→</span></a>
-        <a class="btn btn-ghost" data-link="previous" href="https://www.jupitertexas.com/copy-of-current-opportunities">Previous Opportunities</a>
+      <p class="small">* All returns are subject to market risk. Returns are not guaranteed.</p>
+      <div class="actions">
+        <a class="btn" data-link="contact" href="https://www.jupitertexas.com/contactus">Contact Us</a>
+        <a class="btn btn-line" data-link="previous" href="https://www.jupitertexas.com/copy-of-current-opportunities">Previous Opportunities</a>
       </div>
       <div class="sheet-pager">
-        <button class="round" type="button" data-sheet-step="-1" aria-label="Previous property"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 10H4M9 5 4 10l5 5"/></svg></button>
-        <button class="round" type="button" data-sheet-step="1" aria-label="Next property"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h12M11 5l5 5-5 5"/></svg></button>
+        <button class="round" type="button" data-step="-1" aria-label="Previous property"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg></button>
+        <button class="round" type="button" data-step="1" aria-label="Next property"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 3 5 5-5 5"/></svg></button>
       </div>
     </div>
   </div>
@@ -232,14 +226,17 @@
   <div class="wrap">
     <div class="foot-grid">
       <div class="foot-brand">
-        <a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true"></span><span>Jupiter<small>Texas</small></span></a>
+        <a class="brand" href="index.html" aria-label="Jupiter Texas, home">
+          <svg class="brand-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="10.25"/><path d="M2.2 9h19.6M1.9 13.5h20.2M3.4 17.5h17.2"/></svg>
+          <b>Jupiter</b><span>Texas</span>
+        </a>
         <p>Jupiter Texas is an acquisition and property management company to create consistent cash-flow for the owners.</p>
         <div class="socials">
           <a data-link="linkedin" href="https://www.linkedin.com/company/jupitertexas" aria-label="Jupiter Texas on LinkedIn"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4.98 3.5A2.5 2.5 0 1 1 5 8.5a2.5 2.5 0 0 1-.02-5ZM3 9.75h4V21H3V9.75Zm7 0h3.8v1.6h.05c.53-1 1.84-2.05 3.79-2.05 4.05 0 4.8 2.67 4.8 6.13V21h-4v-4.9c0-1.17-.02-2.68-1.63-2.68-1.64 0-1.89 1.28-1.89 2.6V21h-4V9.75Z"/></svg></a>
           <a data-link="facebook" href="https://www.facebook.com/JupiterTexasRealEstate/" aria-label="Jupiter Texas on Facebook"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 21v-7.5h2.5l.4-3h-2.9V8.6c0-.87.25-1.46 1.5-1.46H16.6V4.46A21 21 0 0 0 14.3 4.3c-2.3 0-3.8 1.4-3.8 3.95v2.25H8v3h2.5V21h3Z"/></svg></a>
         </div>
       </div>
-      <div>
+      <div class="foot-col">
         <h4>Company</h4>
         <ul>
           <li><a data-link="whoWeAre" href="https://www.jupitertexas.com/who-we-are">Who We Are</a></li>
@@ -248,7 +245,7 @@
           <li><a data-link="insights" href="https://www.jupitertexas.com/blog">Insights</a></li>
         </ul>
       </div>
-      <div>
+      <div class="foot-col">
         <h4>Invest</h4>
         <ul>
           <li><a href="portfolio.html">Portfolio</a></li>
@@ -257,7 +254,7 @@
           <li><a data-link="investors" href="https://www.jupitertexas.com/who-are-our-investors">Who are our Investors?</a></li>
         </ul>
       </div>
-      <div>
+      <div class="foot-col">
         <h4>Contact</h4>
         <ul>
           <li><a data-link="email" href="mailto:info@jupitertexas.com">info@jupitertexas.com</a></li>
@@ -267,7 +264,6 @@
         </ul>
       </div>
     </div>
-    <div class="foot-word" aria-hidden="true">Jupiter</div>
     <div class="foot-base">
       <span>© <span data-year>2026</span> Jupiter Texas Real Estate Group</span>
       <span>All returns are subject to market risk. Returns are not guaranteed.</span>
@@ -277,7 +273,6 @@
 
 <script src="assets/vendor/gsap.min.js" defer></script>
 <script src="assets/vendor/ScrollTrigger.min.js" defer></script>
-<script src="assets/vendor/lenis.min.js" defer></script>
 <script src="assets/js/content.js" defer></script>
 <script src="assets/js/art.js" defer></script>
 <script src="assets/js/main.js" defer></script>

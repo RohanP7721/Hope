@@ -1,19 +1,22 @@
 /* ============================================================
-   Isometric property art.
-   Each asset class gets a small 3D scene drawn as SVG, so cards
-   look like objects rather than empty boxes until real photos
-   arrive. Drop a photo path into a property's `image` field and
-   the card uses that instead.
+   Architectural line drawings.
+   Each asset class is drawn as an axonometric plate, like an
+   architect's presentation sheet: white faces, one deep-blue
+   line weight, a dashed site boundary. Faces are filled white
+   so hidden lines drop out naturally.
+   Every outline carries pathLength="1" so a drawing can be
+   "drawn in" with a single stroke-dashoffset transition.
+   Drop a photo path into a property's `image` field and the
+   site uses that instead.
    ============================================================ */
 
 window.JTArt = (function () {
   var COS = Math.cos(Math.PI / 6);
   var SIN = Math.sin(Math.PI / 6);
-  var uid = 0;
+  var FACE = { top: '#ffffff', left: '#f3f5fb', right: '#e6ebf7' };
+  var TINT = { top: '#eef2fd', left: '#e3e9fa', right: '#d6def5' };
 
-  function project(x, y, z) {
-    return [(x - y) * COS, (x + y) * SIN - z];
-  }
+  function project(x, y, z) { return [(x - y) * COS, (x + y) * SIN - z]; }
 
   function pts(list) {
     return list.map(function (p) {
@@ -22,128 +25,146 @@ window.JTArt = (function () {
     }).join(' ');
   }
 
-  /* One box: x, y = footprint origin; w (x-axis), d (y-axis), h (height). */
-  function box(x, y, w, d, h, tone) {
-    var t = tone || {};
-    var top   = [[x, y, h], [x + w, y, h], [x + w, y + d, h], [x, y + d, h]];
-    var left  = [[x, y + d, 0], [x + w, y + d, 0], [x + w, y + d, h], [x, y + d, h]];
-    var right = [[x + w, y, 0], [x + w, y + d, 0], [x + w, y + d, h], [x + w, y, h]];
-    return '<polygon points="' + pts(left)  + '" fill="' + (t.left  || 'url(#L)') + '"/>' +
-           '<polygon points="' + pts(right) + '" fill="' + (t.right || 'url(#R)') + '"/>' +
-           '<polygon points="' + pts(top)   + '" fill="' + (t.top   || 'url(#T)') + '"/>';
+  function poly(list, fill, cls) {
+    return '<polygon class="' + (cls || 'ln') + '" pathLength="1" points="' + pts(list) + '" fill="' + fill + '"/>';
   }
 
-  /* Rows of windows on the two visible faces. */
-  function windows(x, y, w, d, h, rows, cols) {
+  function line(a, b, cls) {
+    var p = project(a[0], a[1], a[2]);
+    var q = project(b[0], b[1], b[2]);
+    return '<line class="' + (cls || 'ln') + '" pathLength="1" x1="' + p[0].toFixed(1) + '" y1="' + p[1].toFixed(1) + '" x2="' + q[0].toFixed(1) + '" y2="' + q[1].toFixed(1) + '"/>';
+  }
+
+  /* A box standing at height z0 (0 = on the ground). */
+  function box(x, y, w, d, h, tone, z0) {
+    var t = tone || FACE;
+    var z = z0 || 0;
+    return poly([[x, y + d, z], [x + w, y + d, z], [x + w, y + d, z + h], [x, y + d, z + h]], t.left) +
+           poly([[x + w, y, z], [x + w, y + d, z], [x + w, y + d, z + h], [x + w, y, z + h]], t.right) +
+           poly([[x, y, z + h], [x + w, y, z + h], [x + w, y + d, z + h], [x, y + d, z + h]], t.top);
+  }
+
+  /* Window bands: thin lines across the two visible faces. */
+  function floors(x, y, w, d, h, count) {
     var out = '';
-    var gapZ = h / (rows + 1);
-    for (var r = 1; r <= rows; r++) {
-      var z = r * gapZ;
-      for (var c = 0; c < cols; c++) {
-        var fx = x + (w / cols) * (c + 0.25);
-        out += '<polygon points="' + pts([[fx, y + d, z], [fx + w / cols * 0.5, y + d, z], [fx + w / cols * 0.5, y + d, z + gapZ * 0.45], [fx, y + d, z + gapZ * 0.45]]) + '" fill="rgba(170,215,255,.55)"/>';
-      }
-      for (var k = 0; k < Math.max(1, Math.round(cols * d / w)); k++) {
-        var fy = y + (d / Math.max(1, Math.round(cols * d / w))) * (k + 0.25);
-        var seg = d / Math.max(1, Math.round(cols * d / w)) * 0.5;
-        out += '<polygon points="' + pts([[x + w, fy, z], [x + w, fy + seg, z], [x + w, fy + seg, z + gapZ * 0.45], [x + w, fy, z + gapZ * 0.45]]) + '" fill="rgba(120,170,255,.35)"/>';
-      }
+    for (var i = 1; i < count; i++) {
+      var z = (h / count) * i;
+      out += line([x + 3, y + d, z], [x + w - 3, y + d, z], 'ln fine');
+      out += line([x + w, y + 3, z], [x + w, y + d - 3, z], 'ln fine');
     }
     return out;
   }
 
-  function gableHouse(x, y, w, d, h, roof) {
-    var ridge = h + roof;
-    var leftRoof  = [[x, y + d / 2, ridge], [x + w, y + d / 2, ridge], [x + w, y + d, h], [x, y + d, h]];
-    var rightGable = [[x + w, y, h], [x + w, y + d, h], [x + w, y + d / 2, ridge]];
-    return box(x, y, w, d, h) +
-      '<polygon points="' + pts(rightGable) + '" fill="url(#R)"/>' +
-      '<polygon points="' + pts(leftRoof) + '" fill="#ffb547"/>' +
-      '<polygon points="' + pts([[x, y, h], [x + w, y, h], [x + w, y + d / 2, ridge], [x, y + d / 2, ridge]]) + '" fill="#ffcf7d"/>' +
-      '<polygon points="' + pts([[x + w * .55, y + d, 0], [x + w * .8, y + d, 0], [x + w * .8, y + d, h * .6], [x + w * .55, y + d, h * .6]]) + '" fill="rgba(5,11,46,.55)"/>';
+  /* Vertical mullions on the front faces. */
+  function mullions(x, y, w, d, h, cols) {
+    var out = '';
+    for (var i = 1; i < cols; i++) {
+      var fx = x + (w / cols) * i;
+      out += line([fx, y + d, 2], [fx, y + d, h - 2], 'ln fine');
+    }
+    var rows = Math.max(1, Math.round(cols * d / w));
+    for (var k = 1; k < rows; k++) {
+      var fy = y + (d / rows) * k;
+      out += line([x + w, fy, 2], [x + w, fy, h - 2], 'ln fine');
+    }
+    return out;
   }
 
-  function ground(size) {
-    return '<polygon points="' + pts([[-size * .1, -size * .1, 0], [size, -size * .1, 0], [size, size, 0], [-size * .1, size, 0]]) + '" fill="url(#G)" opacity=".9"/>';
+  function house(x, y, w, d, h, roof) {
+    var r = h + roof;
+    return box(x, y, w, d, h) +
+      poly([[x + w, y, h], [x + w, y + d, h], [x + w, y + d / 2, r]], FACE.right) +
+      poly([[x, y, h], [x + w, y, h], [x + w, y + d / 2, r], [x, y + d / 2, r]], TINT.top) +
+      poly([[x, y + d / 2, r], [x + w, y + d / 2, r], [x + w, y + d, h], [x, y + d, h]], TINT.left) +
+      poly([[x + w * .58, y + d, 0], [x + w * .8, y + d, 0], [x + w * .8, y + d, h * .62], [x + w * .58, y + d, h * .62]], '#ffffff');
+  }
+
+  function tree(x, y, size) {
+    var s = size || 1;
+    var c = project(x, y, 18 * s);
+    return line([x, y, 0], [x, y, 12 * s]) +
+      '<circle class="ln" pathLength="1" cx="' + c[0].toFixed(1) + '" cy="' + c[1].toFixed(1) + '" r="' + (7 * s).toFixed(1) + '" fill="#ffffff"/>';
+  }
+
+  function site(x0, y0, x1, y1) {
+    return poly([[x0, y0, 0], [x1, y0, 0], [x1, y1, 0], [x0, y1, 0]], 'none', 'ln site');
   }
 
   var scenes = {
     medical: function () {
-      return ground(120) +
-        box(10, 30, 70, 40, 24) + windows(10, 30, 70, 40, 24, 1, 6) +
-        box(20, 10, 40, 40, 78) + windows(20, 10, 40, 40, 78, 5, 3) +
-        /* rooftop cross */
-        box(34, 24, 12, 4, 92, { top: '#fff', left: '#e9f2ff', right: '#c7d7ff' }) +
-        box(38, 20, 4, 12, 92, { top: '#fff', left: '#e9f2ff', right: '#c7d7ff' });
+      return site(-6, -4, 104, 92) +
+        box(20, 8, 42, 40, 84) + floors(20, 8, 42, 40, 84, 7) +
+        box(36, 26, 12, 4, 8, TINT, 84) + box(40, 22, 4, 12, 8, TINT, 84) +
+        box(6, 34, 76, 40, 22) + mullions(6, 34, 76, 40, 22, 8) +
+        tree(92, 82, .8);
     },
     retail: function () {
-      var out = ground(130) + box(0, 30, 110, 34, 26) + windows(0, 30, 110, 34, 26, 1, 7);
-      for (var i = 0; i < 5; i++) {
-        var ax = 4 + i * 21;
-        out += '<polygon points="' + pts([[ax, 64, 20], [ax + 17, 64, 20], [ax + 17, 74, 14], [ax, 74, 14]]) + '" fill="' + (i % 2 ? '#ffb547' : '#5ee7ff') + '"/>';
+      var out = site(-6, -4, 122, 84) + box(96, 2, 10, 10, 50, TINT) + box(2, 28, 112, 36, 26) + mullions(2, 28, 112, 36, 26, 8);
+      for (var i = 0; i < 6; i++) {
+        var ax = 6 + i * 18;
+        out += poly([[ax, 64, 20], [ax + 14, 64, 20], [ax + 14, 72, 15], [ax, 72, 15]], TINT.top);
       }
-      return out + box(84, 2, 10, 10, 48, { top: '#ffb547', left: '#e0952d', right: '#c47c1c' });
+      return out + tree(12, 80, .8) + tree(108, 78, .8);
     },
     business: function () {
-      return ground(130) +
-        box(0, 50, 50, 30, 30) + windows(0, 50, 50, 30, 30, 2, 4) +
-        box(58, 50, 50, 30, 22) + windows(58, 50, 50, 30, 22, 1, 4) +
-        box(10, 6, 44, 34, 40) + windows(10, 6, 44, 34, 40, 3, 4) +
-        box(64, 6, 40, 34, 30) + windows(64, 6, 40, 34, 30, 2, 3);
+      return site(-6, -6, 116, 90) +
+        box(8, 4, 46, 34, 42) + floors(8, 4, 46, 34, 42, 4) +
+        box(64, 4, 42, 34, 32) + floors(64, 4, 42, 34, 32, 3) +
+        box(0, 50, 50, 30, 30) + floors(0, 50, 50, 30, 30, 3) +
+        box(58, 50, 50, 30, 22) + floors(58, 50, 50, 30, 22, 2);
+    },
+    fuel: function () {
+      return site(-8, -2, 106, 96) +
+        box(58, 6, 44, 34, 28) + mullions(58, 6, 44, 34, 28, 4) +
+        box(6, 48, 3, 3, 34) + box(40, 48, 3, 3, 34) + box(6, 80, 3, 3, 34) + box(40, 80, 3, 3, 34) +
+        box(18, 60, 8, 6, 14, TINT) +
+        box(0, 42, 50, 48, 5, TINT, 34);
     },
     homes: function () {
-      return ground(130) +
-        gableHouse(0, 50, 30, 28, 22, 14) +
-        gableHouse(40, 50, 30, 28, 22, 14) +
-        gableHouse(80, 50, 30, 28, 22, 14) +
-        gableHouse(20, 6, 30, 28, 22, 14) +
-        gableHouse(60, 6, 30, 28, 22, 14);
+      return site(-6, -4, 116, 88) +
+        tree(100, 18, .8) +
+        house(20, 6, 30, 28, 22, 14) + house(60, 6, 30, 28, 22, 14) +
+        house(0, 50, 30, 28, 22, 14) + house(40, 50, 30, 28, 22, 14) + house(80, 50, 30, 28, 22, 14);
     },
     daycare: function () {
-      return ground(120) +
-        gableHouse(10, 20, 60, 40, 28, 18) +
-        box(80, 60, 14, 14, 14, { top: '#5ee7ff', left: '#2bb8d8', right: '#1a8fb0' }) +
-        box(80, 30, 14, 14, 22, { top: '#ffb547', left: '#e0952d', right: '#c47c1c' });
+      return site(-6, -4, 108, 84) +
+        tree(92, 10, .8) +
+        house(8, 18, 62, 42, 26, 18) +
+        box(80, 30, 14, 14, 18) + box(80, 58, 14, 14, 10, TINT) +
+        tree(20, 74, .8);
+    },
+    /* The hero plate: one site holding every asset class. */
+    hero: function () {
+      return site(-20, -20, 236, 196) +
+        line([-20, 88, 0], [236, 88, 0], 'ln site') + line([108, -20, 0], [108, 196, 0], 'ln site') +
+        /* medical tower, back left */
+        box(18, -6, 40, 38, 118) + floors(18, -6, 40, 38, 118, 10) +
+        box(34, 10, 10, 4, 8, TINT, 118) + box(37, 7, 4, 10, 8, TINT, 118) +
+        box(6, 14, 70, 34, 22) + mullions(6, 14, 70, 34, 22, 7) +
+        /* business park, back right */
+        box(128, -6, 46, 34, 46) + floors(128, -6, 46, 34, 46, 4) +
+        box(184, -6, 40, 34, 32) + floors(184, -6, 40, 34, 32, 3) +
+        box(128, 40, 96, 34, 22) + mullions(128, 40, 96, 34, 22, 8) +
+        /* retail strip, front left */
+        box(0, 104, 96, 34, 24) + mullions(0, 104, 96, 34, 24, 7) +
+        poly([[4, 138, 18], [92, 138, 18], [92, 146, 13], [4, 146, 13]], TINT.top) +
+        /* homes, front right */
+        house(124, 108, 26, 24, 20, 12) + house(160, 108, 26, 24, 20, 12) + house(196, 108, 26, 24, 20, 12) +
+        house(142, 150, 26, 24, 20, 12) + house(178, 150, 26, 24, 20, 12) +
+        tree(4, 172) + tree(30, 180) + tree(60, 176) + tree(226, 182, .9) + tree(112, 186, .8);
     }
   };
 
-  /* Gas station: the canopy floats on four posts, so it is drawn at z = 34. */
-  scenes.fuel = function () {
-    function raised(x, y, w, d, h, z, tone) {
-      var top   = [[x, y, z + h], [x + w, y, z + h], [x + w, y + d, z + h], [x, y + d, z + h]];
-      var left  = [[x, y + d, z], [x + w, y + d, z], [x + w, y + d, z + h], [x, y + d, z + h]];
-      var right = [[x + w, y, z], [x + w, y + d, z], [x + w, y + d, z + h], [x + w, y, z + h]];
-      return '<polygon points="' + pts(left) + '" fill="' + tone.left + '"/>' +
-             '<polygon points="' + pts(right) + '" fill="' + tone.right + '"/>' +
-             '<polygon points="' + pts(top) + '" fill="' + tone.top + '"/>';
-    }
-    var amber = { top: '#ffcf7d', left: '#ffb547', right: '#e0952d' };
-    return ground(120) +
-      box(58, 6, 44, 34, 28) + windows(58, 6, 44, 34, 28, 1, 4) +
-      box(6, 48, 4, 4, 34) + box(38, 48, 4, 4, 34) + box(6, 80, 4, 4, 34) + box(38, 80, 4, 4, 34) +
-      box(16, 60, 8, 6, 14, { top: '#5ee7ff', left: '#2bb8d8', right: '#1a8fb0' }) +
-      raised(0, 42, 50, 48, 6, 34, amber);
+  var VIEW = {
+    hero: '-198 -136 428 362'
   };
-
-  function defs(id) {
-    return '<defs>' +
-      '<linearGradient id="T' + id + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9fb8ff"/><stop offset="1" stop-color="#6d8cff"/></linearGradient>' +
-      '<linearGradient id="L' + id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3d63ff"/><stop offset="1" stop-color="#1d3bd6"/></linearGradient>' +
-      '<linearGradient id="R' + id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b33b8"/><stop offset="1" stop-color="#0b1a7a"/></linearGradient>' +
-      '<radialGradient id="G' + id + '" cx=".5" cy=".5" r=".6"><stop offset="0" stop-color="rgba(94,231,255,.28)"/><stop offset="1" stop-color="rgba(94,231,255,0)"/></radialGradient>' +
-      '</defs>';
-  }
 
   /* Returns an <svg> string for a property type. */
-  function render(type) {
-    var id = 'a' + (++uid);
-    var body = (scenes[type] || scenes.business)()
-      .replace(/url\(#T\)/g, 'url(#T' + id + ')')
-      .replace(/url\(#L\)/g, 'url(#L' + id + ')')
-      .replace(/url\(#R\)/g, 'url(#R' + id + ')')
-      .replace(/url\(#G\)/g, 'url(#G' + id + ')');
-    return '<svg class="iso" viewBox="-120 -110 240 200" aria-hidden="true" focusable="false">' +
-      defs(id) + '<g class="iso-g">' + body + '</g></svg>';
+  function render(type, opts) {
+    var o = opts || {};
+    var scene = scenes[type] || scenes.business;
+    return '<svg class="plate' + (o.draw ? ' is-drawing' : '') + '" viewBox="' + (VIEW[type] || '-120 -102 240 212') + '" aria-hidden="true" focusable="false">' +
+      '<g>' + scene() + '</g></svg>';
   }
 
   return { render: render };

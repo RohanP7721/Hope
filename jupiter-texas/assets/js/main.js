@@ -1,10 +1,8 @@
 /* ============================================================
    JUPITER TEXAS — behaviour
-   Shared: nav, smooth scroll, reveals, tilt cards, sheet.
-   Home: hero intro, planet parallax, return bars, 1:200 dots,
-         pinned process strip, portfolio teaser.
-   Portfolio: filters, pinned gallery / swipe, ledger view,
-         cursor preview, detail sheet with deep links.
+   Motion is kept to three places: the hero drawing that draws
+   itself once, the navigation, and the portfolio gallery that
+   moves sideways as you scroll. Everything else is still.
    ============================================================ */
 
 (function () {
@@ -12,17 +10,12 @@
 
   var D = window.JT;
   var Art = window.JTArt;
-  var doc = document.documentElement;
-  var page = doc.getAttribute('data-page');
+  var page = document.documentElement.getAttribute('data-page');
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
   var hasGsap = !!(window.gsap && window.ScrollTrigger);
-  var lenis = null;
+  var activeFilter = 'all';
 
-  var ICON = {
-    arrow: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10h12M11 5l5 5-5 5"/></svg>',
-    pin: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 14.5s5-4.6 5-8.5a5 5 0 1 0-10 0c0 3.9 5 8.5 5 8.5Z"/><circle cx="8" cy="6" r="1.8"/></svg>'
-  };
 
   function $(sel, root) { return (root || document).querySelector(sel); }
   function $$(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
@@ -32,41 +25,13 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
+  function byId(id) { return D.properties.filter(function (p) { return p.id === id; })[0]; }
 
   /* ---------------- links from content.js ---------------- */
-  /* Any element with data-link="key" gets its href from JT.links,
-     so every page shares one source of truth for URLs. */
   function wireLinks() {
     $$('[data-link]').forEach(function (a) {
       var url = D.links[a.getAttribute('data-link')];
-      if (!url) return;
-      a.setAttribute('href', url);
-      if (/^https?:/.test(url) && url.indexOf(location.host || '__none__') === -1) {
-        a.setAttribute('rel', 'noopener');
-      }
-    });
-  }
-
-  /* ---------------- smooth scroll ---------------- */
-  function initSmoothScroll() {
-    if (reduceMotion || !window.Lenis || !finePointer) return;
-    lenis = new window.Lenis({ duration: 1.15, easing: function (t) { return Math.min(1, 1.001 - Math.pow(2, -10 * t)); } });
-    if (hasGsap) {
-      lenis.on('scroll', window.ScrollTrigger.update);
-      window.gsap.ticker.add(function (time) { lenis.raf(time * 1000); });
-      window.gsap.ticker.lagSmoothing(0);
-    } else {
-      (function raf(t) { lenis.raf(t); requestAnimationFrame(raf); })(0);
-    }
-    $$('a[href^="#"]').forEach(function (a) {
-      a.addEventListener('click', function (e) {
-        var id = a.getAttribute('href');
-        if (id.length < 2) return;
-        var target = document.querySelector(id);
-        if (!target) return;
-        e.preventDefault();
-        lenis.scrollTo(target, { offset: -80 });
-      });
+      if (url) a.setAttribute('href', url);
     });
   }
 
@@ -79,11 +44,11 @@
 
     function onScroll() {
       var y = window.scrollY;
-      nav.classList.toggle('is-scrolled', y > 40);
-      var goingDown = y > lastY + 4;
-      var goingUp = y < lastY - 4;
-      if (goingDown && y > 320 && !document.body.classList.contains('menu-open')) nav.classList.add('is-hidden');
-      else if (goingUp || y < 120) nav.classList.remove('is-hidden');
+      nav.classList.toggle('is-scrolled', y > 8);
+      if (!document.body.classList.contains('menu-open')) {
+        if (y > lastY + 6 && y > 480) nav.classList.add('is-hidden');
+        else if (y < lastY - 6 || y < 120) nav.classList.remove('is-hidden');
+      }
       lastY = y;
       ticking = false;
     }
@@ -92,459 +57,352 @@
     }, { passive: true });
     onScroll();
 
-    /* gliding hover highlight */
+    /* the blue rule: rests under the current page, follows the pointer */
     var list = $('.nav-links', nav);
-    var glide = $('.nav-glide', nav);
-    if (list && glide) {
-      $$('.nav-links > li > a, .nav-links > li > .nav-drop-btn', nav).forEach(function (el) {
-        el.addEventListener('mouseenter', function () {
-          var r = el.getBoundingClientRect();
-          var lr = list.getBoundingClientRect();
-          glide.style.width = r.width + 'px';
-          glide.style.transform = 'translate(' + (r.left - lr.left) + 'px,' + (r.top - lr.top) + 'px)';
-        });
-      });
+    var rule = $('.nav-rule', nav);
+    if (list && rule) {
+      var targets = $$('.nav-links > li > a, .nav-drop-btn', nav);
+      var current = $('.nav-links a[aria-current="page"]', nav);
+      var place = function (el) {
+        if (!el) { rule.style.opacity = '0'; return; }
+        var r = el.getBoundingClientRect();
+        var lr = list.getBoundingClientRect();
+        rule.style.opacity = '1';
+        rule.style.width = (r.width - 28) + 'px';
+        rule.style.transform = 'translateX(' + (r.left - lr.left + 14) + 'px)';
+      };
+      targets.forEach(function (el) { el.addEventListener('mouseenter', function () { place(el); }); });
+      list.addEventListener('mouseleave', function () { place(current); });
+      window.addEventListener('resize', function () { place(current); });
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { place(current); });
+      place(current);
     }
 
-    /* dropdown: click / keyboard for touch + a11y */
+    /* dropdown: hover on desktop, click and keyboard everywhere */
     $$('.has-drop', nav).forEach(function (li) {
       var btn = $('.nav-drop-btn', li);
-      btn.addEventListener('click', function () {
-        var open = li.classList.toggle('is-open');
-        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-      });
-      li.addEventListener('mouseleave', function () { li.classList.remove('is-open'); btn.setAttribute('aria-expanded', 'false'); });
-      li.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') { li.classList.remove('is-open'); btn.setAttribute('aria-expanded', 'false'); btn.focus(); }
-      });
-    });
-    document.addEventListener('click', function (e) {
-      $$('.has-drop.is-open').forEach(function (li) { if (!li.contains(e.target)) li.classList.remove('is-open'); });
+      var set = function (open) { li.classList.toggle('is-open', open); btn.setAttribute('aria-expanded', open ? 'true' : 'false'); };
+      btn.addEventListener('click', function () { set(!li.classList.contains('is-open')); });
+      li.addEventListener('mouseleave', function () { set(false); });
+      li.addEventListener('keydown', function (e) { if (e.key === 'Escape') { set(false); btn.focus(); } });
+      document.addEventListener('click', function (e) { if (!li.contains(e.target)) set(false); });
     });
 
     /* mobile menu */
     var burger = $('.burger');
     var menu = $('#menu');
     if (burger && menu) {
-      function setMenu(open) {
+      var setMenu = function (open) {
         document.body.classList.toggle('menu-open', open);
         burger.setAttribute('aria-expanded', open ? 'true' : 'false');
         burger.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
         menu.setAttribute('aria-hidden', open ? 'false' : 'true');
-        if (open) { nav.classList.remove('is-hidden'); if (lenis) lenis.stop(); }
-        else if (lenis) lenis.start();
-      }
+        if (open) nav.classList.remove('is-hidden');
+      };
       burger.addEventListener('click', function () { setMenu(!document.body.classList.contains('menu-open')); });
       $$('a', menu).forEach(function (a) { a.addEventListener('click', function () { setMenu(false); }); });
-      document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && document.body.classList.contains('menu-open')) { setMenu(false); burger.focus(); } });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && document.body.classList.contains('menu-open')) { setMenu(false); burger.focus(); }
+      });
       window.addEventListener('resize', function () { if (window.innerWidth > 1080) setMenu(false); });
     }
   }
 
-  /* ---------------- buttons: glow follows the cursor ---------------- */
-  function initButtons() {
-    if (!finePointer) return;
-    document.addEventListener('pointermove', function (e) {
-      var b = e.target.closest && e.target.closest('.btn');
-      if (!b) return;
-      var r = b.getBoundingClientRect();
-      b.style.setProperty('--mx', (e.clientX - r.left) + 'px');
-      b.style.setProperty('--my', (e.clientY - r.top) + 'px');
-    });
-  }
-
-  /* ---------------- reveals ---------------- */
-  function initReveals() {
-    var items = $$('.rv');
-    if (reduceMotion || !('IntersectionObserver' in window)) {
-      items.forEach(function (el) { el.classList.add('in'); });
-      return;
-    }
-    var io = new IntersectionObserver(function (entries) {
-      entries.forEach(function (en) {
-        if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); }
-      });
-    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
-    items.forEach(function (el) { io.observe(el); });
-  }
-
-  function whenVisible(el, fn, margin) {
+  function whenVisible(el, fn) {
     if (!el) return;
     if (!('IntersectionObserver' in window)) { fn(); return; }
     var io = new IntersectionObserver(function (entries) {
       if (entries[0].isIntersecting) { fn(); io.disconnect(); }
-    }, { rootMargin: margin || '0px 0px -15% 0px' });
+    }, { rootMargin: '0px 0px -20% 0px' });
     io.observe(el);
   }
 
-  /* ---------------- headline intro ---------------- */
-  function introHeadline(sel) {
-    var spans = $$(sel + ' .line > span');
-    if (!spans.length || reduceMotion || !hasGsap) return;
-    window.gsap.from(spans, { yPercent: 110, duration: 1.3, ease: 'expo.out', stagger: 0.09, delay: 0.15 });
-    window.gsap.from($$('.intro-fade'), { opacity: 0, y: 24, duration: 1.2, ease: 'expo.out', stagger: 0.08, delay: 0.45 });
-  }
-
-  /* ---------------- tilt cards ---------------- */
-  function bindTilt(card) {
-    if (!finePointer || reduceMotion) return;
-    card.addEventListener('pointermove', function (e) {
-      var r = card.getBoundingClientRect();
-      var px = (e.clientX - r.left) / r.width;
-      var py = (e.clientY - r.top) / r.height;
-      card.classList.add('is-tilting');
-      card.style.setProperty('--ry', ((px - 0.5) * 14).toFixed(2) + 'deg');
-      card.style.setProperty('--rx', ((0.5 - py) * 12).toFixed(2) + 'deg');
-      card.style.setProperty('--gx', (px * 100).toFixed(1) + '%');
-      card.style.setProperty('--gy', (py * 100).toFixed(1) + '%');
-    });
-    card.addEventListener('pointerleave', function () {
-      card.classList.remove('is-tilting');
-      card.style.setProperty('--rx', '0deg');
-      card.style.setProperty('--ry', '0deg');
+  /* ---------------- drawings ---------------- */
+  function fillPlates() {
+    $$('[data-plate]').forEach(function (el) {
+      el.innerHTML = Art.render(el.getAttribute('data-plate'), { draw: el.hasAttribute('data-draw') });
     });
   }
 
-  /* ---------------- property card markup ---------------- */
-  function artFor(p) {
+  /* Draw the hero plate line by line, back to front. */
+  function drawHero() {
+    var svg = $('.hero-plate .plate');
+    if (!svg) return;
+    if (reduceMotion) { svg.classList.remove('is-drawing'); return; }
+    var lines = $$('.ln:not(.site)', svg);
+    var n = lines.length;
+    lines.forEach(function (el, i) { el.style.setProperty('--d', (i / n * 1.6).toFixed(3) + 's'); });
+    requestAnimationFrame(function () { requestAnimationFrame(function () { svg.classList.add('go'); }); });
+  }
+
+  /* ---------------- property card ---------------- */
+  function plateFor(p) {
     return p.image ? '<img src="' + esc(p.image) + '" alt="' + esc(p.name) + '" loading="lazy">' : Art.render(p.type);
   }
 
-  function statsFor(p, cls) {
+  function statsFor(p) {
     var rows = [];
     if (p.price) rows.push(['Purchase Price', p.price, '']);
     if (p.cashOnCash) rows.push(['Projected Annual Cash On Cash*', p.cashOnCash, '']);
-    if (p.forecast) rows.push(['Forecasted Annual Return*', p.forecast, 'hot']);
-    if (!rows.length) return '';
-    return '<dl class="stats ' + (cls || '') + '" style="grid-template-columns:repeat(' + rows.length + ',1fr)">' +
-      rows.map(function (r) { return '<div><dt>' + r[0] + '</dt><dd class="' + r[2] + '">' + esc(r[1]) + '</dd></div>'; }).join('') +
-      '</dl>';
+    if (p.forecast) rows.push(['Forecasted Annual Return*', p.forecast, 'hi']);
+    if (!rows.length) return '<p class="stats-none">Figures for this property are shared on request.</p>';
+    return '<dl class="stats">' + rows.map(function (r) {
+      return '<div><dt>' + r[0] + '</dt><dd class="' + r[2] + '">' + esc(r[1]) + '</dd></div>';
+    }).join('') + '</dl>';
   }
 
-  function cardHTML(p, i) {
-    return '<button class="card" type="button" data-id="' + p.id + '" data-type="' + p.type + '" aria-label="' + esc(p.name + ', ' + p.place) + ' — view details">' +
-      '<span class="card-type">' + esc(D.typeLabels[p.type] || p.type) + '</span>' +
-      '<span class="card-idx">' + pad(i + 1) + '</span>' +
-      '<span class="card-art">' + artFor(p) + '</span>' +
+  function cardHTML(p) {
+    return '<button class="card" type="button" data-id="' + p.id + '" data-type="' + p.type + '" aria-label="' + esc(p.name + ', ' + p.place) + '. View details">' +
+      '<span class="card-plate">' + plateFor(p) + '<span class="card-type">' + esc(D.typeLabels[p.type]) + '</span></span>' +
       '<span class="card-body">' +
-        '<span><h3>' + esc(p.name) + '</h3><span class="card-place">' + ICON.pin + esc(p.place) + '</span></span>' +
+        '<span><h3>' + esc(p.name) + '</h3><span class="place">' + esc(p.place) + '</span></span>' +
         statsFor(p) +
-        '<span class="card-open">View details <span class="arr">→</span></span>' +
       '</span>' +
     '</button>';
   }
 
-  /* ---------------- detail sheet ---------------- */
-  var sheet, sheetList = [], sheetIndex = 0, lastFocus = null;
-
-  function initSheet(list) {
-    sheet = $('#sheet');
-    if (!sheet || typeof sheet.showModal !== 'function') return;
-    sheetList = list;
-    $('.sheet-close', sheet).addEventListener('click', closeSheet);
-    sheet.addEventListener('click', function (e) { if (e.target === sheet) closeSheet(); });
-    sheet.addEventListener('close', function () {
-      if (lenis) lenis.start();
-      if (location.hash) history.replaceState(null, '', location.pathname + location.search);
-      if (lastFocus) lastFocus.focus({ preventScroll: true });
-    });
-    sheet.addEventListener('keydown', function (e) {
-      if (e.key === 'ArrowRight') step(1);
-      if (e.key === 'ArrowLeft') step(-1);
-    });
+  /* ---------------- horizontal track with arrow buttons ---------------- */
+  function bindTrack(track, prev, next) {
+    var step = function (dir) {
+      var card = track.querySelector('.card');
+      var w = card ? card.getBoundingClientRect().width + 24 : 360;
+      track.scrollBy({ left: w * dir, behavior: reduceMotion ? 'auto' : 'smooth' });
+    };
+    var sync = function () {
+      var max = track.scrollWidth - track.clientWidth - 2;
+      prev.disabled = track.scrollLeft <= 2;
+      next.disabled = track.scrollLeft >= max;
+    };
+    prev.addEventListener('click', function () { step(-1); });
+    next.addEventListener('click', function () { step(1); });
+    track.addEventListener('scroll', sync, { passive: true });
+    window.addEventListener('resize', sync);
+    sync();
   }
 
-  function fillSheet(p) {
-    var idx = sheetList.indexOf(p);
-    $('.sheet-art', sheet).innerHTML = artFor(p);
-    $('.sheet-type', sheet).textContent = (D.typeLabels[p.type] || p.type) + ' · ' + pad(idx + 1) + ' / ' + pad(sheetList.length);
-    $('.sheet-name', sheet).textContent = p.name;
-    $('.sheet-place', sheet).innerHTML = ICON.pin + esc(p.place);
-    $('.sheet-stats', sheet).innerHTML = statsFor(p) || '<p class="fine">Figures for this property are shared on request.</p>';
-    sheetIndex = idx;
-  }
-
-  function openSheet(id) {
-    if (!sheet || typeof sheet.showModal !== 'function') return;
-    var p = sheetList.filter(function (x) { return x.id === id; })[0];
-    if (!p) return;
-    lastFocus = document.activeElement;
-    fillSheet(p);
-    if (!sheet.open) sheet.showModal();
-    if (lenis) lenis.stop();
-    history.replaceState(null, '', '#' + p.id);
-  }
-
-  function closeSheet() { if (sheet && sheet.open) sheet.close(); }
-
-  function step(dir) {
-    var visible = sheetList.filter(function (p) { return !activeFilter || activeFilter === 'all' || p.type === activeFilter; });
-    var cur = visible.indexOf(sheetList[sheetIndex]);
-    var next = visible[(cur + dir + visible.length) % visible.length];
-    if (next) { fillSheet(next); history.replaceState(null, '', '#' + next.id); }
-  }
-
-  /* ---------------- pinned horizontal scroll ---------------- */
-  /* Vertical scroll drives a horizontal track. Desktop only;
-     touch screens get a native swipe track from the CSS. */
-  function pinHorizontal(section, pinEl, track, progressBar, onUpdate) {
-    if (!hasGsap || reduceMotion) return null;
+  /* ---------------- pinned horizontal scroll (desktop) ---------------- */
+  function pinHorizontal(pinEl, track, onProgress) {
+    if (!hasGsap || reduceMotion) return;
     var gsap = window.gsap;
     gsap.registerPlugin(window.ScrollTrigger);
-    var mm = gsap.matchMedia();
-    mm.add('(min-width: 861px)', function () {
+    gsap.matchMedia().add('(min-width: 901px)', function () {
       var distance = function () { return Math.max(0, track.scrollWidth - window.innerWidth); };
       var tween = gsap.to(track, {
         x: function () { return -distance(); },
         ease: 'none',
         scrollTrigger: {
           trigger: pinEl,
-          pin: pinEl,
+          pin: true,
           start: 'top top',
           end: function () { return '+=' + distance(); },
-          scrub: 0.8,
+          scrub: 0.6,
           invalidateOnRefresh: true,
-          onUpdate: function (self) {
-            if (progressBar) progressBar.style.transform = 'scaleX(' + self.progress.toFixed(4) + ')';
-            if (onUpdate) onUpdate(self.progress);
-          }
+          onUpdate: function (self) { onProgress(self.progress); }
         }
       });
-      return function () { tween.scrollTrigger && tween.scrollTrigger.kill(); tween.kill(); track.style.transform = ''; };
+      return function () { tween.kill(); track.style.transform = ''; };
     });
-    return mm;
+  }
+
+  /* ---------------- detail sheet ---------------- */
+  var sheet = null, current = null, lastFocus = null;
+
+  function visibleList() {
+    return D.properties.filter(function (p) { return activeFilter === 'all' || p.type === activeFilter; });
+  }
+
+  function fillSheet(p) {
+    var list = visibleList();
+    var i = list.indexOf(p);
+    current = p;
+    $('.sheet-plate', sheet).innerHTML = plateFor(p);
+    $('.sheet-type', sheet).textContent = D.typeLabels[p.type] + ', ' + (i + 1) + ' of ' + list.length;
+    $('.sheet-name', sheet).textContent = p.name;
+    $('.sheet-place', sheet).textContent = p.place;
+    $('.sheet-stats', sheet).innerHTML = statsFor(p);
+    history.replaceState(null, '', '#' + p.id);
+  }
+
+  function openSheet(id) {
+    var p = byId(id);
+    if (!sheet || !p || typeof sheet.showModal !== 'function') return;
+    if (visibleList().indexOf(p) === -1) activeFilter = 'all';
+    lastFocus = document.activeElement;
+    fillSheet(p);
+    if (!sheet.open) sheet.showModal();
+  }
+
+  function stepSheet(dir) {
+    var list = visibleList();
+    var i = list.indexOf(current);
+    fillSheet(list[(i + dir + list.length) % list.length]);
+  }
+
+  function initSheet() {
+    sheet = $('#sheet');
+    if (!sheet) return;
+    $('.sheet-close', sheet).addEventListener('click', function () { sheet.close(); });
+    sheet.addEventListener('click', function (e) { if (e.target === sheet) sheet.close(); });
+    sheet.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowRight') stepSheet(1);
+      if (e.key === 'ArrowLeft') stepSheet(-1);
+    });
+    sheet.addEventListener('close', function () {
+      history.replaceState(null, '', location.pathname + location.search);
+      if (lastFocus) lastFocus.focus({ preventScroll: true });
+    });
+    $$('[data-step]', sheet).forEach(function (b) {
+      b.addEventListener('click', function () { stepSheet(Number(b.getAttribute('data-step'))); });
+    });
+    var fromHash = function () {
+      var id = location.hash.slice(1);
+      if (id && byId(id)) openSheet(id);
+    };
+    fromHash();
+    window.addEventListener('hashchange', fromHash);
   }
 
   /* ============================================================
      HOME
      ============================================================ */
   function initHome() {
-    introHeadline('.hero h1');
+    drawHero();
 
-    /* planet follows the pointer a little */
-    var tilt = $('.planet-tilt');
-    if (tilt && finePointer && !reduceMotion) {
-      window.addEventListener('pointermove', function (e) {
-        var x = e.clientX / window.innerWidth - 0.5;
-        var y = e.clientY / window.innerHeight - 0.5;
-        tilt.style.transform = 'rotateY(' + (x * 18).toFixed(2) + 'deg) rotateX(' + (-y * 14).toFixed(2) + 'deg)';
-      }, { passive: true });
-    }
-    if (hasGsap && !reduceMotion) {
-      window.gsap.to('.planet-stage', { yPercent: 18, ease: 'none', scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true } });
-      window.gsap.to('.hero-copy', { yPercent: -10, opacity: 0.2, ease: 'none', scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true } });
-    }
-
-    /* asset class art */
-    $$('[data-art]').forEach(function (el) { el.innerHTML = Art.render(el.getAttribute('data-art')); });
-
-    /* return bars grow when seen */
-    $$('.bar').forEach(function (b) { b.querySelector('.bar-fill').style.setProperty('--p', reduceMotion ? 1 : 0); });
-    whenVisible($('.bars'), function () {
-      $$('.bar-fill').forEach(function (f, i) { setTimeout(function () { f.style.setProperty('--p', 1); }, i * 250); });
+    /* return meters fill when seen */
+    var meters = $$('.returns .meter i');
+    if (!reduceMotion) meters.forEach(function (m) { m.style.setProperty('--p', 0); });
+    whenVisible($('.returns-figs'), function () {
+      meters.forEach(function (m, i) { setTimeout(function () { m.style.setProperty('--p', 1); }, i * 200); });
     });
 
-    /* 1 : 200 */
+    /* 1 of 200 */
     var dots = $('.dots');
     if (dots) {
       var html = '';
-      for (var i = 0; i < 200; i++) html += '<i></i>';
+      for (var i = 0; i < 200; i++) html += '<i' + (i === 137 ? ' class="pick"' : '') + '></i>';
       dots.innerHTML = html;
-      var cells = dots.children;
-      whenVisible(dots, function () {
-        if (reduceMotion) { cells[137].classList.add('pick'); return; }
-        var n = 0;
-        var scan = setInterval(function () {
-          cells[n].style.background = 'rgba(255,255,255,.4)';
-          (function (c) { setTimeout(function () { c.style.background = ''; }, 260); })(cells[n]);
-          n += 1;
-          if (n > 137) { clearInterval(scan); cells[137].classList.add('pick'); }
-        }, 9);
-      });
     }
 
-    /* process strip */
-    var proc = $('#process');
-    if (proc) pinHorizontal(proc, $('.hscroll-pin', proc), $('.hscroll-track', proc), $('.hscroll-progress i', proc));
-
-    /* portfolio teaser */
-    var teaser = $('#teaser-track');
-    if (teaser) {
-      teaser.innerHTML = D.properties.map(cardHTML).join('');
-      $$('.card', teaser).forEach(function (c) {
-        bindTilt(c);
+    /* portfolio track */
+    var track = $('#teaser');
+    if (track) {
+      track.innerHTML = D.properties.map(cardHTML).join('');
+      $$('.card', track).forEach(function (c) {
         c.addEventListener('click', function () { location.href = 'portfolio.html#' + c.getAttribute('data-id'); });
       });
-      $$('[data-scroll]').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-          var card = teaser.querySelector('.card');
-          var w = card ? card.getBoundingClientRect().width + 20 : 400;
-          teaser.scrollBy({ left: w * Number(btn.getAttribute('data-scroll')), behavior: reduceMotion ? 'auto' : 'smooth' });
-        });
-      });
+      bindTrack(track, $('[data-prev]'), $('[data-next]'));
     }
   }
 
   /* ============================================================
      PORTFOLIO
      ============================================================ */
-  var activeFilter = 'all';
-
   function initPortfolio() {
-    introHeadline('.p-hero h1');
     var list = D.properties;
     var track = $('#gallery-track');
-    var ledger = $('#ledger-rows');
     var end = $('.gallery-end');
+    var rows = $('#rows');
+    var hudNow = $('#hud-now');
+    var hudTotal = $('#hud-total');
+    var hudBar = $('.hud .meter i');
 
-    /* counts */
     $$('[data-count="properties"]').forEach(function (el) { el.textContent = pad(list.length); });
 
-    /* gallery cards. Snap keeps the end card "selected" when cards are
-       inserted before it, so the swipe track is reset to the start. */
+    /* gallery cards (snap would keep the end card selected when
+       cards are inserted before it, so reset the track) */
     end.insertAdjacentHTML('beforebegin', list.map(cardHTML).join(''));
     track.scrollLeft = 0;
     requestAnimationFrame(function () { track.scrollLeft = 0; });
-    $$('.card', track).forEach(function (c) {
-      bindTilt(c);
-      c.addEventListener('click', function () { openSheet(c.getAttribute('data-id')); });
-    });
 
-    /* ledger rows */
-    ledger.innerHTML = list.map(function (p, i) {
-      return '<button class="ledger-row" type="button" data-id="' + p.id + '" data-type="' + p.type + '">' +
-        '<span class="n">' + pad(i + 1) + '</span>' +
-        '<span class="nm">' + esc(p.name) + '</span>' +
-        '<span class="pl">' + esc(p.place) + '</span>' +
-        '<span class="ty">' + esc(D.typeLabels[p.type]) + '</span>' +
-        '<span class="v">' + esc(p.price || '—') + '</span>' +
-        '<span class="v f">' + esc(p.forecast || '—') + '</span>' +
-        '<span class="go">' + ICON.arrow + '</span>' +
+    /* list rows */
+    rows.innerHTML = list.map(function (p, i) {
+      return '<button class="row" type="button" data-id="' + p.id + '" data-type="' + p.type + '">' +
+        '<span class="row-n">' + pad(i + 1) + '</span>' +
+        '<span class="row-name">' + esc(p.name) + '</span>' +
+        '<span class="row-place muted">' + esc(p.place) + '</span>' +
+        '<span class="row-type muted">' + esc(D.typeLabels[p.type]) + '</span>' +
+        '<span class="fig-cell">' + esc(p.price || '—') + '</span>' +
+        '<span class="fig-cell hi">' + esc(p.forecast || '—') + '</span>' +
       '</button>';
     }).join('');
-    $$('.ledger-row:not(.is-head)', ledger).forEach(function (r) {
-      r.addEventListener('click', function () { openSheet(r.getAttribute('data-id')); });
+
+    $$('.card, .row', document).forEach(function (el) {
+      if (!el.getAttribute('data-id')) return;
+      el.addEventListener('click', function () { openSheet(el.getAttribute('data-id')); });
     });
 
-    /* cursor-following preview on the ledger */
-    var peek = $('.cursor-peek');
-    if (peek && finePointer && !reduceMotion) {
-      var px = 0, py = 0, cx = 0, cy = 0, raf = null;
-      var loop = function () {
-        cx += (px - cx) * 0.18; cy += (py - cy) * 0.18;
-        peek.style.left = cx + 'px'; peek.style.top = cy + 'px';
-        raf = requestAnimationFrame(loop);
-      };
-      $$('.ledger-row:not(.is-head)', ledger).forEach(function (r) {
-        var p = list.filter(function (x) { return x.id === r.getAttribute('data-id'); })[0];
-        r.addEventListener('pointerenter', function (e) {
-          peek.innerHTML = artFor(p);
-          px = cx = e.clientX + 170; py = cy = e.clientY;
-          peek.classList.add('is-on');
-          if (!raf) loop();
-        });
-        r.addEventListener('pointermove', function (e) { px = e.clientX + 170; py = e.clientY; });
-        r.addEventListener('pointerleave', function () { peek.classList.remove('is-on'); });
-      });
-      ledger.addEventListener('pointerleave', function () { cancelAnimationFrame(raf); raf = null; });
-    }
+    /* progress readout */
+    var setHud = function (progress) {
+      var n = $$('.card:not(.is-out)', track).length;
+      hudBar.style.transform = 'scaleX(' + progress.toFixed(4) + ')';
+      hudNow.textContent = pad(Math.min(n, Math.round(progress * (n - 1)) + 1));
+    };
+    track.addEventListener('scroll', function () {
+      var max = track.scrollWidth - track.clientWidth;
+      if (max > 0) setHud(track.scrollLeft / max);
+    }, { passive: true });
 
-    /* filters */
-    var filterList = $('.filter-list');
-    var glide = $('.filter-glide');
+    /* segmented filter */
+    var seg = $('.seg');
+    var thumb = $('.seg-thumb');
     var types = [];
     list.forEach(function (p) { if (types.indexOf(p.type) === -1) types.push(p.type); });
-    filterList.insertAdjacentHTML('beforeend',
-      '<button class="filter" type="button" data-filter="all" aria-pressed="true">All <sup>' + list.length + '</sup></button>' +
+    seg.insertAdjacentHTML('beforeend',
+      '<button type="button" data-filter="all" aria-pressed="true">All<span>' + list.length + '</span></button>' +
       types.map(function (t) {
         var n = list.filter(function (p) { return p.type === t; }).length;
-        return '<button class="filter" type="button" data-filter="' + t + '" aria-pressed="false">' + esc(D.typeLabels[t]) + ' <sup>' + n + '</sup></button>';
+        return '<button type="button" data-filter="' + t + '" aria-pressed="false">' + esc(D.typeLabels[t]) + '<span>' + n + '</span></button>';
       }).join(''));
 
-    function moveGlide(btn) {
-      glide.style.width = btn.offsetWidth + 'px';
-      glide.style.transform = 'translateX(' + btn.offsetLeft + 'px)';
-    }
-    function applyFilter(type) {
+    var moveThumb = function () {
+      var on = $('button[aria-pressed="true"]', seg);
+      thumb.style.width = on.offsetWidth + 'px';
+      thumb.style.transform = 'translateX(' + (on.offsetLeft - 3) + 'px)';
+    };
+    var applyFilter = function (type) {
       activeFilter = type;
+      $$('button', seg).forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-filter') === type ? 'true' : 'false'); });
+      moveThumb();
       var shown = 0;
-      $$('.filter', filterList).forEach(function (b) {
-        var on = b.getAttribute('data-filter') === type;
-        b.setAttribute('aria-pressed', on ? 'true' : 'false');
-        if (on) moveGlide(b);
-      });
-      $$('.card', track).concat($$('.ledger-row:not(.is-head)', ledger)).forEach(function (el) {
+      $$('.card', track).concat($$('.row', rows)).forEach(function (el) {
         var out = type !== 'all' && el.getAttribute('data-type') !== type;
         el.classList.toggle('is-out', out);
         if (!out && el.classList.contains('card')) shown += 1;
       });
-      $('#hud-total').textContent = pad(shown);
-      if (hasGsap) {
-        window.ScrollTrigger.refresh();
-        if (!reduceMotion) window.gsap.fromTo($$('.card:not(.is-out)', track), { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.9, ease: 'expo.out', stagger: 0.06 });
-      }
-      track.scrollTo && track.scrollTo({ left: 0 });
-    }
-    filterList.addEventListener('click', function (e) {
-      var b = e.target.closest('.filter');
+      hudTotal.textContent = pad(shown);
+      track.scrollLeft = 0;
+      setHud(0);
+      if (hasGsap) window.ScrollTrigger.refresh();
+    };
+    seg.addEventListener('click', function (e) {
+      var b = e.target.closest('button');
       if (b) applyFilter(b.getAttribute('data-filter'));
     });
-    requestAnimationFrame(function () { moveGlide($('.filter[aria-pressed="true"]', filterList)); });
-    window.addEventListener('resize', function () { moveGlide($('.filter[aria-pressed="true"]', filterList)); });
-    $('#hud-total').textContent = pad(list.length);
+    hudTotal.textContent = pad(list.length);
+    moveThumb();
+    window.addEventListener('resize', moveThumb);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(moveThumb);
 
-    /* view toggle */
-    $$('.view-toggle button').forEach(function (b) {
+    /* gallery / list */
+    $$('.views button').forEach(function (b) {
       b.addEventListener('click', function () {
-        var view = b.getAttribute('data-view');
-        document.body.classList.toggle('view-list', view === 'list');
-        $$('.view-toggle button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+        var listView = b.getAttribute('data-view') === 'list';
+        document.body.classList.toggle('view-list', listView);
+        $$('.views button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
         if (hasGsap) window.ScrollTrigger.refresh();
       });
     });
 
-    /* pinned gallery on desktop */
-    var gallery = $('#gallery');
-    var hudBar = $('.gallery-hud .bar-track i');
-    var hudNow = $('#hud-now');
-    pinHorizontal(gallery, $('.gallery-pin', gallery), track, hudBar, function (prog) {
-      var n = $$('.card:not(.is-out)', track).length;
-      hudNow.textContent = pad(Math.min(n, Math.max(1, Math.round(prog * (n - 1)) + 1)));
-    });
-    /* touch: update the HUD from native scroll */
-    track.addEventListener('scroll', function () {
-      var max = track.scrollWidth - track.clientWidth;
-      if (max <= 0) return;
-      var prog = track.scrollLeft / max;
-      hudBar.style.transform = 'scaleX(' + prog.toFixed(4) + ')';
-      var n = $$('.card:not(.is-out)', track).length;
-      hudNow.textContent = pad(Math.min(n, Math.round(prog * (n - 1)) + 1));
-    }, { passive: true });
-
-    /* opportunity art */
-    $$('[data-art]').forEach(function (el) { el.innerHTML = Art.render(el.getAttribute('data-art')); });
-
-    /* detail sheet + deep links (#gaylord etc.) */
-    initSheet(list);
-    $$('[data-sheet-step]').forEach(function (b) {
-      b.addEventListener('click', function () { step(Number(b.getAttribute('data-sheet-step'))); });
-    });
-    function fromHash() {
-      var id = location.hash.slice(1);
-      if (id && list.some(function (p) { return p.id === id; })) openSheet(id);
-    }
-    fromHash();
-    window.addEventListener('hashchange', fromHash);
+    pinHorizontal($('.gallery-pin'), track, setHud);
+    initSheet();
   }
 
   /* ---------------- boot ---------------- */
   wireLinks();
-  initSmoothScroll();
+  fillPlates();
   initNav();
-  initButtons();
   if (page === 'home') initHome();
   if (page === 'portfolio') initPortfolio();
-  initReveals();
   $$('[data-year]').forEach(function (el) { el.textContent = new Date().getFullYear(); });
   if (hasGsap) window.addEventListener('load', function () { window.ScrollTrigger.refresh(); });
 })();

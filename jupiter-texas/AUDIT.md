@@ -79,27 +79,26 @@ The platform is Wix. You can tell from `/post/…` blog URLs, the `copy-of-…` 
 
 The working build is in this folder (`index.html`, `portfolio.html`). The rules were: **same words, same figures, same links, rebuilt presentation.**
 
+### Direction (v2)
+White does the work; one deep blue carries every action and every drawing. The reference points are Apple's and Google's product pages: lots of white space, one typeface, few sizes, and nothing on the page that doesn't carry information.
+
+- **Colour:** white `#ffffff` and a cool off-white `#f5f6f8` for alternating bands; ink `#0f1729` for text, slate `#5a6478` for supporting text, hairlines `#e3e6ec`; deep blue `#0a2fa8` as the only accent.
+- **Type:** Instrument Sans, self-hosted. Normal width for reading, condensed width for the big figures (1:200, 15-20%). Sentence case throughout, no all-caps labels.
+- **Grid:** one 1200px column with the same side gutter on every section, 12 columns inside it. Every right-hand block starts on column 7. Horizontal tracks start on the same left edge as the text above them.
+- **Spacing:** 4px base (8, 12, 16, 24, 32, 48, 64, 96, 128). Sections are 128px apart on desktop, 88px on mobile.
+- **Imagery:** architect-style line drawings, one per asset class, in a single blue line weight with a dashed site boundary. They read as real-estate plates, not tech illustrations, and are replaced by property photos when those arrive.
+
 ### Structure
-- **Home now reads as an argument in sequence:** positioning → asset mix → returns compared with the S&P → buy/value-add/manage/sell → 1:200 + joint venture → live portfolio strip → who it's for → insights/careers → contact.
+- **Home reads as an argument in order:** positioning → asset mix → returns compared with the S&P → buy / value-add / manage / sell → 1:200 and the joint-venture structure → portfolio strip → who it's for → insights and careers → contact.
 - **Portfolio is the centre of the site:** owned properties, the current opportunity and a link to previous opportunities on one page, filterable by asset class.
-- **One main action everywhere:** "Contact Us" sits in the nav, in every property sheet and in the closing band. "Current Opportunities" is the second action.
-- Opportunities collapse into one nav dropdown (Current / Previous), so the nav stays readable.
+- **One main action everywhere:** "Contact Us" in the nav, in every property panel and at the end of each page. "Current Opportunities" is the second action.
+- Opportunities collapse into one nav dropdown (Current / Previous).
 
-### Design system
-- **Colour:** deep saturated blue (`#1d3bff` → `#0b1fa8`) on ink navy (`#040a2a`), with pale blue paper sections for reading. Only two accents are used: amber (Jupiter's bands) and cyan (glow and data highlights).
-- **Type:** Manrope for display, tight and heavy like Apple's or Google's marketing pages. Inter for body text and numbers.
-- **3D:** an animated banded planet in the hero (it is "Jupiter"), with orbiting moons that follow the cursor, plus isometric 3D models for each asset class (medical tower, retail strip, business park, gas station, homes, day care). The models stand in until real property photos are added.
-
-### Motion and interaction
-- A floating glass nav that condenses on scroll, hides while reading and returns on scroll-up. A highlight glides between links on hover. On mobile it opens a full-screen menu with a circular reveal and staggered links.
-- Smooth scrolling (Lenis) with scroll-linked animation (GSAP ScrollTrigger).
-- **Horizontal scrolling** in two places, the process steps on Home and the property gallery on Portfolio. Both pin, and vertical scroll drives the sideways movement. On phones both become native swipe carousels.
-- 3D tilt cards with a light glare that follows the cursor.
-- Portfolio filter chips with a sliding pill, a Gallery/List toggle, a list view with a preview that follows the cursor, and a property detail sheet with next/previous arrows (keyboard arrows work too). Each property has its own deep link (e.g. `portfolio.html#grapevine`).
-- Animated returns bars, and a 200-dot grid that scans and picks 1. It shows the 1:200 ratio instead of just stating it.
-- All motion respects `prefers-reduced-motion`. Every section still reads correctly with JavaScript off.
-
----
+### Motion (kept to three places)
+- The hero drawing draws itself once on load, line by line.
+- The nav bar is clear over the hero and turns frosted white with a hairline once you scroll; it slides away while you read and returns when you scroll up. A thin blue rule slides to whichever link you point at.
+- The Portfolio gallery pins on desktop and moves sideways as you scroll, with a progress readout. On phones it becomes a swipe carousel.
+- Everything responds to `prefers-reduced-motion`, and every section reads correctly with JavaScript off.
 
 ## 6. Recommended content fixes (not applied, since the brief was to keep content as is)
 

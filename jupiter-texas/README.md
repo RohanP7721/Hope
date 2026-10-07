@@ -8,7 +8,7 @@ A modern rebuild of www.jupitertexas.com. It's plain HTML, CSS and JS, with no b
 
 ## Run it
 
-Open `index.html` in a browser, or serve the folder:
+Double-click `index.html` in this folder (or `OPEN-JUPITER-TEXAS.html` in the repository root). Everything, fonts included, is local, so it works straight from Finder. Or serve the folder:
 
 ```
 python3 -m http.server 8000
@@ -22,12 +22,13 @@ python3 -m http.server 8000
 | All copy, figures and link URLs | `assets/js/content.js` |
 | Styles (colours are tokens at the top) | `assets/css/jt.css` |
 | Interactions and animation | `assets/js/main.js` |
-| 3D isometric property art | `assets/js/art.js` |
-| GSAP, ScrollTrigger, Lenis (vendored) | `assets/vendor/` |
+| Architectural line drawings | `assets/js/art.js` |
+| GSAP + ScrollTrigger (vendored, Portfolio page only) | `assets/vendor/` |
+| Instrument Sans font (self-hosted, SIL Open Font License) | `assets/fonts/` |
 
 **To add a property:** add an entry to `properties` in `content.js`. The gallery, list view, filters, counts and detail sheet all update on their own.
 
-**To use a real photo instead of the 3D art:** add `image: 'assets/img/your-photo.jpg'` to that property.
+**To use a real photo instead of the line drawing:** add `image: 'assets/img/your-photo.jpg'` to that property.
 
 **To deep-link a property:** use `portfolio.html#<id>`, for example `portfolio.html#grapevine`.
 
