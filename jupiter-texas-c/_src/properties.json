@@ -1,0 +1,1058 @@
+{
+ "cash": [
+  {
+   "title": [
+    "Lake Cardiology Center,",
+    "Orlando MSA, FL"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$3.37M"
+    },
+    {
+     "label": "Projected Annual Cash On Cash*",
+     "value": "9%"
+    },
+    {
+     "label": "Forecasted Annual Return*",
+     "value": "19%"
+    }
+   ],
+   "img": "assets/img/props/lake-cardiology-center-orlando-msa-fl.jpg"
+  },
+  {
+   "title": [
+    "Truman Retail Center, Excelsior Springs, MO"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$2.2M"
+    },
+    {
+     "label": "Projected Annual Cash On Cash*",
+     "value": "9%"
+    },
+    {
+     "label": "Forecasted Annual Return*",
+     "value": "16-19%"
+    }
+   ],
+   "img": "assets/img/props/truman-retail-center-excelsior-springs-mo.jpg"
+  },
+  {
+   "title": [
+    "Fresenius Medical Care Center,",
+    "Norton, VA"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$2.4M"
+    },
+    {
+     "label": "Projected Annual Cash On Cash*",
+     "value": "9%"
+    },
+    {
+     "label": "Forecasted Annual Return*",
+     "value": "19%"
+    }
+   ],
+   "img": "assets/img/props/fresenius-medical-care-center-norton-va.jpg"
+  },
+  {
+   "title": [
+    "Kids Education & Therapy Center Palatine - Chicago MSA, IL"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$5M"
+    },
+    {
+     "label": "Projected Annual Cash On Cash*",
+     "value": "11%"
+    },
+    {
+     "label": "Forecasted Annual Return*",
+     "value": "20%"
+    }
+   ],
+   "img": "assets/img/props/kids-education-therapy-center-palatine-chicago-msa-il.jpg"
+  },
+  {
+   "title": [
+    "Great Expression Dental Center, Pontiac, MI"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$0.79M"
+    },
+    {
+     "label": "Projected Annual Cash On Cash*",
+     "value": "9%"
+    },
+    {
+     "label": "Forecasted Annual Return*",
+     "value": "19%"
+    }
+   ],
+   "img": "assets/img/props/great-expression-dental-center-pontiac-mi.jpg"
+  },
+  {
+   "title": [
+    "Akron Medical Center, Akron, OH"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$2.4M"
+    },
+    {
+     "label": "Projected Annual Cash On Cash*",
+     "value": "8-10%"
+    },
+    {
+     "label": "Forecasted Annual Return*",
+     "value": "15-20%"
+    }
+   ],
+   "img": "assets/img/props/akron-medical-center-akron-oh.jpg"
+  },
+  {
+   "title": [
+    "Multi- Tenant Medical Building,",
+    "Hanover, PA"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$1.2M"
+    },
+    {
+     "label": "Projected Annual Cash On Cash*",
+     "value": "9-10%"
+    },
+    {
+     "label": "Forecasted Annual Return*",
+     "value": "17-19%"
+    }
+   ],
+   "img": "assets/img/props/multi-tenant-medical-building-hanover-pa.jpg"
+  },
+  {
+   "title": [
+    "Emery Medical Center, Castle Dale, UT"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$1.7M"
+    },
+    {
+     "label": "Projected Annual Cash On Cash*",
+     "value": "8-10%"
+    },
+    {
+     "label": "Forecasted Annual Return*",
+     "value": "16-20%"
+    }
+   ],
+   "img": "assets/img/props/emery-medical-center-castle-dale-ut.jpg"
+  },
+  {
+   "title": [
+    "Delaware Eyecare Center, Dover, DE"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$4.69M"
+    },
+    {
+     "label": "Projected Annual Cash On Cash*",
+     "value": "9.5-12%"
+    },
+    {
+     "label": "Forecasted Annual Return*",
+     "value": "16-20%"
+    }
+   ],
+   "img": "assets/img/props/delaware-eyecare-center-dover-de.jpg"
+  },
+  {
+   "title": [
+    "SQRL Gas Station & Convenience Store, Fayetteville, AR"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$1.70M"
+    },
+    {
+     "label": "Projected Annual Cash On Cash*",
+     "value": "10%"
+    },
+    {
+     "label": "Forecasted Annual Return*",
+     "value": "20-25%"
+    }
+   ],
+   "img": "assets/img/props/sqrl-gas-station-convenience-store-fayetteville-ar.jpg"
+  },
+  {
+   "title": [
+    "St. Clairsville - Ortho Alliance, OH"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$1.7M"
+    },
+    {
+     "label": "Projected Annual Cash On Cash*",
+     "value": "7.5-9%"
+    },
+    {
+     "label": "Forecasted Annual Return*",
+     "value": "16-18%"
+    }
+   ],
+   "img": "assets/img/props/st-clairsville-ortho-alliance-oh.jpg"
+  },
+  {
+   "title": [
+    "Cleveland Clinic Express Care,Madision, OH"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$1.56M"
+    },
+    {
+     "label": "Projected Annual Cash On Cash*",
+     "value": "9%"
+    },
+    {
+     "label": "Forecasted Annual Return*",
+     "value": "18-20%"
+    }
+   ],
+   "img": "assets/img/props/cleveland-clinic-express-care-madision-oh.jpg"
+  },
+  {
+   "title": [
+    "Central Ohio Primary Care, Westerville, OH"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$3.5M"
+    },
+    {
+     "label": "Projected Annual Cash On Cash*",
+     "value": "9%"
+    },
+    {
+     "label": "Forecasted Annual Return*",
+     "value": "18-20%"
+    }
+   ],
+   "img": "assets/img/props/central-ohio-primary-care-westerville-oh.jpg"
+  },
+  {
+   "title": [
+    "Gateway Retail Cum Medical Home Depot Shadow, Ontario, OH"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$2M"
+    },
+    {
+     "label": "Projected Annual Cash On Cash*",
+     "value": "8-11%"
+    },
+    {
+     "label": "Forecasted Annual Return*",
+     "value": "16-19%"
+    }
+   ],
+   "img": "assets/img/props/gateway-retail-cum-medical-home-depot-shadow-ontario-oh.jpg"
+  },
+  {
+   "title": [
+    "Health Park South, Battle Creek, MI"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$4.7M"
+    },
+    {
+     "label": "Projected Annual Cash On Cash*",
+     "value": "8-10%"
+    },
+    {
+     "label": "Forecasted Annual Return*",
+     "value": "19%"
+    }
+   ],
+   "img": "assets/img/props/health-park-south-battle-creek-mi.jpg"
+  },
+  {
+   "title": [
+    "Lee Eye Center - Calcutta, OH"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$7.7M"
+    },
+    {
+     "label": "Projected Annual Cash On Cash*",
+     "value": "9-10%"
+    },
+    {
+     "label": "Forecasted Annual Return*",
+     "value": "18%"
+    }
+   ],
+   "img": "assets/img/props/lee-eye-center-calcutta-oh.jpg"
+  },
+  {
+   "title": [
+    "Lee Eye Care Center Weirton, WV"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$1.4M"
+    },
+    {
+     "label": "Projected Annual Cash On Cash*",
+     "value": "9.4%"
+    },
+    {
+     "label": "Forecasted Annual Return*",
+     "value": "18.5%"
+    }
+   ],
+   "img": "assets/img/props/lee-eye-care-center-weirton-wv.jpg"
+  },
+  {
+   "title": [
+    "Village Medical (CVS Walgreens) Cumberland, RI"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$3.8M"
+    },
+    {
+     "label": "Projected Annual Cash On Cash*",
+     "value": "9-12%"
+    },
+    {
+     "label": "Forecasted Annual Return*",
+     "value": "16-20%"
+    }
+   ],
+   "img": "assets/img/props/village-medical-cvs-walgreens-cumberland-ri.jpg"
+  },
+  {
+   "title": [
+    "Doctors of Optometry",
+    "Cleveland, OH"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$1.5M"
+    },
+    {
+     "label": "Projected Annual Cash On Cash*",
+     "value": "10%"
+    },
+    {
+     "label": "Forecasted Annual Return*",
+     "value": "21%"
+    }
+   ],
+   "img": "assets/img/props/doctors-of-optometry-cleveland-oh.jpg"
+  },
+  {
+   "title": [
+    "Mary Washington Orthopedic Hospital, Fredericksburg, VA"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$4.5M"
+    },
+    {
+     "label": "Projected Annual Cash On Cash*",
+     "value": "9%"
+    },
+    {
+     "label": "Forecasted Annual Return*",
+     "value": "19%"
+    }
+   ],
+   "img": "assets/img/props/mary-washington-orthopedic-hospital-fredericksburg-va.jpg"
+  },
+  {
+   "title": [
+    "Jupiter Franklin Retail Park, Chicago, IL"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$4.7M"
+    },
+    {
+     "label": "Projected Annual Cash On Cash*",
+     "value": "8-10%"
+    },
+    {
+     "label": "Forecasted Annual Return*",
+     "value": "19%"
+    }
+   ],
+   "img": "assets/img/props/jupiter-franklin-retail-park-chicago-il.jpg"
+  },
+  {
+   "title": [
+    "Medical Eye-Care Building,",
+    "Hermitage, PA"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$1.4M"
+    },
+    {
+     "label": "Projected Annual Cash On Cash*",
+     "value": "9.50%"
+    },
+    {
+     "label": "Forecasted Annual Return*",
+     "value": "18-20%"
+    }
+   ],
+   "img": "assets/img/props/medical-eye-care-building-hermitage-pa.jpg"
+  },
+  {
+   "title": [
+    "Mclauren Cardilogy and Medical Building, Gaylord, MI"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$3.3M"
+    },
+    {
+     "label": "Projected Annual Cash On Cash*",
+     "value": "9%"
+    },
+    {
+     "label": "Forecasted Annual Return*",
+     "value": "18-20%"
+    }
+   ],
+   "img": "assets/img/props/mclauren-cardilogy-and-medical-building-gaylord-mi.jpg"
+  },
+  {
+   "title": [
+    "Grapevine Mustang Business Park, TX"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$4M"
+    },
+    {
+     "label": "Projected Annual Cash On Cash*",
+     "value": "7%"
+    },
+    {
+     "label": "Forecasted Annual Return*",
+     "value": "25%"
+    }
+   ],
+   "img": "assets/img/props/grapevine-mustang-business-park-tx.jpg"
+  },
+  {
+   "title": [
+    "Walmart Shadow Retail StripMall, Oaks Crossing,MI"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$2.25M"
+    },
+    {
+     "label": "Projected Annual Cash On Cash*",
+     "value": "10%"
+    },
+    {
+     "label": "Forecasted Annual Return*",
+     "value": "25%"
+    }
+   ],
+   "img": "assets/img/props/walmart-shadow-retail-stripmall-oaks-crossing-mi.jpg"
+  },
+  {
+   "title": [
+    "Medical & Office Center, Joliet, IL"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$940K"
+    },
+    {
+     "label": "Projected Annual Cash On Cash*",
+     "value": "9-11%"
+    },
+    {
+     "label": "Forecasted Annual Return*",
+     "value": "19%"
+    }
+   ],
+   "img": "assets/img/props/medical-office-center-joliet-il.jpg"
+  },
+  {
+   "title": [
+    "Orchard Plaza, Tractor Supply Anchor, Grand Rapids, MI"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$5.82M"
+    },
+    {
+     "label": "Projected Annual Cash On Cash*",
+     "value": "9-12%"
+    },
+    {
+     "label": "Forecasted Annual Return*",
+     "value": "20%"
+    }
+   ],
+   "img": "assets/img/props/orchard-plaza-tractor-supply-anchor-grand-rapids-mi.jpg"
+  },
+  {
+   "title": [
+    "Walmart Shadowed Retail Mall, Plymouth, IN"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$3.6M"
+    },
+    {
+     "label": "Projected Annual Cash On Cash*",
+     "value": "8-10%"
+    },
+    {
+     "label": "Forecasted Annual Return*",
+     "value": "19%"
+    }
+   ],
+   "img": "assets/img/props/walmart-shadowed-retail-mall-plymouth-in.jpg"
+  },
+  {
+   "title": [
+    "Poplar Plaza Retail Strip Mall, Louisville, KY"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$3.8M"
+    },
+    {
+     "label": "Projected Annual Cash On Cash*",
+     "value": "10%"
+    },
+    {
+     "label": "Forecasted Annual Return*",
+     "value": "21%"
+    }
+   ],
+   "img": "assets/img/props/medical-office-center-joliet-il.jpg"
+  },
+  {
+   "title": [
+    "Oakland Surgery Center, Rochester Hills, MI"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$3.6M"
+    },
+    {
+     "label": "Projected Annual Cash On Cash*",
+     "value": "8-10%"
+    },
+    {
+     "label": "Forecasted Annual Return*",
+     "value": "21%"
+    }
+   ],
+   "img": "assets/img/props/oakland-surgery-center-rochester-hills-mi.jpg"
+  },
+  {
+   "title": [
+    "SFR Oklahoma City, OK"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$9.9M"
+    },
+    {
+     "label": "Projected Annual Cash On Cash*",
+     "value": "9.30%"
+    },
+    {
+     "label": "Forecasted Annual Return*",
+     "value": "18-20%"
+    }
+   ],
+   "img": "assets/img/props/sfr-oklahoma-city-ok.jpg"
+  }
+ ],
+ "dev": [
+  {
+   "title": [
+    "Chalk Hill Apartments, Celina, TX"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$70M"
+    },
+    {
+     "label": "Number Of Units",
+     "value": "300units"
+    }
+   ],
+   "img": "assets/img/props/chalk-hill-apartments-celina-tx.jpg"
+  },
+  {
+   "title": [
+    "Round Rock Multi-family, Austin, TX"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$131M"
+    },
+    {
+     "label": "Number Of Units",
+     "value": "400 units"
+    }
+   ],
+   "img": "assets/img/props/round-rock-multi-family-austin-tx.jpg"
+  },
+  {
+   "title": [
+    "5.5 Acres Land in Del Valle, Austin, TX"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$2M"
+    },
+    {
+     "label": "Forecasted Annual Return*",
+     "value": "40%"
+    }
+   ],
+   "img": "assets/img/props/5-5-acres-land-in-del-valle-austin-tx.jpg"
+  },
+  {
+   "title": [
+    "285-Acre Lake Facing Residential Lots,Montechino, Lake Travis, TX"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$30M"
+    }
+   ],
+   "img": "assets/img/props/285-acre-lake-facing-residential-lots-montechino-lake-travis.jpg"
+  },
+  {
+   "title": [
+    "17 Single Family Homes in Anacapri Community, Anna, TX"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$7.1M"
+    },
+    {
+     "label": "Number Of Units",
+     "value": "17 Homes"
+    }
+   ],
+   "img": "assets/img/props/17-single-family-homes-in-anacapri-community-anna-tx.jpg"
+  },
+  {
+   "title": [
+    "25 Single Family Homes in Sicily Community, Princeton, TX"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$10.8M"
+    },
+    {
+     "label": "Number Of Homes",
+     "value": "25 Homes"
+    }
+   ],
+   "img": "assets/img/props/25-single-family-homes-in-sicily-community-princeton-tx.jpg"
+  },
+  {
+   "title": [
+    "The Learning Experience Daycare, Leander, TX"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$4.6M"
+    },
+    {
+     "label": "Forecasted Annual Return*",
+     "value": "14-16%"
+    }
+   ],
+   "img": "assets/img/props/the-learning-experience-daycare-leander-tx.jpg"
+  },
+  {
+   "title": [
+    "6.4- Acer Corner Lot, Cumming, GA"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$445K"
+    },
+    {
+     "label": "Realized Annual Return",
+     "value": "33%"
+    }
+   ],
+   "img": "assets/img/props/6-4-acer-corner-lot-cumming-ga.jpg"
+  },
+  {
+   "title": [
+    "Mixed Use Medical Building, Hebron, TX"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$4.2M"
+    },
+    {
+     "label": "Realized Annual Return",
+     "value": "30%"
+    }
+   ],
+   "img": "assets/img/props/mixed-use-medical-building-hebron-tx.jpg"
+  }
+ ],
+ "previous": [
+  {
+   "title": [
+    "Mclauren Cardilogy and Medical Building, Gaylord, Michigan"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$3.3M"
+    },
+    {
+     "label": "Annual cash on cash",
+     "value": "9%"
+    },
+    {
+     "label": "Forecasted Annual Return",
+     "value": "18-20%+"
+    }
+   ],
+   "img": "assets/img/props/mclauren-cardilogy-and-medical-building-gaylord-mi.jpg"
+  },
+  {
+   "title": [
+    "Medical Eye-Care Building,",
+    "Hermitage, PA"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$1.4M"
+    },
+    {
+     "label": "Annual cash on cash",
+     "value": "9%"
+    },
+    {
+     "label": "Forecasted Annual Return",
+     "value": "18-20%+"
+    }
+   ],
+   "img": "assets/img/props/medical-eye-care-building-hermitage-pa.jpg"
+  },
+  {
+   "title": [
+    "Walmart Shadowed Retail Mall, Plymouth, IN"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$3.6M"
+    },
+    {
+     "label": "Yearly Cash on Cash",
+     "value": "8-10%"
+    },
+    {
+     "label": "Annual Forecasted Return",
+     "value": "19%"
+    }
+   ],
+   "img": "assets/img/props/walmart-shadowed-retail-mall-plymouth-in.jpg"
+  },
+  {
+   "title": [
+    "Grapevine"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$4M"
+    },
+    {
+     "label": "Forecasted Annual Return",
+     "value": "25%"
+    },
+    {
+     "label": "Annual Cash on Cash",
+     "value": "7%"
+    }
+   ],
+   "img": "assets/img/props/grapevine.jpg"
+  },
+  {
+   "title": [
+    "Poplar Plaza Retail Strip Mall, Louisville, KY"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$3.8M"
+    },
+    {
+     "label": "Annual cash on cash",
+     "value": "10%"
+    },
+    {
+     "label": "Forecasted Annual Return",
+     "value": "21%"
+    }
+   ],
+   "img": "assets/img/props/poplar-plaza-retail-strip-mall-louisville-ky.jpg"
+  },
+  {
+   "title": [
+    "Mary Washington Orthopedic Hospital"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$4.52M"
+    },
+    {
+     "label": "Forecasted Annual Return",
+     "value": "20%"
+    },
+    {
+     "label": "Annual Cash on Cash",
+     "value": "9%"
+    }
+   ],
+   "img": "assets/img/props/mary-washington-orthopedic-hospital-fredericksburg-va.jpg"
+  },
+  {
+   "title": [
+    "Orchard Plaza,",
+    "Tractor Supply Anchor,",
+    "Grand Rapids, MI"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$5.75M"
+    },
+    {
+     "label": "Cash on Cash",
+     "value": "8-10%"
+    },
+    {
+     "label": "Forecasted Annual Return",
+     "value": "20%"
+    }
+   ],
+   "img": "assets/img/props/orchard-plaza-tractor-supply-anchor-grand-rapids-mi.jpg"
+  },
+  {
+   "title": [
+    "Medical & Office Center,",
+    "Joliet, IL"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$940K"
+    },
+    {
+     "label": "Annual cash on cash",
+     "value": "9-11%"
+    },
+    {
+     "label": "Forecasted Annual Return",
+     "value": "19%"
+    }
+   ],
+   "img": "assets/img/props/medical-office-center-joliet-il.jpg"
+  },
+  {
+   "title": [
+    "Oaks Crossing, MI"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$2.25M"
+    },
+    {
+     "label": "Forecasted Annual Return",
+     "value": "25%+"
+    },
+    {
+     "label": "Annual Cash on Cash",
+     "value": "10%"
+    }
+   ],
+   "img": "assets/img/props/oaks-crossing-mi.jpg"
+  },
+  {
+   "title": [
+    "Oakland Surgery Center,  Rochester Hills, MI"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$3.6M"
+    },
+    {
+     "label": "Cash on Cash",
+     "value": "8-10%"
+    },
+    {
+     "label": "Forecasted Annual Return",
+     "value": "21%"
+    }
+   ],
+   "img": "assets/img/props/oakland-surgery-center-rochester-hills-mi.jpg"
+  },
+  {
+   "title": [
+    "Lee Eye Center Hermitage"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$1.4M"
+    },
+    {
+     "label": "Annual cash on cash",
+     "value": "9%"
+    },
+    {
+     "label": "Forecasted Annual Return",
+     "value": "18-20%"
+    }
+   ],
+   "img": "assets/img/props/lee-eye-center-hermitage.jpg"
+  },
+  {
+   "title": [
+    "Franklin retail park"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$4.68M"
+    },
+    {
+     "label": "Forecasted Annual Return",
+     "value": "18-21%"
+    },
+    {
+     "label": "Annual Cash on Cash",
+     "value": "8%"
+    }
+   ],
+   "img": "assets/img/props/franklin-retail-park.jpg"
+  },
+  {
+   "title": [
+    "Jupiter Cumberland Medical Center"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$3.8M"
+    },
+    {
+     "label": "Cash on Cash",
+     "value": "12%"
+    },
+    {
+     "label": "Forecasted Annual Return",
+     "value": "16-20%"
+    }
+   ],
+   "img": "assets/img/props/jupiter-cumberland-medical-center.jpg"
+  },
+  {
+   "title": [
+    "Jewel-Osco shadowed Retail and Medical Strip Mall,",
+    "Chicago, IL"
+   ],
+   "stats": [
+    {
+     "label": "Purchase Price",
+     "value": "$4.7M"
+    },
+    {
+     "label": "Annual cash on cash",
+     "value": "9-11%"
+    },
+    {
+     "label": "Forecasted Annual Return",
+     "value": "20%"
+    }
+   ],
+   "img": "assets/img/props/walmart-shadowed-retail-mall-plymouth-in.jpg"
+  }
+ ]
+}
