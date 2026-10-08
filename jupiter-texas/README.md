@@ -1,52 +1,52 @@
 # Jupiter Texas: website redesign
 
-A modern rebuild of www.jupitertexas.com. It's plain HTML, CSS and JS, with no build step.
+This is a redesign of www.jupitertexas.com. The text, figures and links are the same as the live site; only the design, layout, imagery and scroll motion are new.
 
-- `index.html`: Home
-- `portfolio.html`: Portfolio (the main piece: horizontal gallery, filters, list view, property sheets)
-- `AUDIT.md`: the site audit, its flaws and the redesign rationale
+It's plain HTML, CSS and JS. Every file is local, so double-clicking `index.html` in Finder opens the site.
 
-## Run it
+## Pages
 
-Double-click `index.html` in this folder (or `OPEN-JUPITER-TEXAS.html` in the repository root). Everything, fonts included, is local, so it works straight from Finder. Or serve the folder:
-
-```
-python3 -m http.server 8000
-# then open http://localhost:8000
-```
-
-## Where things live
-
-| What | File |
+| File | Live page |
 |---|---|
-| All copy, figures and link URLs | `assets/js/content.js` |
-| Styles (colours are tokens at the top) | `assets/css/jt.css` |
-| Interactions and animation | `assets/js/main.js` |
-| Architectural line drawings | `assets/js/art.js` |
-| GSAP + ScrollTrigger (vendored, Portfolio page only) | `assets/vendor/` |
-| Instrument Sans font (self-hosted, SIL Open Font License) | `assets/fonts/` |
+| `index.html` | `/` Home |
+| `who-we-are.html` | `/who-we-are` |
+| `who-are-our-investors.html` | `/who-are-our-investors` |
+| `strategy.html` | `/strategy` |
+| `portfolio.html` | `/portfolios` (Cash On Cash Properties + Development Projects) |
+| `current-opportunities.html` | `/current-opportunities` |
+| `previous-opportunities.html` | `/copy-of-current-opportunities` |
+| `faqs.html` | `/faqs` |
+| `contact-us.html` | `/contactus` |
+| `learn.html` | `/contact` ("Learn More", with the embedded AppFolio form) |
+| `insights.html` | `/blog` |
 
-**To add a property:** add an entry to `properties` in `content.js`. The gallery, list view, filters, counts and detail sheet all update on their own.
+These stay as links to the live site or a third-party service, because they are hosted elsewhere:
 
-**To use a real photo instead of the line drawing:** add `image: 'assets/img/your-photo.jpg'` to that property.
+- Careers (`/job-board`) and the four blog posts.
+- AppFolio "Join" / "Investor Login".
+- The webinar registration and recording links.
 
-**To deep-link a property:** use `portfolio.html#<id>`, for example `portfolio.html#grapevine`.
+## Editing
 
-## Links
+The pages are generated. Don't edit the `.html` files by hand. Edit the source and rebuild:
 
-Home and Portfolio are rebuilt here. Every other nav item points to the existing page on www.jupitertexas.com, at the same URL as today:
-Who We Are, Strategy, Current Opportunities (`/lead-collection`), Previous Opportunities (`/copy-of-current-opportunities`), Investors, Insights (`/blog`), Careers (`/job-board`) and Contact Us (`/contactus`).
-The email, both phone numbers, LinkedIn and Facebook come from the live site or the company's own profiles.
+```
+python3 _src/build.py
+```
 
-## Content check (do this before launch)
+| What | Where |
+|---|---|
+| Page copy, nav, footer, links | `_src/build.py` |
+| Property cards (title, figures, photo) | `_src/properties.json` |
+| Styles (colour tokens at the top) | `assets/css/site.css` |
+| Interactions and scroll animation | `assets/js/site.js` |
+| Photos | `assets/img/site/`, `assets/img/props/` |
+| Font (Instrument Sans, SIL OFL) | `assets/fonts/` |
 
-The live site couldn't be loaded from the build environment, so copy and figures were collected from the site's search-indexed pages. Check `content.js` against the live site:
+**To add a property:** add an entry to the right list (`cash`, `dev` or `previous`) in `_src/properties.json`, drop its photo in `assets/img/props/`, then rebuild.
 
-- [ ] Property list on `/portfolios` matches. Add any property that's missing; the Orlando-area cardiology center turned up in one search result but couldn't be confirmed.
-- [ ] Figures for each property (price, cash-on-cash, forecast)
-- [ ] Current opportunity: Oklahoma City, $9.92M, 20–24%, 5–6 years
-- [ ] Which phone number is current: 5175 or 5148
-- [ ] Facebook and LinkedIn links match what the live site uses
-- [ ] Real property photos added to `assets/img/`
+## Known differences from the live site
 
-Section labels and button text ("Explore the Portfolio", "View details", "Scroll to explore" and the like) are new interface text. Everything else is the site's own wording.
+- **Forms.** The Contact Us form and the newsletter form can't post to Wix's backend from a static site. On submit, each one opens the visitor's email app with a message to info@jupitertexas.com. Connect them to a real form handler at launch.
+- **Blog widgets.** The blog's view and like counters and the Wix chat bubble are Wix widgets, so they aren't reproduced.
+- **Phone link.** On the live site the phone number shows as +1 (940) 331-5175, but its `tel:` link dials 331-6222. This build uses 5175 for both. Confirm which number is correct.
