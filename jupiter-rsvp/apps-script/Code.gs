@@ -113,6 +113,17 @@ function rsvpLinks_(guest) {
     poster: CONFIG.POSTER_SRC
   };
   links.yes = links.party[0].href;
+  links.oneTap = false;
+
+  // With the Tracking link in Settings, every button is a one-tap link: tap and it's saved.
+  if (CONFIG.API_URL) {
+    var base = CONFIG.API_URL + '?t=' + encodeURIComponent(guest.token) + '&r=';
+    links.party.forEach(function (p, i) { p.href = base + 'yes&n=' + CONFIG.PARTY_OPTIONS[i].size.replace('+', 'p'); });
+    links.yes = links.party[0].href;
+    links.maybe = base + 'maybe';
+    links.no = base + 'no';
+    links.oneTap = true;
+  }
   return links;
 }
 
@@ -205,7 +216,8 @@ function rsvpButtons_(links, which) {
     : button_(links.no, which === 'yes-reminder' ? 'Plans changed? Let us know' : 'Can&rsquo;t make it', false);
   html += buttonRow_(others);
   html += '<div style="font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:20px;color:' + EMAIL_COLORS.muted + ';padding:20px 0 0;">' +
-    'Each button opens a ready-made reply. Just press <strong style="color:' + EMAIL_COLORS.ink + ';">Send</strong>.</div>';
+    (links.oneTap ? 'One tap is all it takes. Your calendar invite follows automatically.'
+      : 'Each button opens a ready-made reply. Just press <strong style="color:' + EMAIL_COLORS.ink + ';">Send</strong>.') + '</div>';
   return html;
 }
 
@@ -538,6 +550,7 @@ function doGet(e) {
     switch (p.api) {
       case 'o': trackOpen_(p.t); return ContentService.createTextOutput('');
     }
+    if (p.r) return tapPage_(p.t, p.r, p.n);
   } catch (err) {
     console.error(err);
     return ContentService.createTextOutput('');
@@ -550,6 +563,90 @@ function doGet(e) {
     .setTitle('Jupiter Holiday Party · RSVPs')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
+
+/**
+ * The small confirmation shown after an investor taps a button in the email.
+ * The answer is saved by the page's script, not by simply opening the link, so email security
+ * scanners that pre-open every link in an email can't register a fake RSVP.
+ */
+function tapPage_(token, action, size) {
+  loadSettings_();
+  var boot = {
+    t: String(token || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 40),
+    r: ['yes', 'maybe', 'no'].indexOf(String(action).toLowerCase()) !== -1 ? String(action).toLowerCase() : '',
+    n: ['1', '2', '3', '4p'].indexOf(String(size)) !== -1 ? String(size) : '',
+    base: CONFIG.API_URL
+  };
+  var e = CONFIG.EVENT;
+  var html = TAP_PAGE_HTML
+    .replace('__BOOT__', JSON.stringify(boot))
+    .replace(/__DATE__/g, escapeHtml_(e.DATE_LABEL)).replace(/__TIME__/g, escapeHtml_(e.TIME_LABEL))
+    .replace(/__VENUE__/g, escapeHtml_(e.VENUE_NAME)).replace(/__ADDRESS__/g, escapeHtml_(e.VENUE_ADDRESS))
+    .replace(/__MAP__/g, e.MAP_URL);
+  return HtmlService.createHtmlOutput(html)
+    .setTitle('RSVP · The Jupiter Texas Holiday Party')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
+/** Called by the confirmation page. Public on purpose: it only works with the guest's private token. */
+function tapRsvp(token, action, size) {
+  var result = handleRsvp_(token, action);
+  if (!result.ok || action !== 'yes' || !size) return result;
+  var party = size === '4p' ? '4+' : size;
+  if (['1', '2', '3', '4+'].indexOf(party) === -1) return result;
+  result.partySize = party;
+  if (token !== TEST_TOKEN) {
+    var found = findGuestByToken_(token);
+    if (found) setCells_(found.sheet, found.col, found.guest.row, { 'Party Size': party });
+  }
+  return result;
+}
+
+var TAP_PAGE_HTML = [
+'<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">',
+'<style>',
+'  body{margin:0;background:#0B1330;color:#fff;font:16px/1.55 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh}',
+'  .page{max-width:480px;margin:0 auto;padding:36px 20px 48px}',
+'  .brand{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:#B7BED6}.brand b{color:#fff}.brand i{font-style:normal;color:#F2B01E}',
+'  .icon{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;background:rgba(242,176,30,.14);border:1px solid rgba(242,176,30,.4);margin:36px 0 20px;font-size:24px;color:#F2B01E}',
+'  h1{font-family:"Playfair Display",Georgia,serif;font-weight:500;font-size:38px;line-height:1.15;margin:0}h1 em{font-style:normal;color:#F2B01E}',
+'  .lede{color:#B7BED6;font-size:17px;margin:14px 0 0}',
+'  .card{margin-top:28px;background:#121C40;border:1px solid #26305A;border-radius:16px;padding:20px}',
+'  .k{font-weight:500}.v{color:#B7BED6;font-size:14px}.v a{color:#B7BED6}.row+.row{margin-top:14px}',
+'  .change{margin-top:28px;text-align:center;color:#8890AE;font-size:14px;line-height:2}.change a{color:#B7BED6;margin:0 6px}',
+'  .spin{width:28px;height:28px;border:2.5px solid #26305A;border-top-color:#F2B01E;border-radius:50%;animation:s .8s linear infinite;margin:90px auto 16px}',
+'  @keyframes s{to{transform:rotate(360deg)}}.c{text-align:center;color:#B7BED6}',
+'</style>',
+'<main class="page"><div class="brand"><b>Jupiter Texas</b> · <i>Holiday Party</i></div><div id="view"><div class="spin"></div><p class="c">Saving your RSVP…</p></div></main>',
+'<script>',
+'(function(){',
+'  var B = __BOOT__, view = document.getElementById("view");',
+'  function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;","\\"":"&quot;"}[c];});}',
+'  function link(r,n,label){return \'<a target="_top" href="\'+B.base+"?t="+B.t+"&r="+r+(n?"&n="+n:"")+\'">\'+label+"</a>";}',
+'  var details = \'<div class="card"><div class="row"><div class="k">__DATE__</div><div class="v">__TIME__</div></div>\' +',
+'    \'<div class="row"><div class="k">__VENUE__</div><div class="v"><a target="_blank" href="__MAP__">__ADDRESS__</a></div></div></div>\';',
+'  function show(d){',
+'    var name = esc(d.firstName), party = {"1":"just you","2":"2 people","3":"3 people","4+":"4 or more"}[d.partySize];',
+'    var change = \'<div class="change">Change your answer:<br>\' + link("yes","1","Just me") + link("yes","2","Me +1") + link("yes","3","Me +2") +',
+'      link("yes","4p","Me +3 or more") + "<br>" + link("maybe","","Maybe") + link("no","","Can\\\'t make it") + "</div>";',
+'    if (d.rsvp === "Yes") view.innerHTML = \'<div class="icon">✓</div><h1>You\\\'re in, <em>\'+name+"</em>.</h1>" +',
+'      \'<p class="lede">We\\\'re planning for \'+(party||"you")+". A calendar invite is on its way to your email. You can close this page.</p>" + details + change;',
+'    else if (d.rsvp === "Maybe") view.innerHTML = \'<div class="icon">✓</div><h1>We\\\'ve pencilled you in, <em>\'+name+"</em>.</h1>" +',
+'      \'<p class="lede">A calendar hold is on its way so the date doesn\\\'t slip away. Tap an answer below whenever you know.</p>\' + details + change;',
+'    else view.innerHTML = \'<div class="icon">♡</div><h1>We\\\'ll miss you, <em>\'+name+"</em>.</h1>" +',
+'      \'<p class="lede">Thank you for letting us know. If your plans change, tap a new answer below.</p>\' + change;',
+'  }',
+'  function fail(){ view.innerHTML = \'<h1 style="margin-top:36px">We couldn\\\'t <em>save that</em>.</h1><p class="lede">Please tap the button in your email again, or simply reply to the email with Yes, Maybe or No.</p>\'; }',
+'  function go(){',
+'    if (!B.t || !B.r) return fail();',
+'    google.script.run.withSuccessHandler(function(d){ d && d.ok ? show(d) : fail(); }).withFailureHandler(fail).tapRsvp(B.t, B.r, B.n);',
+'  }',
+'  // Wait until a person is actually looking at the page (email scanners open links in hidden browsers).',
+'  if (!document.hidden) setTimeout(go, 200);',
+'  else document.addEventListener("visibilitychange", function once(){ if (!document.hidden){ document.removeEventListener("visibilitychange", once); setTimeout(go, 200);} });',
+'})();',
+'</script>'
+].join('\n');
 
 function isOwner_() {
   var user = Session.getActiveUser().getEmail();

@@ -88,7 +88,7 @@
 <div class="wrap">
   <div class="eyebrow">Jupiter Texas · Holiday Party</div>
   <h1>Setting up the invitations</h1>
-  <p class="intro">Investors get the invitation in their email and answer from their email. Each button opens a ready-made reply, they press Send, and the system reads it. No website needed. Follow the steps in order and tap <strong>Mark done</strong> as you go; this page remembers where you were.</p>
+  <p class="intro">Investors get the invitation in their email and answer with one tap: Just me, Me +1, Me +2, Me +3 or more, Maybe or Can't make it. A short "You're in!" confirmation opens, the answer lands on your dashboard, and a calendar invite follows. Nothing for you to host. Follow the steps in order and tap <strong>Mark done</strong> as you go; this page remembers where you were.</p>
   <div class="progress"><div class="track"><div class="fill" id="fill"></div></div><span id="ptext">0 of 0 done</span></div>
 
   <!-- PART A -->
@@ -166,7 +166,7 @@
       <p>Copy the <strong>Web app</strong> link, open it in a new tab in the info@ window, and <strong>bookmark it</strong> (<span class="ui">Cmd + D</span>). That's your dashboard.</p>
     </li>
     <li class="step" data-id="c2"><button class="tick">Mark done</button>
-      <p><strong>Open tracking: lets the dashboard show who opened the email.</strong> Do <span class="ui">Deploy</span> <span class="arrow">→</span> <span class="ui">New deployment</span> again:</p>
+      <p><strong>The Tracking link: makes the one-tap buttons and "Opened" work.</strong> Do <span class="ui">Deploy</span> <span class="arrow">→</span> <span class="ui">New deployment</span> again:</p>
       <ul>
         <li><span class="ui">⚙ gear</span> <span class="arrow">→</span> <span class="ui">Web app</span></li>
         <li>Description: <span class="ui">Tracking</span></li>
@@ -175,37 +175,49 @@
         <li><span class="ui">Deploy</span></li>
       </ul>
       <p>Copy that <strong>Web app</strong> link. In the sheet, open the <strong>Settings</strong> tab and paste it into cell <span class="ui">B2</span> (the yellow cell).</p>
-      <p class="tip"><b>No "Anyone" option, or want to skip this?</b> Leave B2 empty. Everything else still works: you just won't see "Opened", only replies.</p>
+      <p class="tip"><b>Must say exactly "Anyone".</b> Not "Anyone with Google account" and not "Anyone within Jupiter Texas". If "Anyone" isn't in the list, Jupiter's Google admin has blocked it; send them the message under "If something goes wrong" below.</p>
+    </li>
+  </ol>
+
+  <ol class="steps" style="--start:8">
+    <li class="step" data-id="c3"><button class="tick">Mark done</button>
+      <p><strong>Every time you paste new code</strong>, the two links keep running the old version until you update them:</p>
+      <ul>
+        <li><span class="ui">Deploy</span> <span class="arrow">→</span> <span class="ui">Manage deployments</span></li>
+        <li>Click <strong>Tracking</strong> on the left <span class="arrow">→</span> the <span class="ui">✏️ pencil</span> (top right) <span class="arrow">→</span> Version: <span class="ui">New version</span> <span class="arrow">→</span> <span class="ui">Deploy</span></li>
+        <li>Do the same for <strong>Dashboard</strong></li>
+      </ul>
+      <p>The links stay the same. Nothing to re-paste.</p>
     </li>
   </ol>
 
   <!-- PART D -->
   <h2><b>Part D</b> Test it on yourself <span class="who">10 min</span></h2>
-  <ol class="steps" style="--start:8">
+  <ol class="steps" style="--start:9">
     <li class="step" data-id="d1"><button class="tick">Mark done</button>
       <p>Open your dashboard bookmark. Click <span class="ui">Send invitations</span> <span class="arrow">→</span> <span class="ui">Send test to me</span>.</p>
-      <p>In info@'s Gmail, open the test invitation. Tap <strong>Just me</strong>. A reply opens with everything filled in. Press <strong>Send</strong>.</p>
-      <p><strong>Within 5 minutes</strong> you should get a reply saying "Thank you, Test! You're confirmed…". The test saves nothing in the sheet.</p>
+      <p>In info@'s Gmail, open the test invitation and tap <strong>Me +1</strong>. A page saying <strong>"You're in, Test."</strong> should open. The test saves nothing in the sheet, so tap freely.</p>
+      <p class="tip"><b>Buttons open a reply email instead?</b> The Tracking link isn't in Settings B2 yet, or this email was sent before you added it. Fix B2, then send a new test.</p>
     </li>
     <li class="step" data-id="d2"><button class="tick">Mark done</button>
       <p><strong>Real test.</strong> In the <strong>Guests</strong> tab, on row 2, type your name, your <strong>personal</strong> email (not info@), and <strong>0</strong> as the phase.</p>
       <p>Refresh the dashboard <span class="arrow">→</span> <span class="ui">Send invitations</span> <span class="arrow">→</span> choose <span class="ui">Phase 0</span> <span class="arrow">→</span> <span class="ui">Send 1 invitation</span>.</p>
     </li>
     <li class="step" data-id="d3"><button class="tick">Mark done</button>
-      <p>On your phone, open the email in your personal inbox. Tap <strong>Me +1</strong> and press <strong>Send</strong>. Within 5 minutes check that:</p>
+      <p>On your phone, open the email in your personal inbox. Check that:</p>
       <ul>
-        <li>You got a thank-you reply in the same email thread</li>
-        <li>A calendar invite from info@ arrived</li>
-        <li>After a refresh, the dashboard shows you as <strong>Attending</strong>, party size 2</li>
+        <li>After a refresh, the dashboard shows you as <strong>Opened</strong> (with pictures shown in the email)</li>
+        <li>Tapping <strong>Me +1</strong> opens "You're in" and the dashboard shows <strong>Attending</strong>, party size 2</li>
+        <li>A calendar invite from info@ arrives within a minute</li>
       </ul>
-      <p>Then reply to the thank-you with just the word <strong>No</strong>. Within 5 minutes the dashboard should show <strong>Can't make it</strong> and the calendar event should disappear.</p>
+      <p>Then tap <strong>Can't make it</strong> at the bottom of that page. The dashboard should show <strong>Can't make it</strong>, and the calendar event should disappear.</p>
       <p>All good? Delete your test row (right-click row 2 <span class="arrow">→</span> <span class="ui">Delete row</span>).</p>
     </li>
   </ol>
 
   <!-- PART E -->
   <h2><b>Part E</b> Send to investors</h2>
-  <ol class="steps" style="--start:11">
+  <ol class="steps" style="--start:12">
     <li class="step" data-id="e1"><button class="tick">Mark done</button>
       <p>In the <strong>Guests</strong> tab, paste your investors starting at cell <span class="ui">A2</span>:</p>
       <ul>
@@ -222,8 +234,8 @@
     <li class="step" data-id="e3"><button class="tick">Mark done</button>
       <p><strong>After that, it runs itself.</strong></p>
       <ul>
-        <li>Every 5 minutes it reads RSVP replies, updates the dashboard, sends the calendar invite and a thank-you</li>
-        <li>Replies it can't understand (like "What's the dress code?") stay unread in info@'s inbox for you to answer</li>
+        <li>Taps show up on the dashboard instantly, and the calendar invite goes out straight away</li>
+        <li>If someone replies by email instead ("Yes, 3 of us"), it's read within 5 minutes. Anything else (like "What's the dress code?") stays unread in info@'s inbox for you to answer</li>
         <li>Reminder emails go out 7, 3 and 1 day before, to everyone who said Yes or Maybe</li>
         <li>4 or more days after a phase goes out, use <span class="ui">Nudge non-responders</span> on the dashboard to follow up once</li>
         <li>Every reply is listed in the sheet's <strong>Reply log</strong> tab</li>
@@ -233,7 +245,7 @@
 
   <!-- DMARC -->
   <h2><b>Part F</b> One request to Jupiter's IT person</h2>
-  <ol class="steps" style="--start:14">
+  <ol class="steps" style="--start:15">
     <li class="step" data-id="f1"><button class="tick">Mark done</button>
       <p>This helps keep invitations out of spam. Send this to whoever manages the jupitertexas.com domain:</p>
       <div class="msg" id="dmarc-msg">Hi, could you add one DNS record to jupitertexas.com? We're sending event invitations from info@ and this helps them reach inboxes.
@@ -253,14 +265,19 @@ Thanks!</div>
     <details><summary>The dropdown only shows "myFunction"</summary>
       <p>The code isn't saved. Press Cmd + S (Windows: Ctrl + S), wait until "Unsaved changes" disappears, then open the dropdown again.</p>
     </details>
+    <details><summary>"Opened" never shows up</summary>
+      <p>Check three things. 1) Settings B2 has the Tracking link (ends in /exec). 2) In Deploy → Manage deployments, Tracking says "Anyone". 3) The email was sent after B2 was filled; older emails don't have tracking. Also, many people's email apps hide pictures until they tap "Show images"; those opens only appear once they do, or once they tap a button.</p>
+    </details>
+    <details><summary>There's no "Anyone" option</summary>
+      <p>Send this to Jupiter's Google Workspace admin:</p>
+      <div class="msg" id="admin-msg">Hi, could you allow Apps Script web apps to be shared with anyone? In the Google Admin console: Apps → Google Workspace → Drive and Docs → Sharing settings → Sharing options → allow sharing outside jupitertexas.com. It's for the holiday party RSVP buttons. Thanks!</div>
+      <button class="copy" data-src-text="admin-msg">Copy message</button>
+    </details>
     <details><summary>Someone replied but the dashboard didn't change</summary>
       <p>Wait 5 minutes and refresh. Then check the sheet's <strong>Reply log</strong> tab: it says how each reply was read. "No matching investor" means they replied from an email that isn't on the list and changed the subject; update their row by hand.</p>
     </details>
-    <details><summary>Tapping a button doesn't open a reply on a computer</summary>
-      <p>Some computers have no email app set up for these buttons. On a phone it always works. On a computer the investor can simply reply to the invitation with "Yes, 2 of us", "Maybe" or "No"; the system reads those too.</p>
-    </details>
-    <details><summary>I changed the code and nothing changed in the dashboard</summary>
-      <p>Apps Script: <span class="ui">Deploy</span> → <span class="ui">Manage deployments</span>. For each deployment: click ✏️ → Version: <span class="ui">New version</span> → <span class="ui">Deploy</span>. The links stay the same.</p>
+    <details><summary>I changed the code and nothing changed</summary>
+      <p>Do Part C, step 9 (update both deployments to a New version).</p>
     </details>
     <details><summary>The emails land in Spam</summary>
       <p>Do Part F (DMARC). Also ask your test recipients to move the email to the inbox and mark it "Not spam"; it helps the next ones.</p>
