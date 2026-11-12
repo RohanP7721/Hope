@@ -1,6 +1,7 @@
 /**
  * Jupiter Texas Holiday Party: invitations, RSVP tracking and reminders.
- * The two web links (API link, RSVP page link) live in the sheet's "Settings" tab, not here.
+ * Investors answer from inside their email: each button opens a ready-made reply to info@.
+ * Every 5 minutes this script reads those replies, updates the sheet and sends the calendar invite.
  */
 var CONFIG = {
   // Only this Google account can open the dashboard.
@@ -11,9 +12,13 @@ var CONFIG = {
   REPLY_TO: 'info@jupitertexas.com',
   SUBJECT: "You're invited: The Jupiter Texas Holiday Party, Sat Dec 12",
 
-  // Filled in at run time from the "Settings" tab of the sheet.
+  // Optional. Filled in from the "Settings" tab; only used to track email opens.
   API_URL: '',
-  SITE_URL: '',
+  // Where setup downloads the poster from, once. It is then kept in info@'s Google Drive
+  // and embedded inside every invitation, so no website is needed.
+  POSTER_SOURCE_URL: 'https://raw.githubusercontent.com/RohanP7721/Hope/claude/serene-cray-w4x1e9/jupiter-rsvp/assets/poster.jpg',
+  // 'cid:poster' = the image travels inside the email. Previews swap in a data: URL.
+  POSTER_SRC: 'cid:poster',
 
   EVENT: {
     TITLE: 'The Jupiter Texas Holiday Party',
@@ -35,7 +40,15 @@ var CONFIG = {
   // "Nudge" emails go only to people who got the invite this many days ago and haven't answered.
   NUDGE_AFTER_DAYS: 4,
 
-  MAYBE_REASONS: ['Schedule clash', 'Travelling', 'Checking with family', 'Other'],
+  // Reply subjects start with this, so the script can recognise RSVPs in info@'s inbox.
+  RSVP_SUBJECT: 'Holiday Party RSVP',
+
+  PARTY_OPTIONS: [
+    { size: '1', button: 'Just me', words: 'just me' },
+    { size: '2', button: 'Me +1', words: '2 of us' },
+    { size: '3', button: 'Me +2', words: '3 of us' },
+    { size: '4+', button: 'Me +3 or more', words: '4 or more of us' }
+  ],
 
   TIMEZONE: 'America/Chicago'
 };
@@ -70,19 +83,37 @@ function firstName_(name) {
   return clean.split(/\s+/)[0];
 }
 
+/** Short reference that ties a reply back to the right investor, even if they reply from another address. */
+function rsvpRef_(guest) {
+  return String(guest.token || '').slice(0, 8).toUpperCase();
+}
+
+function mailto_(subject, body) {
+  return 'mailto:' + CONFIG.REPLY_TO + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+}
+
+var REPLY_HINT = 'Just press Send. You can add a note above if you like.';
+
+/** Ready-made reply emails behind each button. */
 function rsvpLinks_(guest) {
-  // k = the Apps Script deployment id, so the RSVP page knows where to save answers without any setup of its own.
-  var key = (CONFIG.API_URL.match(/\/s\/([A-Za-z0-9_-]+)\/exec/) || [])[1] || '';
-  var manage = CONFIG.SITE_URL + '/?k=' + encodeURIComponent(key) + '&t=' + encodeURIComponent(guest.token);
-  var base = manage + '&a=';
-  return {
-    yes: base + 'yes',
-    maybe: base + 'maybe',
-    no: base + 'no',
-    manage: manage,
-    pixel: CONFIG.API_URL + '?api=o&t=' + encodeURIComponent(guest.token),
-    poster: CONFIG.SITE_URL + '/poster.jpg'
+  var tag = ' [Ref ' + rsvpRef_(guest) + ']';
+  var links = {
+    maybe: mailto_(CONFIG.RSVP_SUBJECT + ': Maybe' + tag,
+      'I might make it.\n\n(Optional: tell us what is holding you back, then press Send.)'),
+    no: mailto_(CONFIG.RSVP_SUBJECT + ': Can\'t make it' + tag,
+      'Sorry, I can\'t make it this time.\n\n' + REPLY_HINT),
+    party: CONFIG.PARTY_OPTIONS.map(function (o) {
+      return {
+        label: o.button,
+        href: mailto_(CONFIG.RSVP_SUBJECT + ': Yes, ' + o.words + tag,
+          'Count me in! We will be ' + (o.size === '1' ? 'just me' : o.words) + '.\n\n' + REPLY_HINT)
+      };
+    }),
+    pixel: CONFIG.API_URL ? CONFIG.API_URL + '?api=o&t=' + encodeURIComponent(guest.token) : '',
+    poster: CONFIG.POSTER_SRC
   };
+  links.yes = links.party[0].href;
+  return links;
 }
 
 function emailShell_(opts) {
@@ -96,7 +127,7 @@ function emailShell_(opts) {
 '@media only screen and (max-width:620px){' +
 '.wrap{width:100%!important}.pad{padding-left:24px!important;padding-right:24px!important}' +
 '.btn-cell{display:block!important;width:100%!important;padding:0 0 10px 0!important}' +
-'.btn-a{display:block!important}.h1{font-size:30px!important;line-height:36px!important}}' +
+'.btn-a{display:block!important;width:230px!important;margin:0 auto!important;box-sizing:border-box}.h1{font-size:30px!important;line-height:36px!important}}' +
 '</style></head>' +
 '<body style="margin:0;padding:0;background:' + c.navy + ';">' +
 '<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:' + c.navy + ';">' +
@@ -145,15 +176,42 @@ function button_(href, text, primary) {
   var border = primary ? c.gold : '#5A6590';
   return '<td class="btn-cell" style="padding:0 5px;">' +
     '<a class="btn-a" href="' + escapeHtml_(href) + '" target="_blank" style="display:inline-block;background:' + bg + ';border:1.5px solid ' + border +
-    ';border-radius:999px;padding:14px 22px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;color:' + color +
+    ';min-width:150px;box-sizing:border-box;border-radius:999px;padding:14px 22px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;color:' + color +
     ';text-decoration:none;text-align:center;mso-padding-alt:0;">' + text + '</a></td>';
 }
 
+function buttonRow_(cells) {
+  return '<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;"><tr>' + cells + '</tr></table>';
+}
+
+function smallLabel_(text) {
+  return '<div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;letter-spacing:2px;color:' + EMAIL_COLORS.gold + ';font-weight:bold;padding:0 0 12px;">' + text + '</div>';
+}
+
+/**
+ * The RSVP block. which: 'all' (invite, nudge), 'maybe-reminder' (Yes + Can't), 'yes-reminder' (Can't only).
+ */
 function rsvpButtons_(links, which) {
-  which = which || ['yes', 'maybe', 'no'];
-  var labels = { yes: 'Yes, I&rsquo;ll be there', maybe: 'Maybe', no: 'Can&rsquo;t make it' };
-  var cells = which.map(function (key) { return button_(links[key], labels[key], key === 'yes'); }).join('');
-  return '<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"><tr>' + cells + '</tr></table>';
+  which = which || 'all';
+  var html = '';
+  if (which !== 'yes-reminder') {
+    html += smallLabel_('COMING? TAP HOW MANY OF YOU') +
+      buttonRow_(links.party.slice(0, 2).map(function (p) { return button_(p.href, p.label, true); }).join('')) +
+      '<div style="height:10px;line-height:10px;">&nbsp;</div>' +
+      buttonRow_(links.party.slice(2).map(function (p) { return button_(p.href, p.label, true); }).join('')) +
+      '<div style="height:24px;line-height:24px;">&nbsp;</div>';
+  }
+  var others = which === 'all' ? button_(links.maybe, 'Maybe', false) + button_(links.no, 'Can&rsquo;t make it', false)
+    : button_(links.no, which === 'yes-reminder' ? 'Plans changed? Let us know' : 'Can&rsquo;t make it', false);
+  html += buttonRow_(others);
+  html += '<div style="font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:20px;color:' + EMAIL_COLORS.muted + ';padding:20px 0 0;">' +
+    'Each button opens a ready-made reply. Just press <strong style="color:' + EMAIL_COLORS.ink + ';">Send</strong>.</div>';
+  return html;
+}
+
+function textButtons_() {
+  return 'To RSVP, just reply to this email with one of:\n' +
+    '  YES and how many of you (e.g. "Yes, 3 of us")\n  MAYBE\n  NO\n';
 }
 
 function paragraph_(html) {
@@ -165,8 +223,8 @@ function buildInviteEmail(guest) {
   var c = EMAIL_COLORS, e = CONFIG.EVENT, links = rsvpLinks_(guest);
   var body = '' +
 '<tr><td style="padding:0;">' +
-  '<a href="' + escapeHtml_(links.yes) + '" target="_blank"><img src="' + links.poster + '" width="600" alt="Jupiter Texas Real Estate Group invites you and your family to The Holiday Party, Saturday December 12, 6 PM onwards, Elegance Ballroom, Plano TX" ' +
-  'style="display:block;width:100%;max-width:600px;height:auto;border:0;border-radius:14px;"></a></td></tr>' +
+  '<img src="' + links.poster + '" width="600" alt="Jupiter Texas Real Estate Group invites you and your family to The Holiday Party, Saturday December 12, 6 PM onwards, Elegance Ballroom, Plano TX" ' +
+  'style="display:block;width:100%;max-width:600px;height:auto;border:0;border-radius:14px;"></td></tr>' +
 '<tr><td class="pad" style="padding:40px 48px 8px;">' +
   paragraph_('Dear ' + escapeHtml_(firstName_(guest.name)) + ',') +
   paragraph_('As the year comes to a close, we would love to celebrate it with the people who made it possible: our investors. ' +
@@ -176,8 +234,7 @@ function buildInviteEmail(guest) {
 '<tr><td class="pad" style="padding:40px 48px 8px;text-align:center;">' +
   '<div class="h1" style="font-family:Georgia,\'Times New Roman\',serif;font-size:34px;line-height:40px;color:' + c.gold + ';">Will you join us?</div>' +
   '<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:22px;color:' + c.muted + ';padding:8px 0 24px;">Kindly RSVP by ' + escapeHtml_(e.RSVP_BY_LABEL) + '</div>' +
-  rsvpButtons_(links) +
-  '<div style="font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:20px;color:' + c.muted + ';padding:20px 0 0;">One tap is all it takes. Your calendar invite follows automatically.</div>' +
+  rsvpButtons_(links, 'all') +
 '</td></tr>' +
 '<tr><td class="pad" style="padding:36px 48px 40px;">' +
   paragraph_('Warm regards,<br><strong>The Jupiter Texas Team</strong>') +
@@ -194,8 +251,7 @@ function buildInviteEmail(guest) {
     text: 'Dear ' + firstName_(guest.name) + ',\n\n' +
       'Jupiter Texas Real Estate Group invites you and your family to ' + e.TITLE + '.\n\n' +
       'When: ' + e.DATE_LABEL + ', ' + e.TIME_LABEL + '\nWhere: ' + e.VENUE_NAME + ', ' + e.VENUE_ADDRESS + '\n\n' +
-      'Kindly RSVP by ' + e.RSVP_BY_LABEL + ':\n' +
-      'Yes, I will be there: ' + links.yes + '\nMaybe: ' + links.maybe + '\nCan\'t make it: ' + links.no + '\n\n' +
+      'Kindly RSVP by ' + e.RSVP_BY_LABEL + '.\n' + textButtons_() + '\n' +
       'Warm regards,\nThe Jupiter Texas Team'
   };
 }
@@ -210,10 +266,7 @@ function buildReminderEmail(guest, daysLeft) {
     ? 'The Jupiter Texas Holiday Party is ' + when + ' and we would still love to have you there. Let us know when you can, it helps us plan seating and food.'
     : 'Just a reminder that the Jupiter Texas Holiday Party is ' + when + '. We have you down for ' +
       (guest.partySize && guest.partySize !== '1' ? 'a party of ' + guest.partySize : 'one') + '. Family and friends are welcome.';
-  var buttons = isMaybe
-    ? rsvpButtons_(links, ['yes', 'no'])
-    : '<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"><tr>' +
-      button_(links.manage, 'View or change my RSVP', false) + '</tr></table>';
+  var buttons = rsvpButtons_(links, isMaybe ? 'maybe-reminder' : 'yes-reminder');
 
   var body = '' +
 '<tr><td class="pad" style="padding:40px 48px 8px;text-align:center;">' +
@@ -233,7 +286,7 @@ function buildReminderEmail(guest, daysLeft) {
     html: emailShell_({ title: subject, preheader: e.DATE_LABEL + ', ' + e.TIME_LABEL + ', ' + e.VENUE_ADDRESS, body: body, pixel: null }),
     text: 'Dear ' + firstName_(guest.name) + ',\n\n' + intro + '\n\nWhen: ' + e.DATE_LABEL + ', ' + e.TIME_LABEL +
       '\nWhere: ' + e.VENUE_NAME + ', ' + e.VENUE_ADDRESS + '\n\n' +
-      (isMaybe ? 'Yes: ' + links.yes + '\nCan\'t make it: ' + links.no : 'View or change your RSVP: ' + links.manage) +
+      (isMaybe ? textButtons_() : 'Plans changed? Just reply to this email and let us know.') +
       '\n\nWarm regards,\nThe Jupiter Texas Team'
   };
 }
@@ -245,16 +298,16 @@ function buildNudgeEmail(guest) {
 '<tr><td class="pad" style="padding:40px 48px 8px;">' +
   paragraph_('Dear ' + escapeHtml_(firstName_(guest.name)) + ',') +
   paragraph_('We would love to see you and your family at our Holiday Party on <strong>' + escapeHtml_(e.DATE_LABEL) + '</strong>. ' +
-             'Could you let us know if you can make it? It is a single tap.') +
+             'Could you let us know if you can make it? Tap a button below and press Send.') +
 '</td></tr>' +
 '<tr><td class="pad" style="padding:8px 48px 0;">' + detailsBlock_() + '</td></tr>' +
-'<tr><td class="pad" style="padding:32px 48px 40px;text-align:center;">' + rsvpButtons_(links) + '</td></tr>';
-  var subject = 'Will we see you on December 12?';
+'<tr><td class="pad" style="padding:32px 48px 40px;text-align:center;">' + rsvpButtons_(links, 'all') + '</td></tr>';
+  var subject = 'Will we see you at the Jupiter Texas Holiday Party?';
   return {
     subject: subject,
-    html: emailShell_({ title: subject, preheader: 'One tap to RSVP for the Jupiter Texas Holiday Party.', body: body, pixel: links.pixel }),
+    html: emailShell_({ title: subject, preheader: 'Tap a button to RSVP for the Jupiter Texas Holiday Party on December 12.', body: body, pixel: links.pixel }),
     text: 'Dear ' + firstName_(guest.name) + ',\n\nCould you let us know if you can make our Holiday Party on ' + e.DATE_LABEL + '?\n\n' +
-      'Yes: ' + links.yes + '\nMaybe: ' + links.maybe + '\nCan\'t make it: ' + links.no + '\n\nWarm regards,\nThe Jupiter Texas Team'
+      textButtons_() + '\nWarm regards,\nThe Jupiter Texas Team'
   };
 }
 
@@ -284,6 +337,7 @@ function onOpen() {
 }
 
 function setup() {
+  requireOwner_();
   var ss = SpreadsheetApp.getActive();
   var sheet = ss.getSheetByName(GUEST_SHEET);
   if (!sheet) {
@@ -309,6 +363,7 @@ function setup() {
   sheet.getRange(2, 4, Math.max(sheet.getMaxRows() - 1, 1), HEADERS.length - 3).setBackground('#F4F5F9');
 
   setupSettings_();
+  savePoster_();
   installTriggers_();
   ensureTokens_();
   SpreadsheetApp.getActive().toast('Sheet and reminders are ready. Paste Name, Email and Phase into columns A to C.', 'Jupiter RSVP', 8);
@@ -320,38 +375,57 @@ function setupSettings_() {
   var sheet = ss.insertSheet(SETTINGS_SHEET);
   sheet.getRange(1, 1, 3, 3).setValues([
     ['Setting', 'Paste here', 'What it is'],
-    ['API link', '', 'From Apps Script: Deploy > New deployment > Web app > Who has access: Anyone. Ends in /exec'],
-    ['RSVP page link', '', 'Your Netlify address, e.g. https://jupitertexas-rsvp.netlify.app']
+    ['API link', '', 'Optional, for open tracking. From Apps Script: Deploy > New deployment > Web app > Who has access: Anyone. Ends in /exec'],
+    ['', '', '']
   ]);
   sheet.getRange(1, 1, 1, 3).setFontWeight('bold').setBackground('#0B1330').setFontColor('#F2B01E');
-  sheet.getRange(2, 2, 2, 1).setBackground('#FFF6DF');
+  sheet.getRange(2, 2).setBackground('#FFF6DF');
   sheet.setColumnWidth(1, 140); sheet.setColumnWidth(2, 420); sheet.setColumnWidth(3, 520);
 }
 
-/** Reads the two links from the Settings tab. Throws a plain-English error if they are missing. */
+/** Reads the optional API link (used only for open tracking) from the Settings tab. */
 function loadSettings_() {
   var sheet = SpreadsheetApp.getActive().getSheetByName(SETTINGS_SHEET);
   if (!sheet) throw new Error('Run setup first.');
   var api = String(sheet.getRange('B2').getValue()).trim();
-  var site = String(sheet.getRange('B3').getValue()).trim().replace(/\/+$/, '');
+  if (!api) { CONFIG.API_URL = ''; return; }
   var id = (api.match(/^https:\/\/script\.google\.com\/(?:a\/macros\/[^\/]+|macros)\/s\/([A-Za-z0-9_-]+)\/exec/) || [])[1];
   if (!id) {
-    throw new Error('The "API link" in the Settings tab is missing or wrong. It should start with https://script.google.com and end with /exec.');
+    throw new Error('The "API link" in the Settings tab looks wrong. It should start with https://script.google.com and end with /exec. Or leave it empty.');
   }
-  if (!/^https:\/\//.test(site)) throw new Error('The "RSVP page link" in the Settings tab is missing. Paste your Netlify address there.');
   // Workspace gives /a/macros/<domain>/ links, which can force a login. The plain form works for everyone.
   CONFIG.API_URL = 'https://script.google.com/macros/s/' + id + '/exec';
-  CONFIG.SITE_URL = site;
+}
+
+/* Poster: downloaded once into info@'s Drive, then attached inside each invitation. */
+function savePoster_() {
+  var props = PropertiesService.getScriptProperties();
+  var id = props.getProperty('POSTER_FILE_ID');
+  if (id) { try { DriveApp.getFileById(id).getSize(); return; } catch (e) { /* deleted, fetch again */ } }
+  var blob = UrlFetchApp.fetch(CONFIG.POSTER_SOURCE_URL).getBlob().setName('Jupiter Holiday Party poster.jpg');
+  var file = DriveApp.createFile(blob);
+  props.setProperty('POSTER_FILE_ID', file.getId());
+}
+
+var posterBlobCache_ = null;
+function posterBlob_() {
+  if (posterBlobCache_) return posterBlobCache_;
+  var id = PropertiesService.getScriptProperties().getProperty('POSTER_FILE_ID');
+  if (!id) throw new Error('The poster is missing. Run setup again.');
+  posterBlobCache_ = DriveApp.getFileById(id).getBlob().setName('poster.jpg');
+  return posterBlobCache_;
 }
 
 function installTriggers_() {
   ScriptApp.getProjectTriggers().forEach(function (t) {
-    if (t.getHandlerFunction() === 'hourlyJobs') ScriptApp.deleteTrigger(t);
+    if (['hourlyJobs', 'processReplies'].indexOf(t.getHandlerFunction()) !== -1) ScriptApp.deleteTrigger(t);
   });
   ScriptApp.newTrigger('hourlyJobs').timeBased().everyHours(1).create();
+  ScriptApp.newTrigger('processReplies').timeBased().everyMinutes(5).create();
 }
 
 function menuSendTest() {
+  requireOwner_();
   loadSettings_();
   var to = Session.getActiveUser().getEmail();
   sendEmail_(to, buildInviteEmail({ name: 'Test Investor', token: TEST_TOKEN }));
@@ -463,14 +537,10 @@ function doGet(e) {
   try {
     switch (p.api) {
       case 'o': trackOpen_(p.t); return ContentService.createTextOutput('');
-      case 'rsvp': return json_(handleRsvp_(p.t, p.a));
-      case 'party': return json_(handleParty_(p.t, p.n));
-      case 'reason': return json_(handleReason_(p.t, p.r));
-      case 'get': return json_(handleGet_(p.t));
     }
   } catch (err) {
     console.error(err);
-    return json_({ ok: false, error: 'Something went wrong. Please try again.' });
+    return ContentService.createTextOutput('');
   }
 
   if (!isOwner_()) {
@@ -479,10 +549,6 @@ function doGet(e) {
   return HtmlService.createTemplateFromFile('Dashboard').evaluate()
     .setTitle('Jupiter Holiday Party · RSVPs')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
-}
-
-function json_(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
 
 function isOwner_() {
@@ -501,8 +567,7 @@ function publicGuest_(g, extra) {
     email: g.email,
     rsvp: g.rsvp,
     partySize: g.partySize,
-    reason: g.reason,
-    reasons: CONFIG.MAYBE_REASONS
+    reason: g.reason
   };
   Object.keys(extra || {}).forEach(function (k) { out[k] = extra[k]; });
   return out;
@@ -523,12 +588,6 @@ function trackOpen_(token) {
     if (!g.opened) { fields['Opened'] = 'Yes'; fields['First Opened'] = now; }
     setCells_(found.sheet, found.col, g.row, fields);
   } finally { lock.releaseLock(); }
-}
-
-function handleGet_(token) {
-  if (token === TEST_TOKEN) return demoGuest_({});
-  var found = findGuestByToken_(token);
-  return found ? publicGuest_(found.guest) : { ok: false, error: 'We could not find your invitation.' };
 }
 
 function handleRsvp_(token, action) {
@@ -574,25 +633,164 @@ function handleRsvp_(token, action) {
   } finally { lock.releaseLock(); }
 }
 
-function handleParty_(token, size) {
-  var allowed = ['1', '2', '3', '4+'];
-  if (allowed.indexOf(String(size)) === -1) return { ok: false, error: 'Unknown party size.' };
-  if (token === TEST_TOKEN) return demoGuest_({ rsvp: 'Yes', partySize: String(size) });
-  var found = findGuestByToken_(token);
-  if (!found) return { ok: false, error: 'We could not find your invitation.' };
-  setCells_(found.sheet, found.col, found.guest.row, { 'Party Size': String(size), 'Last Activity': new Date() });
-  found.guest.partySize = String(size);
-  return publicGuest_(found.guest);
+/* ------------------------------------------------------------------ */
+/* Reading RSVP replies from info@'s inbox (runs every 5 minutes)      */
+/* ------------------------------------------------------------------ */
+
+var REPLY_LOG_SHEET = 'Reply log';
+var RSVP_LABEL = 'Holiday Party RSVPs';
+
+function replyLog_() {
+  var ss = SpreadsheetApp.getActive();
+  var sheet = ss.getSheetByName(REPLY_LOG_SHEET);
+  if (!sheet) {
+    sheet = ss.insertSheet(REPLY_LOG_SHEET);
+    sheet.getRange(1, 1, 1, 6).setValues([['Received', 'From', 'Subject', 'Read as', 'Matched investor', 'Message ID']])
+      .setFontWeight('bold').setBackground('#0B1330').setFontColor('#F2B01E');
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
 }
 
-function handleReason_(token, reason) {
-  if (CONFIG.MAYBE_REASONS.indexOf(reason) === -1) return { ok: false, error: 'Unknown reason.' };
-  if (token === TEST_TOKEN) return demoGuest_({ rsvp: 'Maybe', reason: reason });
-  var found = findGuestByToken_(token);
-  if (!found) return { ok: false, error: 'We could not find your invitation.' };
-  setCells_(found.sheet, found.col, found.guest.row, { 'Maybe Reason': reason, 'Last Activity': new Date() });
-  found.guest.reason = reason;
-  return publicGuest_(found.guest);
+/** Works out what a reply means. Returns null if it isn't an RSVP. */
+function parseReply_(subject, body) {
+  var text = (subject + '\n' + body).toLowerCase();
+  var ref = (subject.match(/\[ref\s+([a-z0-9]{4,})\]/i) || [])[1] || '';
+  var choice = null, party = '';
+
+  // Button replies carry the answer in the subject. A later "Re:" reply may change it, so read its message instead.
+  var tagged = /^\s*re:/i.test(subject) ? null : subject.match(/holiday party rsvp:\s*(yes|maybe|can.?t make it)/i);
+  if (tagged) {
+    choice = /^yes/i.test(tagged[1]) ? 'Yes' : /^maybe/i.test(tagged[1]) ? 'Maybe' : 'No';
+  } else {
+    // Plain reply typed by hand, e.g. "Yes, 3 of us" or "no sorry". Look at the first line only.
+    var first = String(body).replace(/^\s+/, '').split(/\n/)[0].toLowerCase();
+    if (/^(yes|yep|yeah|count (me|us) in|we('| a)re in|i('| a)m in|attending)\b/.test(first)) choice = 'Yes';
+    else if (/^(maybe|not sure|might)\b/.test(first)) choice = 'Maybe';
+    else if (/^(no|sorry|unfortunately|can.?t|cannot|won.?t)\b/.test(first)) choice = 'No';
+    text = first;
+  }
+  if (!choice) return null;
+
+  if (choice === 'Yes') {
+    if (/4 or more|\+ ?3 or more/.test(text)) party = '4+';
+    else if (/just me|only me|myself/.test(text)) party = '1';
+    else {
+      var n = text.match(/\b([1-9])\s*(of us|people|persons|guests|adults|in total)\b/) || text.match(/\+\s*([1-9])\b/);
+      if (n) {
+        var count = n[0].indexOf('+') !== -1 ? Number(n[1]) + 1 : Number(n[1]);
+        party = count >= 4 ? '4+' : String(count);
+      }
+    }
+  }
+
+  // Anything the investor typed themselves, minus our pre-filled lines.
+  var note = String(body)
+    .replace(/(^|\n)\s*>.*$/g, '')
+    .split(/\n(?:on .+wrote:|-{2,}|_{2,}|from: )/i)[0]
+    .replace(/I might make it\.|\(Optional: tell us what is holding you back, then press Send\.\)|Sorry, I can't make it this time\.|Count me in! We will be [^.]+\.|Just press Send\.( You can add a note above if you like\.)?/g, '')
+    .replace(/\s+/g, ' ').trim().slice(0, 300);
+
+  return { choice: choice, party: party, ref: ref, note: note };
+}
+
+function emailAddress_(from) {
+  var m = String(from).match(/<([^>]+)>/);
+  return (m ? m[1] : String(from)).trim().toLowerCase();
+}
+
+function findGuestByRef_(ref) {
+  if (!ref) return null;
+  var sheet = guestSheet_(), col = columnMap_(sheet), last = sheet.getLastRow();
+  if (last < 2) return null;
+  var cell = sheet.getRange(2, col['Token'], last - 1, 1)
+    .createTextFinder('^' + ref.toLowerCase().replace(/[^a-z0-9]/g, '')).useRegularExpression(true).findNext();
+  if (!cell) return null;
+  var values = sheet.getRange(cell.getRow(), 1, 1, sheet.getLastColumn()).getValues()[0];
+  return rowToGuest_(values, col, cell.getRow());
+}
+
+function findGuestByEmail_(email) {
+  var guests = readGuests_().guests;
+  for (var i = 0; i < guests.length; i++) if (guests[i].email === email) return guests[i];
+  return null;
+}
+
+/** Trigger: reads new RSVP replies, records them, sends the calendar invite and a short thank-you in the same thread. */
+function processReplies() {
+  var lock = LockService.getDocumentLock();
+  if (!lock.tryLock(1000)) return;
+  try {
+    var owner = CONFIG.OWNER_EMAIL.toLowerCase();
+    var log = replyLog_();
+    var seen = {};
+    if (log.getLastRow() > 1) log.getRange(2, 6, log.getLastRow() - 1, 1).getValues().forEach(function (r) { seen[r[0]] = true; });
+
+    var query = '{subject:"' + CONFIG.RSVP_SUBJECT + '" subject:"Jupiter Texas Holiday Party"} newer_than:21d -in:sent';
+    var threads = GmailApp.search(query, 0, 100);
+    var label = GmailApp.getUserLabelByName(RSVP_LABEL) || GmailApp.createLabel(RSVP_LABEL);
+
+    threads.forEach(function (thread) {
+      thread.getMessages().forEach(function (msg) {
+        var id = msg.getId();
+        if (seen[id]) return;
+        var from = emailAddress_(msg.getFrom());
+        var subject = msg.getSubject();
+        var isTest = /\[ref test\]/i.test(subject);
+        // Skip our own invites, reminders and thank-yous. A test RSVP from info@ to itself counts once, never its "Re:" thank-you.
+        if (from === owner && (!isTest || /^\s*re:/i.test(subject))) return;
+        seen[id] = true;
+
+        var parsed = parseReply_(subject, msg.getPlainBody());
+        var outcome = 'Not an RSVP (left for you to read)', who = '';
+        if (parsed) {
+          if (isTest) {
+            outcome = 'Test reply: ' + parsed.choice + (parsed.party ? ', party ' + parsed.party : '');
+            who = 'Test';
+            sendThankYou_(msg, { name: 'Test Investor' }, parsed);
+          } else {
+            var guest = findGuestByRef_(parsed.ref) || findGuestByEmail_(from);
+            if (!guest) {
+              outcome = 'RSVP ' + parsed.choice + ', but no matching investor (check manually)';
+            } else {
+              who = guest.name + ' <' + guest.email + '>';
+              applyRsvp_(guest, parsed);
+              sendThankYou_(msg, guest, parsed);
+              outcome = parsed.choice + (parsed.party ? ', party ' + parsed.party : '') + (parsed.note ? ', note: ' + parsed.note : '');
+            }
+          }
+          msg.markRead();
+          thread.addLabel(label);
+        }
+        log.appendRow([msg.getDate(), from, subject, outcome, who, id]);
+      });
+    });
+  } finally { lock.releaseLock(); }
+}
+
+function applyRsvp_(guest, parsed) {
+  handleRsvp_(guest.token, parsed.choice.toLowerCase());
+  var found = findGuestByToken_(guest.token);
+  var fields = {};
+  if (parsed.choice === 'Yes' && parsed.party) fields['Party Size'] = parsed.party;
+  if (parsed.choice === 'Maybe') fields['Maybe Reason'] = parsed.note || '';
+  if (Object.keys(fields).length) setCells_(found.sheet, found.col, found.guest.row, fields);
+}
+
+function sendThankYou_(msg, guest, parsed) {
+  var name = escapeHtml_(firstName_(guest.name)), e = CONFIG.EVENT;
+  var partyWords = { '1': 'just you', '2': 'the 2 of you', '3': 'the 3 of you', '4+': '4 or more of you' }[parsed.party];
+  var line = {
+    Yes: 'Thank you, ' + name + '! You\'re confirmed' + (partyWords ? ' for ' + partyWords : '') + '. A calendar invite is on its way, and we\'ll send a reminder before the day.',
+    Maybe: 'Thanks, ' + name + '. We\'ve pencilled you in and sent a calendar hold so the date doesn\'t slip away. Just reply "Yes" or "No" here whenever you know.',
+    No: 'Thank you for letting us know, ' + name + '. We\'ll miss you! If your plans change, just reply "Yes" here.'
+  }[parsed.choice];
+  var html = '<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:24px;color:#1D1D1F;">' +
+    '<p>' + line + '</p>' +
+    (parsed.choice === 'No' ? '' : '<p><strong>' + escapeHtml_(e.DATE_LABEL) + ', ' + escapeHtml_(e.TIME_LABEL) + '</strong><br>' +
+      escapeHtml_(e.VENUE_NAME) + '<br><a href="' + e.MAP_URL + '">' + escapeHtml_(e.VENUE_ADDRESS) + '</a></p>') +
+    '<p>Warm regards,<br>The Jupiter Texas Team</p></div>';
+  msg.reply(html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(), { htmlBody: html, name: CONFIG.SENDER_NAME });
 }
 
 /* ------------------------------------------------------------------ */
@@ -694,11 +892,9 @@ function sendPhaseBatch(phase) {
 }
 
 function sendEmail_(to, email) {
-  GmailApp.sendEmail(to, email.subject, email.text, {
-    htmlBody: email.html,
-    name: CONFIG.SENDER_NAME,
-    replyTo: CONFIG.REPLY_TO
-  });
+  var options = { htmlBody: email.html, name: CONFIG.SENDER_NAME, replyTo: CONFIG.REPLY_TO };
+  if (email.html.indexOf('cid:poster') !== -1) options.inlineImages = { poster: posterBlob_() };
+  GmailApp.sendEmail(to, email.subject, email.text, options);
 }
 
 function sendTestToMe() {
@@ -712,6 +908,9 @@ function sendTestToMe() {
 function getEmailPreview(kind) {
   requireOwner_();
   loadSettings_();
+  // Previews can't show the embedded poster, so hand them a data: URL copy.
+  var blob = posterBlob_();
+  CONFIG.POSTER_SRC = 'data:' + blob.getContentType() + ';base64,' + Utilities.base64Encode(blob.getBytes());
   var demo = { name: 'Test Investor', token: TEST_TOKEN, rsvp: kind === 'reminder-maybe' ? 'Maybe' : 'Yes', partySize: '3' };
   if (kind === 'nudge') return buildNudgeEmail(demo).html;
   if (kind && kind.indexOf('reminder') === 0) return buildReminderEmail(demo, 3).html;

@@ -88,54 +88,50 @@
 <div class="wrap">
   <div class="eyebrow">Jupiter Texas · Holiday Party</div>
   <h1>Setting up the invitations</h1>
-  <p class="intro">Follow the steps in order. Tap <strong>Mark done</strong> on each one as you go; this page remembers where you were. Whenever you see a <strong>Copy</strong> button, press it and paste where the step says.</p>
+  <p class="intro">Investors get the invitation in their email and answer from their email. Each button opens a ready-made reply, they press Send, and the system reads it. No website needed. Follow the steps in order and tap <strong>Mark done</strong> as you go; this page remembers where you were.</p>
   <div class="progress"><div class="track"><div class="fill" id="fill"></div></div><span id="ptext">0 of 0 done</span></div>
 
   <!-- PART A -->
-  <h2><b>Part A</b> Get the sheet ready <span class="who">10 min</span></h2>
+  <h2><b>Part A</b> A new sheet in info@ <span class="who">3 min</span></h2>
   <ol class="steps" style="--start:0">
     <li class="step" data-id="a1"><button class="tick">Mark done</button>
-      <p><strong>From your own Google account</strong>, open the Google Sheet and share it with info@.</p>
-      <p>Click <span class="ui">Share</span> (top right), type this email, set it to <span class="ui">Editor</span>, click <span class="ui">Send</span>.</p>
-      <div class="copyrow"><code>info@jupitertexas.com</code><button class="copy" data-text="info@jupitertexas.com">Copy</button></div>
+      <p><strong>Log in as info@jupitertexas.com.</strong> In Chrome, click your round profile picture (top right) <span class="arrow">→</span> <span class="ui">Add</span> <span class="arrow">→</span> <span class="ui">Sign in</span> <span class="arrow">→</span> enter info@jupitertexas.com and its password. A new Chrome window opens. Do everything below in that window.</p>
+      <p class="tip"><b>Why:</b> invitations are sent by whichever account sets this up.</p>
     </li>
     <li class="step" data-id="a2"><button class="tick">Mark done</button>
-      <p><strong>Log in as info@jupitertexas.com.</strong> From here on, everything happens in that account.</p>
-      <p>Easiest way: open Chrome, click your profile picture (top right) <span class="arrow">→</span> <span class="ui">Add</span> <span class="arrow">→</span> sign in as info@jupitertexas.com. A separate window opens just for that account.</p>
-      <p class="tip"><b>Why:</b> invitations are sent by whichever account sets this up. If you do it from your own account, the emails go out from your address.</p>
-    </li>
-    <li class="step" data-id="a3"><button class="tick">Mark done</button>
-      <p>In the info@ window, open Gmail, find the "shared with you" email for the sheet and open the sheet.</p>
-      <p>Click <span class="ui">File</span> <span class="arrow">→</span> <span class="ui">Make a copy</span>. Name it as below, then click <span class="ui">Make a copy</span>.</p>
+      <p>In that window, paste this in the address bar and press <span class="ui">Enter</span>. A blank Google Sheet opens.</p>
+      <div class="copyrow"><code>sheets.new</code><button class="copy" data-text="sheets.new">Copy</button></div>
+      <p>Click <span class="ui">Untitled spreadsheet</span> (top left) and name it:</p>
       <div class="copyrow"><code>Jupiter Holiday Party RSVPs</code><button class="copy" data-text="Jupiter Holiday Party RSVPs">Copy</button></div>
-      <p>The copy opens in a new tab. <strong>Use only this copy from now on.</strong></p>
+      <p class="tip"><b>Already made one earlier?</b> Keep using it. Skip to Part B.</p>
     </li>
   </ol>
 
   <!-- PART B -->
   <h2><b>Part B</b> Add the code <span class="who">10 min</span></h2>
-  <ol class="steps" style="--start:3">
+  <ol class="steps" style="--start:2">
     <li class="step" data-id="b1"><button class="tick">Mark done</button>
-      <p>In the copied sheet, click <span class="ui">Extensions</span> <span class="arrow">→</span> <span class="ui">Apps Script</span>. A new tab opens with a code editor.</p>
+      <p>In the sheet, click <span class="ui">Extensions</span> <span class="arrow">→</span> <span class="ui">Apps Script</span>. A code editor opens in a new tab.</p>
       <p>Click <span class="ui">Untitled project</span> at the top left and rename it:</p>
       <div class="copyrow"><code>Jupiter RSVP</code><button class="copy" data-text="Jupiter RSVP">Copy</button></div>
     </li>
     <li class="step" data-id="b2"><button class="tick">Mark done</button>
-      <p>You'll see a file called <span class="ui">Code.gs</span> with a few lines in it. Click inside the code, press <span class="ui">Ctrl + A</span> (Mac: <span class="ui">Cmd + A</span>) and then <span class="ui">Delete</span>, so it's empty.</p>
-      <p>Press the button below, then click in the empty editor and paste (<span class="ui">Ctrl + V</span> / <span class="ui">Cmd + V</span>).</p>
+      <p>Click <span class="ui">Code.gs</span> on the left. Click inside the code, press <span class="ui">Cmd + A</span> (Windows: <span class="ui">Ctrl + A</span>), then <span class="ui">Delete</span>, so it's completely empty.</p>
+      <p>Press the button below, click in the empty editor, and paste (<span class="ui">Cmd + V</span> / <span class="ui">Ctrl + V</span>).</p>
       <div class="bigcopy">
-        <div class="head"><span><span class="name">Code.gs</span> <span class="meta">· 858 lines</span></span><button class="copy" data-src="code-gs">Copy all of Code.gs</button></div>
+        <div class="head"><span><span class="name">Code.gs</span> <span class="meta">· 1057 lines</span></span><button class="copy" data-src="code-gs">Copy all of Code.gs</button></div>
         <pre aria-hidden="true">/**
  * Jupiter Texas Holiday Party: invitations, RSVP tracking and reminders.
- * The two web links (API link, RSVP page link) live in the sheet&#x27;s &quot;Settings&quot; tab, not here.
+ * Investors answer from inside their email: each button opens a ready-made reply to info@.
+ * Every 5 minutes this script reads those replies, updates the sheet and sends the calendar invite.
  */
 var CONFIG = {
   // Only this Google account can open the dashboard.
-  OWNER_EMAIL: &#x27;info@jupitertexas.com&#x27;,
-</pre>
+  OWNER_EMAIL: &#x27;info@jupitertexas.com&#x27;,</pre>
         <textarea id="code-gs" readonly hidden aria-label="Code.gs">/**
  * Jupiter Texas Holiday Party: invitations, RSVP tracking and reminders.
- * The two web links (API link, RSVP page link) live in the sheet's "Settings" tab, not here.
+ * Investors answer from inside their email: each button opens a ready-made reply to info@.
+ * Every 5 minutes this script reads those replies, updates the sheet and sends the calendar invite.
  */
 var CONFIG = {
   // Only this Google account can open the dashboard.
@@ -146,9 +142,13 @@ var CONFIG = {
   REPLY_TO: 'info@jupitertexas.com',
   SUBJECT: "You're invited: The Jupiter Texas Holiday Party, Sat Dec 12",
 
-  // Filled in at run time from the "Settings" tab of the sheet.
+  // Optional. Filled in from the "Settings" tab; only used to track email opens.
   API_URL: '',
-  SITE_URL: '',
+  // Where setup downloads the poster from, once. It is then kept in info@'s Google Drive
+  // and embedded inside every invitation, so no website is needed.
+  POSTER_SOURCE_URL: 'https://raw.githubusercontent.com/RohanP7721/Hope/claude/serene-cray-w4x1e9/jupiter-rsvp/assets/poster.jpg',
+  // 'cid:poster' = the image travels inside the email. Previews swap in a data: URL.
+  POSTER_SRC: 'cid:poster',
 
   EVENT: {
     TITLE: 'The Jupiter Texas Holiday Party',
@@ -170,7 +170,15 @@ var CONFIG = {
   // "Nudge" emails go only to people who got the invite this many days ago and haven't answered.
   NUDGE_AFTER_DAYS: 4,
 
-  MAYBE_REASONS: ['Schedule clash', 'Travelling', 'Checking with family', 'Other'],
+  // Reply subjects start with this, so the script can recognise RSVPs in info@'s inbox.
+  RSVP_SUBJECT: 'Holiday Party RSVP',
+
+  PARTY_OPTIONS: [
+    { size: '1', button: 'Just me', words: 'just me' },
+    { size: '2', button: 'Me +1', words: '2 of us' },
+    { size: '3', button: 'Me +2', words: '3 of us' },
+    { size: '4+', button: 'Me +3 or more', words: '4 or more of us' }
+  ],
 
   TIMEZONE: 'America/Chicago'
 };
@@ -205,19 +213,37 @@ function firstName_(name) {
   return clean.split(/\s+/)[0];
 }
 
+/** Short reference that ties a reply back to the right investor, even if they reply from another address. */
+function rsvpRef_(guest) {
+  return String(guest.token || '').slice(0, 8).toUpperCase();
+}
+
+function mailto_(subject, body) {
+  return 'mailto:' + CONFIG.REPLY_TO + '?subject=' + encodeURIComponent(subject) + '&amp;body=' + encodeURIComponent(body);
+}
+
+var REPLY_HINT = 'Just press Send. You can add a note above if you like.';
+
+/** Ready-made reply emails behind each button. */
 function rsvpLinks_(guest) {
-  // k = the Apps Script deployment id, so the RSVP page knows where to save answers without any setup of its own.
-  var key = (CONFIG.API_URL.match(/\/s\/([A-Za-z0-9_-]+)\/exec/) || [])[1] || '';
-  var manage = CONFIG.SITE_URL + '/?k=' + encodeURIComponent(key) + '&amp;t=' + encodeURIComponent(guest.token);
-  var base = manage + '&amp;a=';
-  return {
-    yes: base + 'yes',
-    maybe: base + 'maybe',
-    no: base + 'no',
-    manage: manage,
-    pixel: CONFIG.API_URL + '?api=o&amp;t=' + encodeURIComponent(guest.token),
-    poster: CONFIG.SITE_URL + '/poster.jpg'
+  var tag = ' [Ref ' + rsvpRef_(guest) + ']';
+  var links = {
+    maybe: mailto_(CONFIG.RSVP_SUBJECT + ': Maybe' + tag,
+      'I might make it.\n\n(Optional: tell us what is holding you back, then press Send.)'),
+    no: mailto_(CONFIG.RSVP_SUBJECT + ': Can\'t make it' + tag,
+      'Sorry, I can\'t make it this time.\n\n' + REPLY_HINT),
+    party: CONFIG.PARTY_OPTIONS.map(function (o) {
+      return {
+        label: o.button,
+        href: mailto_(CONFIG.RSVP_SUBJECT + ': Yes, ' + o.words + tag,
+          'Count me in! We will be ' + (o.size === '1' ? 'just me' : o.words) + '.\n\n' + REPLY_HINT)
+      };
+    }),
+    pixel: CONFIG.API_URL ? CONFIG.API_URL + '?api=o&amp;t=' + encodeURIComponent(guest.token) : '',
+    poster: CONFIG.POSTER_SRC
   };
+  links.yes = links.party[0].href;
+  return links;
 }
 
 function emailShell_(opts) {
@@ -231,7 +257,7 @@ function emailShell_(opts) {
 '@media only screen and (max-width:620px){' +
 '.wrap{width:100%!important}.pad{padding-left:24px!important;padding-right:24px!important}' +
 '.btn-cell{display:block!important;width:100%!important;padding:0 0 10px 0!important}' +
-'.btn-a{display:block!important}.h1{font-size:30px!important;line-height:36px!important}}' +
+'.btn-a{display:block!important;width:230px!important;margin:0 auto!important;box-sizing:border-box}.h1{font-size:30px!important;line-height:36px!important}}' +
 '&lt;/style&gt;&lt;/head&gt;' +
 '&lt;body style="margin:0;padding:0;background:' + c.navy + ';"&gt;' +
 '&lt;div style="display:none;max-height:0;overflow:hidden;opacity:0;color:' + c.navy + ';"&gt;' +
@@ -280,15 +306,42 @@ function button_(href, text, primary) {
   var border = primary ? c.gold : '#5A6590';
   return '&lt;td class="btn-cell" style="padding:0 5px;"&gt;' +
     '&lt;a class="btn-a" href="' + escapeHtml_(href) + '" target="_blank" style="display:inline-block;background:' + bg + ';border:1.5px solid ' + border +
-    ';border-radius:999px;padding:14px 22px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;color:' + color +
+    ';min-width:150px;box-sizing:border-box;border-radius:999px;padding:14px 22px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;color:' + color +
     ';text-decoration:none;text-align:center;mso-padding-alt:0;"&gt;' + text + '&lt;/a&gt;&lt;/td&gt;';
 }
 
+function buttonRow_(cells) {
+  return '&lt;table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;"&gt;&lt;tr&gt;' + cells + '&lt;/tr&gt;&lt;/table&gt;';
+}
+
+function smallLabel_(text) {
+  return '&lt;div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;letter-spacing:2px;color:' + EMAIL_COLORS.gold + ';font-weight:bold;padding:0 0 12px;"&gt;' + text + '&lt;/div&gt;';
+}
+
+/**
+ * The RSVP block. which: 'all' (invite, nudge), 'maybe-reminder' (Yes + Can't), 'yes-reminder' (Can't only).
+ */
 function rsvpButtons_(links, which) {
-  which = which || ['yes', 'maybe', 'no'];
-  var labels = { yes: 'Yes, I&amp;rsquo;ll be there', maybe: 'Maybe', no: 'Can&amp;rsquo;t make it' };
-  var cells = which.map(function (key) { return button_(links[key], labels[key], key === 'yes'); }).join('');
-  return '&lt;table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"&gt;&lt;tr&gt;' + cells + '&lt;/tr&gt;&lt;/table&gt;';
+  which = which || 'all';
+  var html = '';
+  if (which !== 'yes-reminder') {
+    html += smallLabel_('COMING? TAP HOW MANY OF YOU') +
+      buttonRow_(links.party.slice(0, 2).map(function (p) { return button_(p.href, p.label, true); }).join('')) +
+      '&lt;div style="height:10px;line-height:10px;"&gt;&amp;nbsp;&lt;/div&gt;' +
+      buttonRow_(links.party.slice(2).map(function (p) { return button_(p.href, p.label, true); }).join('')) +
+      '&lt;div style="height:24px;line-height:24px;"&gt;&amp;nbsp;&lt;/div&gt;';
+  }
+  var others = which === 'all' ? button_(links.maybe, 'Maybe', false) + button_(links.no, 'Can&amp;rsquo;t make it', false)
+    : button_(links.no, which === 'yes-reminder' ? 'Plans changed? Let us know' : 'Can&amp;rsquo;t make it', false);
+  html += buttonRow_(others);
+  html += '&lt;div style="font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:20px;color:' + EMAIL_COLORS.muted + ';padding:20px 0 0;"&gt;' +
+    'Each button opens a ready-made reply. Just press &lt;strong style="color:' + EMAIL_COLORS.ink + ';"&gt;Send&lt;/strong&gt;.&lt;/div&gt;';
+  return html;
+}
+
+function textButtons_() {
+  return 'To RSVP, just reply to this email with one of:\n' +
+    '  YES and how many of you (e.g. "Yes, 3 of us")\n  MAYBE\n  NO\n';
 }
 
 function paragraph_(html) {
@@ -300,8 +353,8 @@ function buildInviteEmail(guest) {
   var c = EMAIL_COLORS, e = CONFIG.EVENT, links = rsvpLinks_(guest);
   var body = '' +
 '&lt;tr&gt;&lt;td style="padding:0;"&gt;' +
-  '&lt;a href="' + escapeHtml_(links.yes) + '" target="_blank"&gt;&lt;img src="' + links.poster + '" width="600" alt="Jupiter Texas Real Estate Group invites you and your family to The Holiday Party, Saturday December 12, 6 PM onwards, Elegance Ballroom, Plano TX" ' +
-  'style="display:block;width:100%;max-width:600px;height:auto;border:0;border-radius:14px;"&gt;&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;' +
+  '&lt;img src="' + links.poster + '" width="600" alt="Jupiter Texas Real Estate Group invites you and your family to The Holiday Party, Saturday December 12, 6 PM onwards, Elegance Ballroom, Plano TX" ' +
+  'style="display:block;width:100%;max-width:600px;height:auto;border:0;border-radius:14px;"&gt;&lt;/td&gt;&lt;/tr&gt;' +
 '&lt;tr&gt;&lt;td class="pad" style="padding:40px 48px 8px;"&gt;' +
   paragraph_('Dear ' + escapeHtml_(firstName_(guest.name)) + ',') +
   paragraph_('As the year comes to a close, we would love to celebrate it with the people who made it possible: our investors. ' +
@@ -311,8 +364,7 @@ function buildInviteEmail(guest) {
 '&lt;tr&gt;&lt;td class="pad" style="padding:40px 48px 8px;text-align:center;"&gt;' +
   '&lt;div class="h1" style="font-family:Georgia,\'Times New Roman\',serif;font-size:34px;line-height:40px;color:' + c.gold + ';"&gt;Will you join us?&lt;/div&gt;' +
   '&lt;div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:22px;color:' + c.muted + ';padding:8px 0 24px;"&gt;Kindly RSVP by ' + escapeHtml_(e.RSVP_BY_LABEL) + '&lt;/div&gt;' +
-  rsvpButtons_(links) +
-  '&lt;div style="font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:20px;color:' + c.muted + ';padding:20px 0 0;"&gt;One tap is all it takes. Your calendar invite follows automatically.&lt;/div&gt;' +
+  rsvpButtons_(links, 'all') +
 '&lt;/td&gt;&lt;/tr&gt;' +
 '&lt;tr&gt;&lt;td class="pad" style="padding:36px 48px 40px;"&gt;' +
   paragraph_('Warm regards,&lt;br&gt;&lt;strong&gt;The Jupiter Texas Team&lt;/strong&gt;') +
@@ -329,8 +381,7 @@ function buildInviteEmail(guest) {
     text: 'Dear ' + firstName_(guest.name) + ',\n\n' +
       'Jupiter Texas Real Estate Group invites you and your family to ' + e.TITLE + '.\n\n' +
       'When: ' + e.DATE_LABEL + ', ' + e.TIME_LABEL + '\nWhere: ' + e.VENUE_NAME + ', ' + e.VENUE_ADDRESS + '\n\n' +
-      'Kindly RSVP by ' + e.RSVP_BY_LABEL + ':\n' +
-      'Yes, I will be there: ' + links.yes + '\nMaybe: ' + links.maybe + '\nCan\'t make it: ' + links.no + '\n\n' +
+      'Kindly RSVP by ' + e.RSVP_BY_LABEL + '.\n' + textButtons_() + '\n' +
       'Warm regards,\nThe Jupiter Texas Team'
   };
 }
@@ -345,10 +396,7 @@ function buildReminderEmail(guest, daysLeft) {
     ? 'The Jupiter Texas Holiday Party is ' + when + ' and we would still love to have you there. Let us know when you can, it helps us plan seating and food.'
     : 'Just a reminder that the Jupiter Texas Holiday Party is ' + when + '. We have you down for ' +
       (guest.partySize &amp;&amp; guest.partySize !== '1' ? 'a party of ' + guest.partySize : 'one') + '. Family and friends are welcome.';
-  var buttons = isMaybe
-    ? rsvpButtons_(links, ['yes', 'no'])
-    : '&lt;table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"&gt;&lt;tr&gt;' +
-      button_(links.manage, 'View or change my RSVP', false) + '&lt;/tr&gt;&lt;/table&gt;';
+  var buttons = rsvpButtons_(links, isMaybe ? 'maybe-reminder' : 'yes-reminder');
 
   var body = '' +
 '&lt;tr&gt;&lt;td class="pad" style="padding:40px 48px 8px;text-align:center;"&gt;' +
@@ -368,7 +416,7 @@ function buildReminderEmail(guest, daysLeft) {
     html: emailShell_({ title: subject, preheader: e.DATE_LABEL + ', ' + e.TIME_LABEL + ', ' + e.VENUE_ADDRESS, body: body, pixel: null }),
     text: 'Dear ' + firstName_(guest.name) + ',\n\n' + intro + '\n\nWhen: ' + e.DATE_LABEL + ', ' + e.TIME_LABEL +
       '\nWhere: ' + e.VENUE_NAME + ', ' + e.VENUE_ADDRESS + '\n\n' +
-      (isMaybe ? 'Yes: ' + links.yes + '\nCan\'t make it: ' + links.no : 'View or change your RSVP: ' + links.manage) +
+      (isMaybe ? textButtons_() : 'Plans changed? Just reply to this email and let us know.') +
       '\n\nWarm regards,\nThe Jupiter Texas Team'
   };
 }
@@ -380,16 +428,16 @@ function buildNudgeEmail(guest) {
 '&lt;tr&gt;&lt;td class="pad" style="padding:40px 48px 8px;"&gt;' +
   paragraph_('Dear ' + escapeHtml_(firstName_(guest.name)) + ',') +
   paragraph_('We would love to see you and your family at our Holiday Party on &lt;strong&gt;' + escapeHtml_(e.DATE_LABEL) + '&lt;/strong&gt;. ' +
-             'Could you let us know if you can make it? It is a single tap.') +
+             'Could you let us know if you can make it? Tap a button below and press Send.') +
 '&lt;/td&gt;&lt;/tr&gt;' +
 '&lt;tr&gt;&lt;td class="pad" style="padding:8px 48px 0;"&gt;' + detailsBlock_() + '&lt;/td&gt;&lt;/tr&gt;' +
-'&lt;tr&gt;&lt;td class="pad" style="padding:32px 48px 40px;text-align:center;"&gt;' + rsvpButtons_(links) + '&lt;/td&gt;&lt;/tr&gt;';
-  var subject = 'Will we see you on December 12?';
+'&lt;tr&gt;&lt;td class="pad" style="padding:32px 48px 40px;text-align:center;"&gt;' + rsvpButtons_(links, 'all') + '&lt;/td&gt;&lt;/tr&gt;';
+  var subject = 'Will we see you at the Jupiter Texas Holiday Party?';
   return {
     subject: subject,
-    html: emailShell_({ title: subject, preheader: 'One tap to RSVP for the Jupiter Texas Holiday Party.', body: body, pixel: links.pixel }),
+    html: emailShell_({ title: subject, preheader: 'Tap a button to RSVP for the Jupiter Texas Holiday Party on December 12.', body: body, pixel: links.pixel }),
     text: 'Dear ' + firstName_(guest.name) + ',\n\nCould you let us know if you can make our Holiday Party on ' + e.DATE_LABEL + '?\n\n' +
-      'Yes: ' + links.yes + '\nMaybe: ' + links.maybe + '\nCan\'t make it: ' + links.no + '\n\nWarm regards,\nThe Jupiter Texas Team'
+      textButtons_() + '\nWarm regards,\nThe Jupiter Texas Team'
   };
 }
 
@@ -419,6 +467,7 @@ function onOpen() {
 }
 
 function setup() {
+  requireOwner_();
   var ss = SpreadsheetApp.getActive();
   var sheet = ss.getSheetByName(GUEST_SHEET);
   if (!sheet) {
@@ -444,6 +493,7 @@ function setup() {
   sheet.getRange(2, 4, Math.max(sheet.getMaxRows() - 1, 1), HEADERS.length - 3).setBackground('#F4F5F9');
 
   setupSettings_();
+  savePoster_();
   installTriggers_();
   ensureTokens_();
   SpreadsheetApp.getActive().toast('Sheet and reminders are ready. Paste Name, Email and Phase into columns A to C.', 'Jupiter RSVP', 8);
@@ -455,38 +505,57 @@ function setupSettings_() {
   var sheet = ss.insertSheet(SETTINGS_SHEET);
   sheet.getRange(1, 1, 3, 3).setValues([
     ['Setting', 'Paste here', 'What it is'],
-    ['API link', '', 'From Apps Script: Deploy &gt; New deployment &gt; Web app &gt; Who has access: Anyone. Ends in /exec'],
-    ['RSVP page link', '', 'Your Netlify address, e.g. https://jupitertexas-rsvp.netlify.app']
+    ['API link', '', 'Optional, for open tracking. From Apps Script: Deploy &gt; New deployment &gt; Web app &gt; Who has access: Anyone. Ends in /exec'],
+    ['', '', '']
   ]);
   sheet.getRange(1, 1, 1, 3).setFontWeight('bold').setBackground('#0B1330').setFontColor('#F2B01E');
-  sheet.getRange(2, 2, 2, 1).setBackground('#FFF6DF');
+  sheet.getRange(2, 2).setBackground('#FFF6DF');
   sheet.setColumnWidth(1, 140); sheet.setColumnWidth(2, 420); sheet.setColumnWidth(3, 520);
 }
 
-/** Reads the two links from the Settings tab. Throws a plain-English error if they are missing. */
+/** Reads the optional API link (used only for open tracking) from the Settings tab. */
 function loadSettings_() {
   var sheet = SpreadsheetApp.getActive().getSheetByName(SETTINGS_SHEET);
   if (!sheet) throw new Error('Run setup first.');
   var api = String(sheet.getRange('B2').getValue()).trim();
-  var site = String(sheet.getRange('B3').getValue()).trim().replace(/\/+$/, '');
+  if (!api) { CONFIG.API_URL = ''; return; }
   var id = (api.match(/^https:\/\/script\.google\.com\/(?:a\/macros\/[^\/]+|macros)\/s\/([A-Za-z0-9_-]+)\/exec/) || [])[1];
   if (!id) {
-    throw new Error('The "API link" in the Settings tab is missing or wrong. It should start with https://script.google.com and end with /exec.');
+    throw new Error('The "API link" in the Settings tab looks wrong. It should start with https://script.google.com and end with /exec. Or leave it empty.');
   }
-  if (!/^https:\/\//.test(site)) throw new Error('The "RSVP page link" in the Settings tab is missing. Paste your Netlify address there.');
   // Workspace gives /a/macros/&lt;domain&gt;/ links, which can force a login. The plain form works for everyone.
   CONFIG.API_URL = 'https://script.google.com/macros/s/' + id + '/exec';
-  CONFIG.SITE_URL = site;
+}
+
+/* Poster: downloaded once into info@'s Drive, then attached inside each invitation. */
+function savePoster_() {
+  var props = PropertiesService.getScriptProperties();
+  var id = props.getProperty('POSTER_FILE_ID');
+  if (id) { try { DriveApp.getFileById(id).getSize(); return; } catch (e) { /* deleted, fetch again */ } }
+  var blob = UrlFetchApp.fetch(CONFIG.POSTER_SOURCE_URL).getBlob().setName('Jupiter Holiday Party poster.jpg');
+  var file = DriveApp.createFile(blob);
+  props.setProperty('POSTER_FILE_ID', file.getId());
+}
+
+var posterBlobCache_ = null;
+function posterBlob_() {
+  if (posterBlobCache_) return posterBlobCache_;
+  var id = PropertiesService.getScriptProperties().getProperty('POSTER_FILE_ID');
+  if (!id) throw new Error('The poster is missing. Run setup again.');
+  posterBlobCache_ = DriveApp.getFileById(id).getBlob().setName('poster.jpg');
+  return posterBlobCache_;
 }
 
 function installTriggers_() {
   ScriptApp.getProjectTriggers().forEach(function (t) {
-    if (t.getHandlerFunction() === 'hourlyJobs') ScriptApp.deleteTrigger(t);
+    if (['hourlyJobs', 'processReplies'].indexOf(t.getHandlerFunction()) !== -1) ScriptApp.deleteTrigger(t);
   });
   ScriptApp.newTrigger('hourlyJobs').timeBased().everyHours(1).create();
+  ScriptApp.newTrigger('processReplies').timeBased().everyMinutes(5).create();
 }
 
 function menuSendTest() {
+  requireOwner_();
   loadSettings_();
   var to = Session.getActiveUser().getEmail();
   sendEmail_(to, buildInviteEmail({ name: 'Test Investor', token: TEST_TOKEN }));
@@ -598,14 +667,10 @@ function doGet(e) {
   try {
     switch (p.api) {
       case 'o': trackOpen_(p.t); return ContentService.createTextOutput('');
-      case 'rsvp': return json_(handleRsvp_(p.t, p.a));
-      case 'party': return json_(handleParty_(p.t, p.n));
-      case 'reason': return json_(handleReason_(p.t, p.r));
-      case 'get': return json_(handleGet_(p.t));
     }
   } catch (err) {
     console.error(err);
-    return json_({ ok: false, error: 'Something went wrong. Please try again.' });
+    return ContentService.createTextOutput('');
   }
 
   if (!isOwner_()) {
@@ -614,10 +679,6 @@ function doGet(e) {
   return HtmlService.createTemplateFromFile('Dashboard').evaluate()
     .setTitle('Jupiter Holiday Party · RSVPs')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
-}
-
-function json_(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
 
 function isOwner_() {
@@ -636,8 +697,7 @@ function publicGuest_(g, extra) {
     email: g.email,
     rsvp: g.rsvp,
     partySize: g.partySize,
-    reason: g.reason,
-    reasons: CONFIG.MAYBE_REASONS
+    reason: g.reason
   };
   Object.keys(extra || {}).forEach(function (k) { out[k] = extra[k]; });
   return out;
@@ -658,12 +718,6 @@ function trackOpen_(token) {
     if (!g.opened) { fields['Opened'] = 'Yes'; fields['First Opened'] = now; }
     setCells_(found.sheet, found.col, g.row, fields);
   } finally { lock.releaseLock(); }
-}
-
-function handleGet_(token) {
-  if (token === TEST_TOKEN) return demoGuest_({});
-  var found = findGuestByToken_(token);
-  return found ? publicGuest_(found.guest) : { ok: false, error: 'We could not find your invitation.' };
 }
 
 function handleRsvp_(token, action) {
@@ -709,25 +763,164 @@ function handleRsvp_(token, action) {
   } finally { lock.releaseLock(); }
 }
 
-function handleParty_(token, size) {
-  var allowed = ['1', '2', '3', '4+'];
-  if (allowed.indexOf(String(size)) === -1) return { ok: false, error: 'Unknown party size.' };
-  if (token === TEST_TOKEN) return demoGuest_({ rsvp: 'Yes', partySize: String(size) });
-  var found = findGuestByToken_(token);
-  if (!found) return { ok: false, error: 'We could not find your invitation.' };
-  setCells_(found.sheet, found.col, found.guest.row, { 'Party Size': String(size), 'Last Activity': new Date() });
-  found.guest.partySize = String(size);
-  return publicGuest_(found.guest);
+/* ------------------------------------------------------------------ */
+/* Reading RSVP replies from info@'s inbox (runs every 5 minutes)      */
+/* ------------------------------------------------------------------ */
+
+var REPLY_LOG_SHEET = 'Reply log';
+var RSVP_LABEL = 'Holiday Party RSVPs';
+
+function replyLog_() {
+  var ss = SpreadsheetApp.getActive();
+  var sheet = ss.getSheetByName(REPLY_LOG_SHEET);
+  if (!sheet) {
+    sheet = ss.insertSheet(REPLY_LOG_SHEET);
+    sheet.getRange(1, 1, 1, 6).setValues([['Received', 'From', 'Subject', 'Read as', 'Matched investor', 'Message ID']])
+      .setFontWeight('bold').setBackground('#0B1330').setFontColor('#F2B01E');
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
 }
 
-function handleReason_(token, reason) {
-  if (CONFIG.MAYBE_REASONS.indexOf(reason) === -1) return { ok: false, error: 'Unknown reason.' };
-  if (token === TEST_TOKEN) return demoGuest_({ rsvp: 'Maybe', reason: reason });
-  var found = findGuestByToken_(token);
-  if (!found) return { ok: false, error: 'We could not find your invitation.' };
-  setCells_(found.sheet, found.col, found.guest.row, { 'Maybe Reason': reason, 'Last Activity': new Date() });
-  found.guest.reason = reason;
-  return publicGuest_(found.guest);
+/** Works out what a reply means. Returns null if it isn't an RSVP. */
+function parseReply_(subject, body) {
+  var text = (subject + '\n' + body).toLowerCase();
+  var ref = (subject.match(/\[ref\s+([a-z0-9]{4,})\]/i) || [])[1] || '';
+  var choice = null, party = '';
+
+  // Button replies carry the answer in the subject. A later "Re:" reply may change it, so read its message instead.
+  var tagged = /^\s*re:/i.test(subject) ? null : subject.match(/holiday party rsvp:\s*(yes|maybe|can.?t make it)/i);
+  if (tagged) {
+    choice = /^yes/i.test(tagged[1]) ? 'Yes' : /^maybe/i.test(tagged[1]) ? 'Maybe' : 'No';
+  } else {
+    // Plain reply typed by hand, e.g. "Yes, 3 of us" or "no sorry". Look at the first line only.
+    var first = String(body).replace(/^\s+/, '').split(/\n/)[0].toLowerCase();
+    if (/^(yes|yep|yeah|count (me|us) in|we('| a)re in|i('| a)m in|attending)\b/.test(first)) choice = 'Yes';
+    else if (/^(maybe|not sure|might)\b/.test(first)) choice = 'Maybe';
+    else if (/^(no|sorry|unfortunately|can.?t|cannot|won.?t)\b/.test(first)) choice = 'No';
+    text = first;
+  }
+  if (!choice) return null;
+
+  if (choice === 'Yes') {
+    if (/4 or more|\+ ?3 or more/.test(text)) party = '4+';
+    else if (/just me|only me|myself/.test(text)) party = '1';
+    else {
+      var n = text.match(/\b([1-9])\s*(of us|people|persons|guests|adults|in total)\b/) || text.match(/\+\s*([1-9])\b/);
+      if (n) {
+        var count = n[0].indexOf('+') !== -1 ? Number(n[1]) + 1 : Number(n[1]);
+        party = count &gt;= 4 ? '4+' : String(count);
+      }
+    }
+  }
+
+  // Anything the investor typed themselves, minus our pre-filled lines.
+  var note = String(body)
+    .replace(/(^|\n)\s*&gt;.*$/g, '')
+    .split(/\n(?:on .+wrote:|-{2,}|_{2,}|from: )/i)[0]
+    .replace(/I might make it\.|\(Optional: tell us what is holding you back, then press Send\.\)|Sorry, I can't make it this time\.|Count me in! We will be [^.]+\.|Just press Send\.( You can add a note above if you like\.)?/g, '')
+    .replace(/\s+/g, ' ').trim().slice(0, 300);
+
+  return { choice: choice, party: party, ref: ref, note: note };
+}
+
+function emailAddress_(from) {
+  var m = String(from).match(/&lt;([^&gt;]+)&gt;/);
+  return (m ? m[1] : String(from)).trim().toLowerCase();
+}
+
+function findGuestByRef_(ref) {
+  if (!ref) return null;
+  var sheet = guestSheet_(), col = columnMap_(sheet), last = sheet.getLastRow();
+  if (last &lt; 2) return null;
+  var cell = sheet.getRange(2, col['Token'], last - 1, 1)
+    .createTextFinder('^' + ref.toLowerCase().replace(/[^a-z0-9]/g, '')).useRegularExpression(true).findNext();
+  if (!cell) return null;
+  var values = sheet.getRange(cell.getRow(), 1, 1, sheet.getLastColumn()).getValues()[0];
+  return rowToGuest_(values, col, cell.getRow());
+}
+
+function findGuestByEmail_(email) {
+  var guests = readGuests_().guests;
+  for (var i = 0; i &lt; guests.length; i++) if (guests[i].email === email) return guests[i];
+  return null;
+}
+
+/** Trigger: reads new RSVP replies, records them, sends the calendar invite and a short thank-you in the same thread. */
+function processReplies() {
+  var lock = LockService.getDocumentLock();
+  if (!lock.tryLock(1000)) return;
+  try {
+    var owner = CONFIG.OWNER_EMAIL.toLowerCase();
+    var log = replyLog_();
+    var seen = {};
+    if (log.getLastRow() &gt; 1) log.getRange(2, 6, log.getLastRow() - 1, 1).getValues().forEach(function (r) { seen[r[0]] = true; });
+
+    var query = '{subject:"' + CONFIG.RSVP_SUBJECT + '" subject:"Jupiter Texas Holiday Party"} newer_than:21d -in:sent';
+    var threads = GmailApp.search(query, 0, 100);
+    var label = GmailApp.getUserLabelByName(RSVP_LABEL) || GmailApp.createLabel(RSVP_LABEL);
+
+    threads.forEach(function (thread) {
+      thread.getMessages().forEach(function (msg) {
+        var id = msg.getId();
+        if (seen[id]) return;
+        var from = emailAddress_(msg.getFrom());
+        var subject = msg.getSubject();
+        var isTest = /\[ref test\]/i.test(subject);
+        // Skip our own invites, reminders and thank-yous. A test RSVP from info@ to itself counts once, never its "Re:" thank-you.
+        if (from === owner &amp;&amp; (!isTest || /^\s*re:/i.test(subject))) return;
+        seen[id] = true;
+
+        var parsed = parseReply_(subject, msg.getPlainBody());
+        var outcome = 'Not an RSVP (left for you to read)', who = '';
+        if (parsed) {
+          if (isTest) {
+            outcome = 'Test reply: ' + parsed.choice + (parsed.party ? ', party ' + parsed.party : '');
+            who = 'Test';
+            sendThankYou_(msg, { name: 'Test Investor' }, parsed);
+          } else {
+            var guest = findGuestByRef_(parsed.ref) || findGuestByEmail_(from);
+            if (!guest) {
+              outcome = 'RSVP ' + parsed.choice + ', but no matching investor (check manually)';
+            } else {
+              who = guest.name + ' &lt;' + guest.email + '&gt;';
+              applyRsvp_(guest, parsed);
+              sendThankYou_(msg, guest, parsed);
+              outcome = parsed.choice + (parsed.party ? ', party ' + parsed.party : '') + (parsed.note ? ', note: ' + parsed.note : '');
+            }
+          }
+          msg.markRead();
+          thread.addLabel(label);
+        }
+        log.appendRow([msg.getDate(), from, subject, outcome, who, id]);
+      });
+    });
+  } finally { lock.releaseLock(); }
+}
+
+function applyRsvp_(guest, parsed) {
+  handleRsvp_(guest.token, parsed.choice.toLowerCase());
+  var found = findGuestByToken_(guest.token);
+  var fields = {};
+  if (parsed.choice === 'Yes' &amp;&amp; parsed.party) fields['Party Size'] = parsed.party;
+  if (parsed.choice === 'Maybe') fields['Maybe Reason'] = parsed.note || '';
+  if (Object.keys(fields).length) setCells_(found.sheet, found.col, found.guest.row, fields);
+}
+
+function sendThankYou_(msg, guest, parsed) {
+  var name = escapeHtml_(firstName_(guest.name)), e = CONFIG.EVENT;
+  var partyWords = { '1': 'just you', '2': 'the 2 of you', '3': 'the 3 of you', '4+': '4 or more of you' }[parsed.party];
+  var line = {
+    Yes: 'Thank you, ' + name + '! You\'re confirmed' + (partyWords ? ' for ' + partyWords : '') + '. A calendar invite is on its way, and we\'ll send a reminder before the day.',
+    Maybe: 'Thanks, ' + name + '. We\'ve pencilled you in and sent a calendar hold so the date doesn\'t slip away. Just reply "Yes" or "No" here whenever you know.',
+    No: 'Thank you for letting us know, ' + name + '. We\'ll miss you! If your plans change, just reply "Yes" here.'
+  }[parsed.choice];
+  var html = '&lt;div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:24px;color:#1D1D1F;"&gt;' +
+    '&lt;p&gt;' + line + '&lt;/p&gt;' +
+    (parsed.choice === 'No' ? '' : '&lt;p&gt;&lt;strong&gt;' + escapeHtml_(e.DATE_LABEL) + ', ' + escapeHtml_(e.TIME_LABEL) + '&lt;/strong&gt;&lt;br&gt;' +
+      escapeHtml_(e.VENUE_NAME) + '&lt;br&gt;&lt;a href="' + e.MAP_URL + '"&gt;' + escapeHtml_(e.VENUE_ADDRESS) + '&lt;/a&gt;&lt;/p&gt;') +
+    '&lt;p&gt;Warm regards,&lt;br&gt;The Jupiter Texas Team&lt;/p&gt;&lt;/div&gt;';
+  msg.reply(html.replace(/&lt;[^&gt;]+&gt;/g, ' ').replace(/\s+/g, ' ').trim(), { htmlBody: html, name: CONFIG.SENDER_NAME });
 }
 
 /* ------------------------------------------------------------------ */
@@ -829,11 +1022,9 @@ function sendPhaseBatch(phase) {
 }
 
 function sendEmail_(to, email) {
-  GmailApp.sendEmail(to, email.subject, email.text, {
-    htmlBody: email.html,
-    name: CONFIG.SENDER_NAME,
-    replyTo: CONFIG.REPLY_TO
-  });
+  var options = { htmlBody: email.html, name: CONFIG.SENDER_NAME, replyTo: CONFIG.REPLY_TO };
+  if (email.html.indexOf('cid:poster') !== -1) options.inlineImages = { poster: posterBlob_() };
+  GmailApp.sendEmail(to, email.subject, email.text, options);
 }
 
 function sendTestToMe() {
@@ -847,6 +1038,9 @@ function sendTestToMe() {
 function getEmailPreview(kind) {
   requireOwner_();
   loadSettings_();
+  // Previews can't show the embedded poster, so hand them a data: URL copy.
+  var blob = posterBlob_();
+  CONFIG.POSTER_SRC = 'data:' + blob.getContentType() + ';base64,' + Utilities.base64Encode(blob.getBytes());
   var demo = { name: 'Test Investor', token: TEST_TOKEN, rsvp: kind === 'reminder-maybe' ? 'Maybe' : 'Yes', partySize: '3' };
   if (kind === 'nudge') return buildNudgeEmail(demo).html;
   if (kind &amp;&amp; kind.indexOf('reminder') === 0) return buildReminderEmail(demo, 3).html;
@@ -993,12 +1187,13 @@ function getDashboard() {
 }
 </textarea>
       </div>
-      <p>Press <span class="ui">Ctrl + S</span> (Mac: <span class="ui">Cmd + S</span>) to save.</p>
+      <p><strong>Save:</strong> press <span class="ui">Cmd + S</span> (Windows: <span class="ui">Ctrl + S</span>). Wait until "Unsaved changes" at the top disappears.</p>
+      <p class="tip"><b>Pasted an older version before?</b> Replace it with this one. The new version works by email replies.</p>
     </li>
     <li class="step" data-id="b3"><button class="tick">Mark done</button>
-      <p>On the left, next to <strong>Files</strong>, click the <span class="ui">+</span> <span class="arrow">→</span> <span class="ui">HTML</span>. Type this name exactly (with a capital D) and press <span class="ui">Enter</span>:</p>
+      <p>On the left, next to <strong>Files</strong>, click <span class="ui">+</span> <span class="arrow">→</span> <span class="ui">HTML</span>. Type this name and press <span class="ui">Enter</span>:</p>
       <div class="copyrow"><code>Dashboard</code><button class="copy" data-text="Dashboard">Copy</button></div>
-      <p>Delete the few lines it starts with (<span class="ui">Ctrl + A</span>, <span class="ui">Delete</span>), then paste this:</p>
+      <p>Delete the lines it starts with (<span class="ui">Cmd + A</span>, <span class="ui">Delete</span>), then paste this:</p>
       <div class="bigcopy">
         <div class="head"><span><span class="name">Dashboard.html</span> <span class="meta">· 440 lines</span></span><button class="copy" data-src="dash-html">Copy all of Dashboard.html</button></div>
         <pre aria-hidden="true">&lt;!DOCTYPE html&gt;
@@ -1451,131 +1646,107 @@ function getDashboard() {
 &lt;/html&gt;
 </textarea>
       </div>
-      <p>Save again (<span class="ui">Ctrl + S</span>).</p>
+      <p>Save again (<span class="ui">Cmd + S</span>). If you already have a Dashboard file from before, just replace its contents.</p>
     </li>
     <li class="step" data-id="b4"><button class="tick">Mark done</button>
-      <p>At the top of the editor there's a dropdown next to <span class="ui">▷ Run</span>. Click <span class="ui">Code.gs</span> on the left first, then choose <span class="ui">setup</span> in that dropdown and click <span class="ui">▷ Run</span>.</p>
+      <p>Click <span class="ui">Code.gs</span> on the left. In the dropdown next to <span class="ui">▷ Run</span> at the top, choose <span class="ui">setup</span>, then click <span class="ui">▷ Run</span>.</p>
+      <p class="tip"><b>Only see "myFunction"?</b> The code isn't saved yet. Press <span class="ui">Cmd + S</span>, wait a second, and open the dropdown again.</p>
       <p>Google asks for permission:</p>
       <ul>
         <li><span class="ui">Review permissions</span> <span class="arrow">→</span> pick <strong>info@jupitertexas.com</strong></li>
-        <li>If you see "Google hasn't verified this app": click <span class="ui">Advanced</span> <span class="arrow">→</span> <span class="ui">Go to Jupiter RSVP (unsafe)</span>. It's safe: it's your own code.</li>
-        <li>Click <span class="ui">Allow</span></li>
+        <li>If you see "Google hasn't verified this app": <span class="ui">Advanced</span> <span class="arrow">→</span> <span class="ui">Go to Jupiter RSVP (unsafe)</span>. It's safe: it's your own code.</li>
+        <li>Click <span class="ui">Allow</span>. It asks for Gmail (to send and read replies), Calendar (to send invites), Drive (to keep the poster) and Sheets.</li>
       </ul>
-      <p>Wait until the bottom says <strong>Execution completed</strong>. Go back to the sheet tab: you'll now see two tabs at the bottom, <strong>Guests</strong> and <strong>Settings</strong>.</p>
+      <p>Wait for <strong>Execution completed</strong> at the bottom. In the sheet you'll now see tabs called <strong>Guests</strong> and <strong>Settings</strong>.</p>
+      <p class="tip"><b>Ran setup before?</b> Run it again now. The new version needs the extra permissions.</p>
     </li>
   </ol>
 
   <!-- PART C -->
-  <h2><b>Part C</b> Create the two links <span class="who">5 min</span></h2>
-  <ol class="steps" style="--start:7">
+  <h2><b>Part C</b> Your dashboard link <span class="who">5 min</span></h2>
+  <ol class="steps" style="--start:6">
     <li class="step" data-id="c1"><button class="tick">Mark done</button>
-      <p><strong>Link 1: the RSVP link (public).</strong> In Apps Script, click the blue <span class="ui">Deploy</span> button (top right) <span class="arrow">→</span> <span class="ui">New deployment</span>.</p>
+      <p><strong>Your private dashboard.</strong> In Apps Script, click the blue <span class="ui">Deploy</span> button (top right) <span class="arrow">→</span> <span class="ui">New deployment</span>.</p>
       <ul>
         <li>Click the <span class="ui">⚙ gear</span> next to "Select type" <span class="arrow">→</span> <span class="ui">Web app</span></li>
-        <li>Description: <span class="ui">RSVP</span></li>
+        <li>Description: <span class="ui">Dashboard</span></li>
         <li>Execute as: <span class="ui">Me (info@jupitertexas.com)</span></li>
-        <li>Who has access: <span class="ui">Anyone</span></li>
-        <li>Click <span class="ui">Deploy</span> (click <span class="ui">Authorize access</span> and <span class="ui">Allow</span> again if asked)</li>
+        <li>Who has access: <span class="ui">Only myself</span></li>
+        <li>Click <span class="ui">Deploy</span></li>
       </ul>
-      <p>Under <strong>Web app</strong>, click <span class="ui">Copy</span>. Go to the sheet <span class="arrow">→</span> <strong>Settings</strong> tab <span class="arrow">→</span> click cell <span class="ui">B2</span> (yellow, next to "API link") <span class="arrow">→</span> paste.</p>
-      <p class="tip"><b>No "Anyone" option?</b> Jupiter's Google admin has turned it off. Send them the message in the "If something goes wrong" section at the bottom.</p>
+      <p>Copy the <strong>Web app</strong> link, open it in a new tab in the info@ window, and <strong>bookmark it</strong> (<span class="ui">Cmd + D</span>). That's your dashboard.</p>
     </li>
     <li class="step" data-id="c2"><button class="tick">Mark done</button>
-      <p><strong>Link 2: your dashboard (private).</strong> Click <span class="ui">Deploy</span> <span class="arrow">→</span> <span class="ui">New deployment</span> again.</p>
+      <p><strong>Open tracking: lets the dashboard show who opened the email.</strong> Do <span class="ui">Deploy</span> <span class="arrow">→</span> <span class="ui">New deployment</span> again:</p>
       <ul>
         <li><span class="ui">⚙ gear</span> <span class="arrow">→</span> <span class="ui">Web app</span></li>
-        <li>Description: <span class="ui">Dashboard</span></li>
+        <li>Description: <span class="ui">Tracking</span></li>
         <li>Execute as: <span class="ui">Me</span></li>
-        <li>Who has access: <span class="ui">Only myself</span></li>
+        <li>Who has access: <span class="ui">Anyone</span></li>
         <li><span class="ui">Deploy</span></li>
       </ul>
-      <p>Copy this Web app link, paste it into a new Chrome tab (in the info@ window) and press Enter. That's your dashboard. <strong>Bookmark it</strong> (<span class="ui">Ctrl + D</span> / <span class="ui">Cmd + D</span>).</p>
+      <p>Copy that <strong>Web app</strong> link. In the sheet, open the <strong>Settings</strong> tab and paste it into cell <span class="ui">B2</span> (the yellow cell).</p>
+      <p class="tip"><b>No "Anyone" option, or want to skip this?</b> Leave B2 empty. Everything else still works: you just won't see "Opened", only replies.</p>
     </li>
   </ol>
 
   <!-- PART D -->
-  <h2><b>Part D</b> Put the RSVP page online <span class="who">5 min</span></h2>
-  <ol class="steps" style="--start:9">
+  <h2><b>Part D</b> Test it on yourself <span class="who">10 min</span></h2>
+  <ol class="steps" style="--start:8">
     <li class="step" data-id="d1"><button class="tick">Mark done</button>
-      <p>Download <strong>jupiter-rsvp-page.zip</strong> (the file Claude sent you in the chat) to your computer.</p>
-      <p>Double-click it to unzip. On Windows: right-click <span class="arrow">→</span> <span class="ui">Extract All</span>. You now have a folder called <strong>jupiter-rsvp-page</strong>.</p>
+      <p>Open your dashboard bookmark. Click <span class="ui">Send invitations</span> <span class="arrow">→</span> <span class="ui">Send test to me</span>.</p>
+      <p>In info@'s Gmail, open the test invitation. Tap <strong>Just me</strong>. A reply opens with everything filled in. Press <strong>Send</strong>.</p>
+      <p><strong>Within 5 minutes</strong> you should get a reply saying "Thank you, Test! You're confirmed…". The test saves nothing in the sheet.</p>
     </li>
     <li class="step" data-id="d2"><button class="tick">Mark done</button>
-      <p>Go to Netlify's sign-up page and click <span class="ui">Sign up with Google</span>. Use info@jupitertexas.com so Jupiter owns it. It's free.</p>
-      <div class="copyrow"><code>https://app.netlify.com/signup</code><button class="copy" data-text="https://app.netlify.com/signup">Copy</button></div>
-      <p>If it asks questions about your team or project, pick anything and skip ahead.</p>
-    </li>
-    <li class="step" data-id="d3"><button class="tick">Mark done</button>
-      <p>Open the drop page and <strong>drag the jupiter-rsvp-page folder</strong> onto the box in the middle.</p>
-      <div class="copyrow"><code>https://app.netlify.com/drop</code><button class="copy" data-text="https://app.netlify.com/drop">Copy</button></div>
-      <p>After a few seconds you get a link like <strong>https://random-words-123.netlify.app</strong>.</p>
-    </li>
-    <li class="step" data-id="d4"><button class="tick">Mark done</button>
-      <p><strong>Give it a proper name</strong>, since investors will briefly see it: <span class="ui">Site configuration</span> <span class="arrow">→</span> <span class="ui">Change site name</span> <span class="arrow">→</span> paste the name below <span class="arrow">→</span> <span class="ui">Save</span>.</p>
-      <div class="copyrow"><code>jupitertexas-rsvp</code><button class="copy" data-text="jupitertexas-rsvp">Copy</button></div>
-      <p>If that name is taken, try <strong>jupitertexas-events</strong>.</p>
-    </li>
-    <li class="step" data-id="d5"><button class="tick">Mark done</button>
-      <p>Copy the site's link (for example <strong>https://jupitertexas-rsvp.netlify.app</strong>). In the sheet's <strong>Settings</strong> tab, paste it into cell <span class="ui">B3</span>.</p>
-      <p>Open the link once in your browser: you should see the Holiday Party poster.</p>
-    </li>
-  </ol>
-
-  <!-- PART E -->
-  <h2><b>Part E</b> Test it on yourself <span class="who">10 min</span></h2>
-  <ol class="steps" style="--start:14">
-    <li class="step" data-id="e1"><button class="tick">Mark done</button>
-      <p>Open your dashboard bookmark. Click <span class="ui">Send invitations</span> <span class="arrow">→</span> <span class="ui">Send test to me</span>.</p>
-      <p>Check info@'s inbox. Open the test email and tap <strong>Yes, I'll be there</strong>. A page saying <strong>"You're in, Test."</strong> should open. The test saves nothing, so tap all the buttons freely.</p>
-    </li>
-    <li class="step" data-id="e2"><button class="tick">Mark done</button>
-      <p><strong>Real test.</strong> In the sheet's <strong>Guests</strong> tab, on row 2, type your own name, your <strong>personal</strong> email (not info@), and <strong>0</strong> as the phase.</p>
+      <p><strong>Real test.</strong> In the <strong>Guests</strong> tab, on row 2, type your name, your <strong>personal</strong> email (not info@), and <strong>0</strong> as the phase.</p>
       <p>Refresh the dashboard <span class="arrow">→</span> <span class="ui">Send invitations</span> <span class="arrow">→</span> choose <span class="ui">Phase 0</span> <span class="arrow">→</span> <span class="ui">Send 1 invitation</span>.</p>
     </li>
-    <li class="step" data-id="e3"><button class="tick">Mark done</button>
-      <p>On your phone, open the email. Check that:</p>
+    <li class="step" data-id="d3"><button class="tick">Mark done</button>
+      <p>On your phone, open the email in your personal inbox. Tap <strong>Me +1</strong> and press <strong>Send</strong>. Within 5 minutes check that:</p>
       <ul>
-        <li>It's in your main inbox, not Spam or Promotions</li>
-        <li>Tapping <strong>Yes</strong> opens the page and a calendar invite from info@ arrives within a minute</li>
-        <li>Picking a party size shows "Perfect. We're planning for…"</li>
-        <li>After a refresh, the dashboard shows you as <strong>Opened</strong> and <strong>Attending</strong></li>
-        <li>Tapping <strong>Can't make it</strong> at the bottom of the page removes the calendar event</li>
+        <li>You got a thank-you reply in the same email thread</li>
+        <li>A calendar invite from info@ arrived</li>
+        <li>After a refresh, the dashboard shows you as <strong>Attending</strong>, party size 2</li>
       </ul>
+      <p>Then reply to the thank-you with just the word <strong>No</strong>. Within 5 minutes the dashboard should show <strong>Can't make it</strong> and the calendar event should disappear.</p>
       <p>All good? Delete your test row (right-click row 2 <span class="arrow">→</span> <span class="ui">Delete row</span>).</p>
     </li>
   </ol>
 
-  <!-- PART F -->
-  <h2><b>Part F</b> Send to investors</h2>
-  <ol class="steps" style="--start:17">
-    <li class="step" data-id="f1"><button class="tick">Mark done</button>
+  <!-- PART E -->
+  <h2><b>Part E</b> Send to investors</h2>
+  <ol class="steps" style="--start:11">
+    <li class="step" data-id="e1"><button class="tick">Mark done</button>
       <p>In the <strong>Guests</strong> tab, paste your investors starting at cell <span class="ui">A2</span>:</p>
       <ul>
         <li>Column A: <strong>Name</strong> (e.g. Raj Mehta)</li>
         <li>Column B: <strong>Email</strong></li>
         <li>Column C: <strong>Phase</strong> (1, 2, 3…)</li>
       </ul>
-      <p>From Excel: select those three columns of data (no header row), <span class="ui">Ctrl + C</span>, click A2 in the sheet, <span class="ui">Ctrl + V</span>. Leave the grey columns empty; the system fills them.</p>
+      <p>From Excel: select those three columns of data (no header row), copy, click A2 in the sheet, paste. Leave the grey columns empty; the system fills them.</p>
     </li>
-    <li class="step" data-id="f2"><button class="tick">Mark done</button>
+    <li class="step" data-id="e2"><button class="tick">Mark done</button>
       <p>Dashboard <span class="arrow">→</span> <span class="ui">Send invitations</span> <span class="arrow">→</span> choose <span class="ui">Phase 1</span>. It shows how many it found and how many it will send. Click <span class="ui">Send</span> and keep the tab open until it says <strong>Done</strong>.</p>
-      <p>Repeat for each phase when you're ready. Nobody is ever sent the invite twice.</p>
+      <p>Repeat for each phase when you're ready. Nobody gets the invite twice.</p>
     </li>
-    <li class="step" data-id="f3"><button class="tick">Mark done</button>
+    <li class="step" data-id="e3"><button class="tick">Mark done</button>
       <p><strong>After that, it runs itself.</strong></p>
       <ul>
+        <li>Every 5 minutes it reads RSVP replies, updates the dashboard, sends the calendar invite and a thank-you</li>
+        <li>Replies it can't understand (like "What's the dress code?") stay unread in info@'s inbox for you to answer</li>
         <li>Reminder emails go out 7, 3 and 1 day before, to everyone who said Yes or Maybe</li>
-        <li>Bounced emails are marked within the hour</li>
         <li>4 or more days after a phase goes out, use <span class="ui">Nudge non-responders</span> on the dashboard to follow up once</li>
+        <li>Every reply is listed in the sheet's <strong>Reply log</strong> tab</li>
       </ul>
     </li>
   </ol>
 
   <!-- DMARC -->
-  <h2><b>Part G</b> One request to Jupiter's IT person</h2>
-  <ol class="steps" style="--start:20">
-    <li class="step" data-id="g1"><button class="tick">Mark done</button>
-      <p>This helps keep invitations out of spam. It isn't required to start, but do it this week. Send this message to whoever manages the jupitertexas.com domain (GoDaddy, Google Domains, Cloudflare, etc.):</p>
+  <h2><b>Part F</b> One request to Jupiter's IT person</h2>
+  <ol class="steps" style="--start:14">
+    <li class="step" data-id="f1"><button class="tick">Mark done</button>
+      <p>This helps keep invitations out of spam. Send this to whoever manages the jupitertexas.com domain:</p>
       <div class="msg" id="dmarc-msg">Hi, could you add one DNS record to jupitertexas.com? We're sending event invitations from info@ and this helps them reach inboxes.
 
 Type: TXT
@@ -1590,22 +1761,20 @@ Thanks!</div>
   <!-- Troubleshooting -->
   <h2>If something goes wrong</h2>
   <div class="fix">
-    <details><summary>There's no "Anyone" option in step 8</summary>
-      <p>Send this to Jupiter's Google Workspace admin:</p>
-      <div class="msg" id="admin-msg">Hi, could you allow Apps Script web apps to be shared outside our domain? In the Google Admin console: Apps → Google Workspace → Drive and Docs → Sharing settings → Sharing options → allow users to share outside jupitertexas.com. It's for the holiday party RSVP page. Thanks!</div>
-      <button class="copy" data-src-text="admin-msg">Copy message</button>
+    <details><summary>The dropdown only shows "myFunction"</summary>
+      <p>The code isn't saved. Press Cmd + S (Windows: Ctrl + S), wait until "Unsaved changes" disappears, then open the dropdown again.</p>
     </details>
-    <details><summary>The dashboard says the "API link" or "RSVP page link" is missing or wrong</summary>
-      <p>Check the sheet's Settings tab. B2 must start with https://script.google.com and end with /exec (it's the one from step 8, "Anyone"). B3 must be your Netlify link starting with https://.</p>
+    <details><summary>Someone replied but the dashboard didn't change</summary>
+      <p>Wait 5 minutes and refresh. Then check the sheet's <strong>Reply log</strong> tab: it says how each reply was read. "No matching investor" means they replied from an email that isn't on the list and changed the subject; update their row by hand.</p>
     </details>
-    <details><summary>I changed something in the code and nothing changed</summary>
-      <p>In Apps Script: <span class="ui">Deploy</span> → <span class="ui">Manage deployments</span>. For each of the two deployments: click ✏️ → Version: <span class="ui">New version</span> → <span class="ui">Deploy</span>. The links stay the same.</p>
+    <details><summary>Tapping a button doesn't open a reply on a computer</summary>
+      <p>Some computers have no email app set up for these buttons. On a phone it always works. On a computer the investor can simply reply to the invitation with "Yes, 2 of us", "Maybe" or "No"; the system reads those too.</p>
     </details>
-    <details><summary>Tapping a button says "We couldn't save that"</summary>
-      <p>Usually the RSVP link (step 8) was made with "Only myself" instead of "Anyone", or B2 has the dashboard link instead of the RSVP link. Redo step 8 and paste the new link into B2. Then send yourself a new test, because emails already sent keep the old link.</p>
+    <details><summary>I changed the code and nothing changed in the dashboard</summary>
+      <p>Apps Script: <span class="ui">Deploy</span> → <span class="ui">Manage deployments</span>. For each deployment: click ✏️ → Version: <span class="ui">New version</span> → <span class="ui">Deploy</span>. The links stay the same.</p>
     </details>
     <details><summary>The emails land in Spam</summary>
-      <p>Do Part G (DMARC). Also ask your test recipients to move the email to the inbox and mark it "Not spam"; it helps the next ones.</p>
+      <p>Do Part F (DMARC). Also ask your test recipients to move the email to the inbox and mark it "Not spam"; it helps the next ones.</p>
     </details>
   </div>
 
