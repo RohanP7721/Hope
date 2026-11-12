@@ -1,0 +1,32 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Jupiter Texas//Holiday Party//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:holiday-party-2026@jupitertexas.com
+DTSTAMP:20261112T000000Z
+DTSTART:20261213T000000Z
+DTEND:20261213T050000Z
+SUMMARY:The Jupiter Texas Holiday Party
+LOCATION:Elegance Ballroom & Event Center (Hello India)\, 8740 Ohio Dr A1\, Plano\, TX 75024
+DESCRIPTION:Jupiter Texas Real Estate Group invites you and your family. Friends are welcome too.\n\nSaturday\, December 12\, 6 PM onwards.\n\nQuestions? info@jupitertexas.com
+URL:https://jupitertexas.com
+ORGANIZER;CN=Jupiter Texas:mailto:info@jupitertexas.com
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Jupiter Texas Holiday Party is in 1 week
+TRIGGER:-P7D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Jupiter Texas Holiday Party is in 3 days
+TRIGGER:-P3D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Jupiter Texas Holiday Party is tomorrow
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+END:VCALENDAR

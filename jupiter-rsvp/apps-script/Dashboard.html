@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jupiter Holiday Party · RSVPs</title>
+<style>
+  :root {
+    --bg: #F5F5F7; --card: #FFFFFF; --ink: #1D1D1F; --muted: #6E6E73; --line: #E5E5EA;
+    --navy: #0B1330; --gold: #D99A0B; --gold-soft: #FFF6DF;
+    --green: #1F8A4C; --green-soft: #E6F4EC; --amber: #A86A00; --amber-soft: #FFF3D6;
+    --red: #C2362B; --red-soft: #FCE9E7; --blue: #0A5BD3; --blue-soft: #E8F0FD;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 14px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased; }
+  button { font: inherit; cursor: pointer; }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 28px 24px 60px; }
+
+  header { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
+  .eyebrow { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); font-weight: 600; }
+  h1 { margin: 4px 0 0; font-size: 28px; letter-spacing: -.02em; font-weight: 700; }
+  .sub { color: var(--muted); margin-top: 4px; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .btn { border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 999px; padding: 9px 16px; font-weight: 500; transition: background .15s, transform .1s; }
+  .btn:hover { background: #F0F0F2; }
+  .btn:active { transform: scale(.97); }
+  .btn.primary { background: var(--navy); border-color: var(--navy); color: #fff; }
+  .btn.primary:hover { background: #18234A; }
+  .btn.gold { background: var(--gold); border-color: var(--gold); color: #fff; }
+  .btn[disabled] { opacity: .45; cursor: not-allowed; }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .stat { background: var(--card); border-radius: var(--radius); padding: 16px 18px; border: 1px solid var(--line); cursor: pointer; transition: border-color .15s; }
+  .stat:hover { border-color: #C7C7CC; }
+  .stat .label { color: var(--muted); font-size: 12px; font-weight: 500; }
+  .stat .value { font-size: 28px; font-weight: 700; letter-spacing: -.02em; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .stat .note { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .stat.hero { background: var(--navy); border-color: var(--navy); color: #fff; }
+  .stat.hero .label, .stat.hero .note { color: #B7BED6; }
+  .stat.hero .value { color: #F2B01E; }
+
+  .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+  .chip { border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 6px 12px; font-size: 13px; color: var(--ink); }
+  .chip.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .chip .n { color: var(--muted); margin-left: 4px; font-variant-numeric: tabular-nums; }
+  .chip.on .n { color: #C7C7CC; }
+  input[type=search], select { border: 1px solid var(--line); background: var(--card); border-radius: 10px; padding: 8px 12px; font: inherit; color: var(--ink); }
+  input[type=search] { width: 240px; }
+
+  .table-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  .scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; min-width: 920px; }
+  th { text-align: left; font-size: 12px; font-weight: 600; color: var(--muted); padding: 12px 14px; border-bottom: 1px solid var(--line); background: #FAFAFC; white-space: nowrap; cursor: pointer; user-select: none; }
+  th .arrow { opacity: .5; }
+  td { padding: 12px 14px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  tr:last-child td { border-bottom: 0; }
+  tbody tr:hover { background: #FAFAFC; }
+  .name { font-weight: 600; }
+  .email { color: var(--muted); font-size: 13px; }
+  .time { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .p-yes { background: var(--green-soft); color: var(--green); }
+  .p-maybe { background: var(--amber-soft); color: var(--amber); }
+  .p-no { background: var(--red-soft); color: var(--red); }
+  .p-sent { background: var(--blue-soft); color: var(--blue); }
+  .p-none { background: #F0F0F2; color: var(--muted); }
+  .p-open { background: var(--gold-soft); color: var(--amber); }
+  .empty { padding: 48px; text-align: center; color: var(--muted); }
+  .foot { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; margin-top: 10px; flex-wrap: wrap; gap: 8px; }
+  .foot a { color: var(--muted); }
+
+  /* Modal */
+  .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.35); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 10; }
+  .scrim.show { display: flex; }
+  .modal { background: var(--card); border-radius: 18px; width: 100%; max-width: 480px; padding: 24px; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+  .modal.wide { max-width: 700px; padding: 0; overflow: hidden; }
+  .modal h2 { margin: 0 0 4px; font-size: 20px; letter-spacing: -.01em; }
+  .modal p { color: var(--muted); margin: 0 0 16px; }
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+  .field select { width: 100%; }
+  .summary { background: var(--bg); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; }
+  .summary .big { font-size: 22px; font-weight: 700; letter-spacing: -.01em; }
+  .summary ul { margin: 8px 0 0; padding-left: 18px; color: var(--muted); }
+  .bar { height: 8px; border-radius: 99px; background: var(--line); overflow: hidden; margin: 12px 0 6px; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--gold); transition: width .3s; }
+  .row-end { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+  .modal-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  iframe { width: 100%; height: 70vh; border: 0; display: block; background: #0B1330; }
+
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 12px; opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; z-index: 20; max-width: 90vw; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .loading { opacity: .5; pointer-events: none; }
+
+  @media (max-width: 640px) {
+    .wrap { padding: 20px 16px 48px; }
+    input[type=search] { width: 100%; }
+    h1 { font-size: 24px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <header>
+    <div>
+      <div class="eyebrow">Jupiter Texas · Holiday Party</div>
+      <h1>Invitations & RSVPs</h1>
+      <div class="sub" id="sub">Loading…</div>
+    </div>
+    <div class="actions">
+      <button class="btn" onclick="openPreview('invite')">Preview emails</button>
+      <button class="btn" onclick="openNudge()">Nudge non-responders</button>
+      <button class="btn primary" onclick="openSend()">Send invitations</button>
+    </div>
+  </header>
+
+  <section class="stats" id="stats"></section>
+
+  <div class="toolbar">
+    <div class="chips" id="chips"></div>
+    <select id="phaseFilter" onchange="render()"><option value="">All phases</option></select>
+    <input type="search" id="search" placeholder="Search name or email" oninput="render()">
+  </div>
+
+  <div class="table-card">
+    <div class="scroll">
+      <table>
+        <thead><tr id="thead"></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="foot">
+    <span id="count"></span>
+    <span><a href="#" onclick="exportCsv();return false;">Export CSV</a> · <a id="sheetLink" href="#" target="_blank">Open Google Sheet</a> · <span id="updated"></span></span>
+  </div>
+</div>
+
+<!-- Send invitations -->
+<div class="scrim" id="sendModal">
+  <div class="modal">
+    <h2>Send invitations</h2>
+    <p>Pick a phase. Nobody is ever invited twice.</p>
+    <div class="field">
+      <label for="sendPhase">Phase</label>
+      <select id="sendPhase" onchange="loadSendPreview()"></select>
+    </div>
+    <div class="summary" id="sendSummary">Pick a phase.</div>
+    <div id="sendProgress" style="display:none">
+      <div class="bar"><i id="sendBar"></i></div>
+      <div class="time" id="sendStatus"></div>
+    </div>
+    <div class="row-end" style="margin-top:16px">
+      <button class="btn" onclick="sendTest()">Send test to me</button>
+      <button class="btn" onclick="closeModal('sendModal')" id="sendCancel">Close</button>
+      <button class="btn gold" id="sendGo" disabled onclick="startSend()">Send</button>
+    </div>
+  </div>
+</div>
+
+<!-- Nudge -->
+<div class="scrim" id="nudgeModal">
+  <div class="modal">
+    <h2>Nudge non-responders</h2>
+    <p id="nudgeText">Checking…</p>
+    <div id="nudgeProgress" style="display:none"><div class="bar"><i id="nudgeBar"></i></div></div>
+    <div class="row-end">
+      <button class="btn" onclick="openPreview('nudge')">Preview nudge</button>
+      <button class="btn" onclick="closeModal('nudgeModal')">Close</button>
+      <button class="btn gold" id="nudgeGo" disabled onclick="startNudge()">Send nudge</button>
+    </div>
+  </div>
+</div>
+
+<!-- Email preview -->
+<div class="scrim" id="previewModal">
+  <div class="modal wide">
+    <div class="modal-head">
+      <div class="tabs">
+        <button class="chip" data-kind="invite" onclick="openPreview('invite')">Invitation</button>
+        <button class="chip" data-kind="nudge" onclick="openPreview('nudge')">Nudge</button>
+        <button class="chip" data-kind="reminder-yes" onclick="openPreview('reminder-yes')">Reminder · Yes</button>
+        <button class="chip" data-kind="reminder-maybe" onclick="openPreview('reminder-maybe')">Reminder · Maybe</button>
+      </div>
+      <button class="btn" onclick="closeModal('previewModal')">Done</button>
+    </div>
+    <iframe id="previewFrame" title="Email preview"></iframe>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  var DATA = null;
+  var FILTER = 'all';
+  var SORT = { key: 'lastActivity', dir: -1 };
+
+  var FILTERS = [
+    ['all', 'All', function () { return true; }],
+    ['notsent', 'Not sent', function (r) { return r.status === 'Not sent' || r.status.indexOf('Failed') === 0; }],
+    ['unopened', 'Sent, not opened', function (r) { return r.status === 'Sent' && !r.opened; }],
+    ['opened', 'Opened, no RSVP', function (r) { return r.opened && !r.rsvp; }],
+    ['yes', 'Attending', function (r) { return r.rsvp === 'Yes'; }],
+    ['maybe', 'Maybe', function (r) { return r.rsvp === 'Maybe'; }],
+    ['no', "Can't make it", function (r) { return r.rsvp === 'No'; }],
+    ['bounced', 'Bounced', function (r) { return r.status === 'Bounced'; }]
+  ];
+
+  var COLUMNS = [
+    ['name', 'Investor'], ['phase', 'Phase'], ['status', 'Invite'], ['opened', 'Opened'],
+    ['rsvp', 'RSVP'], ['partySize', 'Party'], ['reason', 'Maybe reason'], ['lastActivity', 'Last activity']
+  ];
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function when(iso) {
+    if (!iso) return '';
+    var d = new Date(iso), now = new Date(), mins = Math.round((now - d) / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return mins + 'm ago';
+    if (mins < 60 * 24) return Math.round(mins / 60) + 'h ago';
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ', ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  }
+  function toast(msg) { var t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(function () { t.classList.remove('show'); }, 3500); }
+  function fail(err) { toast(err && err.message ? err.message : String(err)); }
+  function call(fn) {
+    var args = Array.prototype.slice.call(arguments, 1);
+    return new Promise(function (resolve, reject) {
+      var runner = google.script.run.withSuccessHandler(resolve).withFailureHandler(reject);
+      runner[fn].apply(runner, args);
+    });
+  }
+
+  function load() {
+    return call('getDashboard').then(function (data) { DATA = data; renderAll(); }).catch(fail);
+  }
+
+  function renderAll() {
+    var s = DATA.stats;
+    var pct = function (n, d) { return d ? Math.round(n / d * 100) + '%' : '—'; };
+    $('sub').textContent = DATA.daysLeft > 0 ? DATA.daysLeft + ' days to the party · Saturday, December 12' : (DATA.daysLeft === 0 ? 'The party is today' : 'The party has happened');
+    $('stats').innerHTML = [
+      ['hero', 'yes', 'Attending', s.yes, 'Expected headcount ' + s.headcount],
+      ['', 'all', 'Invited', s.sent, 'of ' + s.total + ' on the list'],
+      ['', 'opened', 'Opened', s.opened, pct(s.opened, s.sent) + ' of invited'],
+      ['', 'maybe', 'Maybe', s.maybe, ''],
+      ['', 'no', "Can't make it", s.no, ''],
+      ['', 'unopened', 'No response yet', s.noResponse, pct(s.yes + s.maybe + s.no, s.sent) + ' have replied'],
+      ['', 'bounced', 'Bounced', s.bounced, s.bounced ? 'Check these emails' : 'All delivered']
+    ].map(function (c) {
+      return '<div class="stat ' + c[0] + '" onclick="setFilter(\'' + c[1] + '\')"><div class="label">' + c[2] + '</div><div class="value">' + c[3] + '</div><div class="note">' + esc(c[4]) + '</div></div>';
+    }).join('');
+
+    var current = $('phaseFilter').value;
+    $('phaseFilter').innerHTML = '<option value="">All phases</option>' + DATA.phases.map(function (p) { return '<option value="' + esc(p) + '">Phase ' + esc(p) + '</option>'; }).join('');
+    $('phaseFilter').value = current;
+    $('sheetLink').href = DATA.sheetUrl;
+    $('updated').textContent = 'Updated ' + new Date(DATA.updatedAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+    render();
+  }
+
+  function setFilter(key) { FILTER = key; render(); }
+  function setSort(key) { SORT = { key: key, dir: SORT.key === key ? -SORT.dir : 1 }; render(); }
+
+  function visibleRows() {
+    var q = $('search').value.trim().toLowerCase(), phase = $('phaseFilter').value;
+    var test = FILTERS.filter(function (f) { return f[0] === FILTER; })[0][2];
+    return DATA.rows.filter(function (r) {
+      if (phase && r.phase !== phase) return false;
+      if (q && (r.name + ' ' + r.email).toLowerCase().indexOf(q) === -1) return false;
+      return test(r);
+    });
+  }
+
+  function render() {
+    if (!DATA) return;
+    var phase = $('phaseFilter').value;
+    var base = DATA.rows.filter(function (r) { return !phase || r.phase === phase; });
+    $('chips').innerHTML = FILTERS.map(function (f) {
+      var n = base.filter(f[2]).length;
+      return '<button class="chip ' + (FILTER === f[0] ? 'on' : '') + '" onclick="setFilter(\'' + f[0] + '\')">' + f[1] + '<span class="n">' + n + '</span></button>';
+    }).join('');
+
+    $('thead').innerHTML = COLUMNS.map(function (c) {
+      var arrow = SORT.key === c[0] ? (SORT.dir > 0 ? ' ↑' : ' ↓') : '';
+      return '<th onclick="setSort(\'' + c[0] + '\')">' + c[1] + '<span class="arrow">' + arrow + '</span></th>';
+    }).join('');
+
+    var rows = visibleRows().sort(function (a, b) {
+      var x = a[SORT.key], y = b[SORT.key];
+      if (typeof x === 'boolean') { x = x ? 1 : 0; y = y ? 1 : 0; }
+      x = x || ''; y = y || '';
+      return (x > y ? 1 : x < y ? -1 : 0) * SORT.dir;
+    });
+
+    $('tbody').innerHTML = rows.length ? rows.map(rowHtml).join('') :
+      '<tr><td colspan="8" class="empty">' + (DATA.rows.length ? 'Nobody matches this view.' : 'No investors yet. Paste Name, Email and Phase into the Google Sheet.') + '</td></tr>';
+    $('count').textContent = 'Showing ' + rows.length + ' of ' + DATA.rows.length + ' investors';
+  }
+
+  function rowHtml(r) {
+    var status = r.status === 'Sent' ? '<span class="pill p-sent">Sent</span><div class="time">' + when(r.sentAt) + '</div>'
+      : r.status === 'Bounced' ? '<span class="pill p-no">Bounced</span>'
+      : r.status.indexOf('Failed') === 0 ? '<span class="pill p-no" title="' + esc(r.status) + '">Failed</span>'
+      : '<span class="pill p-none">Not sent</span>';
+    var opened = r.opened ? '<span class="pill p-open">Opened</span><div class="time">' + when(r.firstOpened) + (r.openCount > 1 ? ' · ' + r.openCount + '×' : '') + '</div>'
+      : (r.status === 'Sent' ? '<span class="pill p-none">Not yet</span>' : '');
+    var rsvpClass = { Yes: 'p-yes', Maybe: 'p-maybe', No: 'p-no' }[r.rsvp];
+    var rsvpLabel = { Yes: 'Attending', Maybe: 'Maybe', No: "Can't make it" }[r.rsvp];
+    var rsvp = r.rsvp ? '<span class="pill ' + rsvpClass + '">' + rsvpLabel + '</span><div class="time">' + when(r.rsvpAt) + (r.calendar ? ' · 📅' : '') + '</div>'
+      : (r.opened ? '<span class="pill p-none">No RSVP</span>' : '');
+    var party = r.rsvp === 'Yes' ? (r.partySize === '1' ? 'Just them' : r.partySize === '4+' ? '4 or more' : r.partySize ? r.partySize + ' people' : '') : '';
+    return '<tr>' +
+      '<td><div class="name">' + esc(r.name || '—') + '</div><div class="email">' + esc(r.email) + '</div></td>' +
+      '<td>' + esc(r.phase) + '</td><td>' + status + '</td><td>' + opened + '</td><td>' + rsvp + '</td>' +
+      '<td>' + party + '</td><td>' + esc(r.rsvp === 'Maybe' ? r.reason : '') + '</td>' +
+      '<td class="time">' + when(r.lastActivity) + '</td></tr>';
+  }
+
+  function exportCsv() {
+    var head = ['Name', 'Email', 'Phase', 'Invite', 'Sent at', 'Opened', 'First opened', 'RSVP', 'Party size', 'Maybe reason', 'RSVP at'];
+    var lines = [head].concat(visibleRows().map(function (r) {
+      return [r.name, r.email, r.phase, r.status, r.sentAt, r.opened ? 'Yes' : 'No', r.firstOpened, r.rsvp, r.partySize, r.reason, r.rsvpAt];
+    })).map(function (cols) { return cols.map(function (c) { return '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"'; }).join(','); });
+    var blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'jupiter-holiday-party-rsvps.csv';
+    a.click();
+  }
+
+  /* ---- Modals ---- */
+  function openModal(id) { $(id).classList.add('show'); }
+  function closeModal(id) { $(id).classList.remove('show'); }
+  document.querySelectorAll('.scrim').forEach(function (s) {
+    s.addEventListener('click', function (e) { if (e.target === s && !s.dataset.busy) closeModal(s.id); });
+  });
+
+  function openSend() {
+    var phases = DATA ? DATA.phases : [];
+    $('sendPhase').innerHTML = phases.map(function (p) { return '<option value="' + esc(p) + '">Phase ' + esc(p) + '</option>'; }).join('') +
+      '<option value="ALL">Everyone on the list</option>';
+    $('sendProgress').style.display = 'none';
+    openModal('sendModal');
+    loadSendPreview();
+  }
+
+  function loadSendPreview() {
+    var phase = $('sendPhase').value;
+    $('sendGo').disabled = true;
+    $('sendSummary').innerHTML = 'Checking the list…';
+    call('previewPhase', phase).then(function (p) {
+      var label = phase === 'ALL' ? 'the whole list' : 'Phase ' + esc(phase);
+      var notes = [];
+      if (p.alreadySent) notes.push(p.alreadySent + ' already invited, will be skipped');
+      if (p.invalid.length) notes.push(p.invalid.length + ' invalid email' + (p.invalid.length > 1 ? 's' : '') + ': ' + esc(p.invalid.slice(0, 3).join(', ')) + (p.invalid.length > 3 ? '…' : ''));
+      if (p.duplicates.length) notes.push(p.duplicates.length + ' duplicate' + (p.duplicates.length > 1 ? 's' : '') + ' removed');
+      if (p.toSend > p.quota) notes.push('Gmail allows ' + p.quota + ' more today. The rest go tomorrow.');
+      $('sendSummary').innerHTML = '<div>' + label + ' has <strong>' + p.inPhase + '</strong> investor' + (p.inPhase === 1 ? '' : 's') + '.</div>' +
+        '<div class="big">' + (p.toSend ? 'Ready to send ' + p.toSend : 'Nothing new to send') + '</div>' +
+        (notes.length ? '<ul><li>' + notes.join('</li><li>') + '</li></ul>' : '');
+      $('sendGo').textContent = p.toSend ? 'Send ' + p.toSend + ' invitation' + (p.toSend === 1 ? '' : 's') : 'Send';
+      $('sendGo').disabled = !p.toSend;
+      $('sendGo').dataset.total = p.toSend;
+    }).catch(function (e) { $('sendSummary').textContent = e.message; });
+  }
+
+  function startSend() {
+    var phase = $('sendPhase').value, total = Number($('sendGo').dataset.total), done = 0, failed = 0;
+    if (!confirm('Send ' + total + ' invitations from ' + '<?= CONFIG.OWNER_EMAIL ?>' + ' now?')) return;
+    $('sendModal').dataset.busy = '1';
+    $('sendGo').disabled = true; $('sendPhase').disabled = true; $('sendCancel').disabled = true;
+    $('sendProgress').style.display = 'block';
+    (function next() {
+      $('sendStatus').textContent = 'Sending… ' + done + ' of ' + total;
+      call('sendPhaseBatch', phase).then(function (r) {
+        done += r.sent; failed += r.failed;
+        $('sendBar').style.width = Math.min(100, Math.round((done + failed) / total * 100)) + '%';
+        if (r.remaining > 0 && (r.sent + r.failed) > 0) return next();
+        finish();
+      }).catch(function (e) { fail(e); finish(); });
+    })();
+    function finish() {
+      delete $('sendModal').dataset.busy;
+      $('sendPhase').disabled = false; $('sendCancel').disabled = false;
+      $('sendStatus').textContent = 'Done. ' + done + ' sent' + (failed ? ', ' + failed + ' failed (see Invite column)' : '') + '.';
+      toast(done + ' invitations sent');
+      load(); loadSendPreview();
+    }
+  }
+
+  function sendTest() {
+    call('sendTestToMe').then(function (r) { toast('Test invite sent to ' + r.to); }).catch(fail);
+  }
+
+  function openNudge() {
+    openModal('nudgeModal');
+    $('nudgeGo').disabled = true; $('nudgeProgress').style.display = 'none';
+    $('nudgeText').textContent = 'Checking…';
+    call('previewNudge').then(function (p) {
+      $('nudgeText').innerHTML = p.count
+        ? '<strong>' + p.count + '</strong> investor' + (p.count === 1 ? '' : 's') + ' got the invite more than ' + p.days + ' days ago and haven\'t answered. Each gets one short follow-up, never more.'
+        : 'Nobody to nudge right now. People become eligible ' + p.days + ' days after their invite, if they haven\'t answered.';
+      $('nudgeGo').disabled = !p.count;
+      $('nudgeGo').dataset.total = p.count;
+    }).catch(fail);
+  }
+
+  function startNudge() {
+    var total = Number($('nudgeGo').dataset.total), done = 0;
+    $('nudgeGo').disabled = true; $('nudgeProgress').style.display = 'block';
+    (function next() {
+      call('sendNudgeBatch').then(function (r) {
+        done += r.sent;
+        $('nudgeBar').style.width = Math.min(100, Math.round(done / total * 100)) + '%';
+        if (r.remaining > 0 && r.sent > 0) return next();
+        $('nudgeText').textContent = 'Done. ' + done + ' nudges sent.';
+        load();
+      }).catch(fail);
+    })();
+  }
+
+  function openPreview(kind) {
+    openModal('previewModal');
+    document.querySelectorAll('#previewModal .chip').forEach(function (c) { c.classList.toggle('on', c.dataset.kind === kind); });
+    call('getEmailPreview', kind).then(function (html) { $('previewFrame').srcdoc = html; }).catch(fail);
+  }
+
+  load();
+  setInterval(function () { if (!document.hidden && !document.querySelector('.scrim.show')) load(); }, 60000);
+</script>
+</body>
+</html>
