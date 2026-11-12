@@ -119,7 +119,7 @@
       <p>Click <span class="ui">Code.gs</span> on the left. Click inside the code, press <span class="ui">Cmd + A</span> (Windows: <span class="ui">Ctrl + A</span>), then <span class="ui">Delete</span>, so it's completely empty.</p>
       <p>Press the button below, click in the empty editor, and paste (<span class="ui">Cmd + V</span> / <span class="ui">Ctrl + V</span>).</p>
       <div class="bigcopy">
-        <div class="head"><span><span class="name">Code.gs</span> <span class="meta">· 1154 lines</span></span><button class="copy" data-src="code-gs">Copy all of Code.gs</button></div>
+        <div class="head"><span><span class="name">Code.gs</span> <span class="meta">· 1232 lines</span></span><button class="copy" data-src="code-gs">Copy all of Code.gs</button></div>
         <pre aria-hidden="true">/**
  * Jupiter Texas Holiday Party: invitations, RSVP tracking and reminders.
  * Investors answer from inside their email: each button opens a ready-made reply to info@.
@@ -679,6 +679,7 @@ function doGet(e) {
   try {
     switch (p.api) {
       case 'o': trackOpen_(p.t); return ContentService.createTextOutput('');
+      case 'ping': return ContentService.createTextOutput(PING_REPLY);
     }
     if (p.r) return tapPage_(p.t, p.r, p.n);
   } catch (err) {
@@ -692,6 +693,48 @@ function doGet(e) {
   return HtmlService.createTemplateFromFile('Dashboard').evaluate()
     .setTitle('Jupiter Holiday Party · RSVPs')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
+/* ------------------------------------------------------------------ */
+/* Tracking link health check                                          */
+/* ------------------------------------------------------------------ */
+
+var PING_REPLY = 'jupiter-rsvp-ok-v4';
+
+/**
+ * Opens the Tracking link the way an investor's phone would, and reports in plain English what's wrong.
+ * Without a working link, buttons can't save with one tap and opens can't be seen, so sending is blocked.
+ */
+function trackingHealth_() {
+  loadSettings_();
+  if (!CONFIG.API_URL) {
+    return { ok: false, message: 'The Tracking link is missing. Paste it into the Settings tab, cell B2 (guide Part C, step 8).' };
+  }
+  var cache = CacheService.getScriptCache(), key = 'health:' + CONFIG.API_URL;
+  var cached = cache.get(key);
+  if (cached) return JSON.parse(cached);
+  var result;
+  try {
+    var res = UrlFetchApp.fetch(CONFIG.API_URL + '?api=ping', { muteHttpExceptions: true, followRedirects: true });
+    var body = res.getContentText();
+    if (body.trim() === PING_REPLY) result = { ok: true, message: '' };
+    else if (/accounts\.google\.com|ServiceLogin|Sign in/i.test(body) || res.getResponseCode() === 401 || res.getResponseCode() === 403) {
+      result = { ok: false, message: 'The Tracking link is not open to everyone. In Apps Script: Deploy &gt; Manage deployments &gt; Tracking &gt; pencil &gt; Who has access: "Anyone" &gt; Deploy.' };
+    } else if (res.getResponseCode() === 404) {
+      result = { ok: false, message: 'The Tracking link in Settings B2 doesn\'t exist. Copy it again from Deploy &gt; Manage deployments &gt; Tracking and paste it into B2.' };
+    } else {
+      result = { ok: false, message: 'The Tracking link is running old code. In Apps Script: Deploy &gt; Manage deployments &gt; Tracking &gt; pencil &gt; Version: "New version" &gt; Deploy.' };
+    }
+  } catch (err) {
+    result = { ok: false, message: 'Could not reach the Tracking link: ' + err.message };
+  }
+  cache.put(key, JSON.stringify(result), result.ok ? 600 : 30);
+  return result;
+}
+
+function requireTracking_() {
+  var h = trackingHealth_();
+  if (!h.ok) throw new Error('Not sent. ' + h.message);
 }
 
 /**
@@ -1088,7 +1131,8 @@ function previewPhase(phase) {
     invalid: report.invalid,
     duplicates: report.duplicates,
     toSend: report.toSend.length,
-    quota: MailApp.getRemainingDailyQuota()
+    quota: MailApp.getRemainingDailyQuota(),
+    tracking: trackingHealth_()
   };
 }
 
@@ -1096,6 +1140,7 @@ function previewPhase(phase) {
 function sendPhaseBatch(phase) {
   requireOwner_();
   loadSettings_();
+  requireTracking_();
   var lock = LockService.getDocumentLock();
   if (!lock.tryLock(5000)) throw new Error('Another send is already running. Wait for it to finish.');
   try {
@@ -1127,6 +1172,7 @@ function sendEmail_(to, email) {
 function sendTestToMe() {
   requireOwner_();
   loadSettings_();
+  requireTracking_();
   var to = Session.getActiveUser().getEmail();
   sendEmail_(to, buildInviteEmail({ name: 'Test Investor', token: TEST_TOKEN }));
   return { to: to };
@@ -1156,6 +1202,35 @@ function nudgeCandidates_(guests) {
   });
 }
 
+/* Resend: a fresh one-tap invite to people whose first invite had the old buttons and who haven't answered. */
+function resendCandidates_(guests) {
+  return guests.filter(function (g) {
+    return g.status === 'Sent' &amp;&amp; !g.rsvp &amp;&amp; g.emailsSent.split(',').indexOf('resend') === -1;
+  });
+}
+
+function sendResendBatch() {
+  requireOwner_();
+  loadSettings_();
+  requireTracking_();
+  var lock = LockService.getDocumentLock();
+  if (!lock.tryLock(5000)) throw new Error('Another send is already running.');
+  try {
+    var data = readGuests_(), list = resendCandidates_(data.guests), batch = list.slice(0, SEND_BATCH), sent = 0;
+    batch.forEach(function (g) {
+      try {
+        var email = buildInviteEmail(g);
+        email.subject = 'RSVP in one tap: The Jupiter Texas Holiday Party, Sat Dec 12';
+        sendEmail_(g.email, email);
+        setCells_(data.sheet, data.col, g.row, { 'Emails Sent': addTag_(g.emailsSent, 'resend') });
+        sent++;
+      } catch (err) { console.error('Resend failed for ' + g.email + ': ' + err); }
+      SpreadsheetApp.flush();
+    });
+    return { sent: sent, remaining: list.length - batch.length };
+  } finally { lock.releaseLock(); }
+}
+
 function previewNudge() {
   requireOwner_();
   return { count: nudgeCandidates_(readGuests_().guests).length, days: CONFIG.NUDGE_AFTER_DAYS };
@@ -1164,6 +1239,7 @@ function previewNudge() {
 function sendNudgeBatch() {
   requireOwner_();
   loadSettings_();
+  requireTracking_();
   var lock = LockService.getDocumentLock();
   if (!lock.tryLock(5000)) throw new Error('Another send is already running.');
   try {
@@ -1277,6 +1353,8 @@ function getDashboard() {
     rows: rows,
     phases: Object.keys(phases).sort(),
     quota: MailApp.getRemainingDailyQuota(),
+    tracking: trackingHealth_(),
+    resendCount: resendCandidates_(guests).length,
     sheetUrl: SpreadsheetApp.getActive().getUrl(),
     daysLeft: daysUntilEvent_(),
     updatedAt: new Date().toISOString()
@@ -1292,7 +1370,7 @@ function getDashboard() {
       <div class="copyrow"><code>Dashboard</code><button class="copy" data-text="Dashboard">Copy</button></div>
       <p>Delete the lines it starts with (<span class="ui">Cmd + A</span>, <span class="ui">Delete</span>), then paste this:</p>
       <div class="bigcopy">
-        <div class="head"><span><span class="name">Dashboard.html</span> <span class="meta">· 440 lines</span></span><button class="copy" data-src="dash-html">Copy all of Dashboard.html</button></div>
+        <div class="head"><span><span class="name">Dashboard.html</span> <span class="meta">· 476 lines</span></span><button class="copy" data-src="dash-html">Copy all of Dashboard.html</button></div>
         <pre aria-hidden="true">&lt;!DOCTYPE html&gt;
 &lt;html lang=&quot;en&quot;&gt;
 &lt;head&gt;
@@ -1398,6 +1476,10 @@ function getDashboard() {
   .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
   iframe { width: 100%; height: 70vh; border: 0; display: block; background: #0B1330; }
 
+  .alert { display: flex; gap: 12px; align-items: flex-start; background: var(--red-soft); color: var(--red); border: 1px solid #F3C4BF; border-radius: var(--radius); padding: 14px 18px; margin-bottom: 20px; font-weight: 500; }
+  .alert b { display: block; margin-bottom: 2px; }
+  .alert span { color: var(--ink); font-weight: 400; }
+  .notice { background: var(--gold-soft); color: var(--ink); border: 1px solid #F1DDA8; border-radius: var(--radius); padding: 14px 18px; margin-bottom: 20px; display: flex; gap: 12px; justify-content: space-between; align-items: center; flex-wrap: wrap; }
   .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 12px; opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; z-index: 20; max-width: 90vw; }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   .loading { opacity: .5; pointer-events: none; }
@@ -1423,6 +1505,12 @@ function getDashboard() {
       &lt;button class="btn primary" onclick="openSend()"&gt;Send invitations&lt;/button&gt;
     &lt;/div&gt;
   &lt;/header&gt;
+
+  &lt;div class="alert" id="alert" hidden&gt;&lt;div&gt;&lt;b&gt;One-tap buttons and open tracking are not working yet&lt;/b&gt;&lt;span id="alertText"&gt;&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;
+  &lt;div class="notice" id="resendBox" hidden&gt;
+    &lt;div&gt;&lt;b id="resendTitle"&gt;&lt;/b&gt;&lt;br&gt;&lt;span class="sub" style="margin:0"&gt;Their first invitation had the older buttons. This sends a fresh one-tap invitation, once.&lt;/span&gt;&lt;/div&gt;
+    &lt;button class="btn gold" onclick="startResend()" id="resendGo"&gt;Resend&lt;/button&gt;
+  &lt;/div&gt;
 
   &lt;section class="stats" id="stats"&gt;&lt;/section&gt;
 
@@ -1565,6 +1653,12 @@ function getDashboard() {
     $('phaseFilter').innerHTML = '&lt;option value=""&gt;All phases&lt;/option&gt;' + DATA.phases.map(function (p) { return '&lt;option value="' + esc(p) + '"&gt;Phase ' + esc(p) + '&lt;/option&gt;'; }).join('');
     $('phaseFilter').value = current;
     $('sheetLink').href = DATA.sheetUrl;
+    var t = DATA.tracking || { ok: true };
+    $('alert').hidden = t.ok;
+    $('alertText').textContent = t.message || '';
+    $('resendBox').hidden = !(t.ok &amp;&amp; DATA.resendCount &gt; 0);
+    $('resendTitle').textContent = DATA.resendCount + ' invited investor' + (DATA.resendCount === 1 ? ' hasn\'t' : 's haven\'t') + ' answered yet';
+    $('resendGo').textContent = 'Resend to ' + DATA.resendCount;
     $('updated').textContent = 'Updated ' + new Date(DATA.updatedAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
     render();
   }
@@ -1670,6 +1764,11 @@ function getDashboard() {
         '&lt;div class="big"&gt;' + (p.toSend ? 'Ready to send ' + p.toSend : 'Nothing new to send') + '&lt;/div&gt;' +
         (notes.length ? '&lt;ul&gt;&lt;li&gt;' + notes.join('&lt;/li&gt;&lt;li&gt;') + '&lt;/li&gt;&lt;/ul&gt;' : '');
       $('sendGo').textContent = p.toSend ? 'Send ' + p.toSend + ' invitation' + (p.toSend === 1 ? '' : 's') : 'Send';
+      if (p.tracking &amp;&amp; !p.tracking.ok) {
+        $('sendSummary').innerHTML += '&lt;ul&gt;&lt;li style="color:var(--red)"&gt;' + esc(p.tracking.message) + '&lt;/li&gt;&lt;/ul&gt;';
+        $('sendGo').disabled = true;
+        return;
+      }
       $('sendGo').disabled = !p.toSend;
       $('sendGo').dataset.total = p.toSend;
     }).catch(function (e) { $('sendSummary').textContent = e.message; });
@@ -1697,6 +1796,21 @@ function getDashboard() {
       toast(done + ' invitations sent');
       load(); loadSendPreview();
     }
+  }
+
+  var RESEND_ARMED = false;
+  function startResend() {
+    var btn = $('resendGo'), total = DATA.resendCount, done = 0;
+    if (!RESEND_ARMED) { RESEND_ARMED = true; btn.textContent = 'Tap again to send ' + total; setTimeout(function () { RESEND_ARMED = false; renderAll(); }, 4000); return; }
+    RESEND_ARMED = false; btn.disabled = true;
+    (function next() {
+      btn.textContent = 'Sending… ' + done + ' of ' + total;
+      call('sendResendBatch').then(function (r) {
+        done += r.sent;
+        if (r.remaining &gt; 0 &amp;&amp; r.sent &gt; 0) return next();
+        btn.disabled = false; toast(done + ' fresh invitations sent'); load();
+      }).catch(function (e) { btn.disabled = false; fail(e); load(); });
+    })();
   }
 
   function sendTest() {

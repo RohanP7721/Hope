@@ -549,6 +549,7 @@ function doGet(e) {
   try {
     switch (p.api) {
       case 'o': trackOpen_(p.t); return ContentService.createTextOutput('');
+      case 'ping': return ContentService.createTextOutput(PING_REPLY);
     }
     if (p.r) return tapPage_(p.t, p.r, p.n);
   } catch (err) {
@@ -562,6 +563,48 @@ function doGet(e) {
   return HtmlService.createTemplateFromFile('Dashboard').evaluate()
     .setTitle('Jupiter Holiday Party · RSVPs')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
+/* ------------------------------------------------------------------ */
+/* Tracking link health check                                          */
+/* ------------------------------------------------------------------ */
+
+var PING_REPLY = 'jupiter-rsvp-ok-v4';
+
+/**
+ * Opens the Tracking link the way an investor's phone would, and reports in plain English what's wrong.
+ * Without a working link, buttons can't save with one tap and opens can't be seen, so sending is blocked.
+ */
+function trackingHealth_() {
+  loadSettings_();
+  if (!CONFIG.API_URL) {
+    return { ok: false, message: 'The Tracking link is missing. Paste it into the Settings tab, cell B2 (guide Part C, step 8).' };
+  }
+  var cache = CacheService.getScriptCache(), key = 'health:' + CONFIG.API_URL;
+  var cached = cache.get(key);
+  if (cached) return JSON.parse(cached);
+  var result;
+  try {
+    var res = UrlFetchApp.fetch(CONFIG.API_URL + '?api=ping', { muteHttpExceptions: true, followRedirects: true });
+    var body = res.getContentText();
+    if (body.trim() === PING_REPLY) result = { ok: true, message: '' };
+    else if (/accounts\.google\.com|ServiceLogin|Sign in/i.test(body) || res.getResponseCode() === 401 || res.getResponseCode() === 403) {
+      result = { ok: false, message: 'The Tracking link is not open to everyone. In Apps Script: Deploy > Manage deployments > Tracking > pencil > Who has access: "Anyone" > Deploy.' };
+    } else if (res.getResponseCode() === 404) {
+      result = { ok: false, message: 'The Tracking link in Settings B2 doesn\'t exist. Copy it again from Deploy > Manage deployments > Tracking and paste it into B2.' };
+    } else {
+      result = { ok: false, message: 'The Tracking link is running old code. In Apps Script: Deploy > Manage deployments > Tracking > pencil > Version: "New version" > Deploy.' };
+    }
+  } catch (err) {
+    result = { ok: false, message: 'Could not reach the Tracking link: ' + err.message };
+  }
+  cache.put(key, JSON.stringify(result), result.ok ? 600 : 30);
+  return result;
+}
+
+function requireTracking_() {
+  var h = trackingHealth_();
+  if (!h.ok) throw new Error('Not sent. ' + h.message);
 }
 
 /**
@@ -958,7 +1001,8 @@ function previewPhase(phase) {
     invalid: report.invalid,
     duplicates: report.duplicates,
     toSend: report.toSend.length,
-    quota: MailApp.getRemainingDailyQuota()
+    quota: MailApp.getRemainingDailyQuota(),
+    tracking: trackingHealth_()
   };
 }
 
@@ -966,6 +1010,7 @@ function previewPhase(phase) {
 function sendPhaseBatch(phase) {
   requireOwner_();
   loadSettings_();
+  requireTracking_();
   var lock = LockService.getDocumentLock();
   if (!lock.tryLock(5000)) throw new Error('Another send is already running. Wait for it to finish.');
   try {
@@ -997,6 +1042,7 @@ function sendEmail_(to, email) {
 function sendTestToMe() {
   requireOwner_();
   loadSettings_();
+  requireTracking_();
   var to = Session.getActiveUser().getEmail();
   sendEmail_(to, buildInviteEmail({ name: 'Test Investor', token: TEST_TOKEN }));
   return { to: to };
@@ -1026,6 +1072,35 @@ function nudgeCandidates_(guests) {
   });
 }
 
+/* Resend: a fresh one-tap invite to people whose first invite had the old buttons and who haven't answered. */
+function resendCandidates_(guests) {
+  return guests.filter(function (g) {
+    return g.status === 'Sent' && !g.rsvp && g.emailsSent.split(',').indexOf('resend') === -1;
+  });
+}
+
+function sendResendBatch() {
+  requireOwner_();
+  loadSettings_();
+  requireTracking_();
+  var lock = LockService.getDocumentLock();
+  if (!lock.tryLock(5000)) throw new Error('Another send is already running.');
+  try {
+    var data = readGuests_(), list = resendCandidates_(data.guests), batch = list.slice(0, SEND_BATCH), sent = 0;
+    batch.forEach(function (g) {
+      try {
+        var email = buildInviteEmail(g);
+        email.subject = 'RSVP in one tap: The Jupiter Texas Holiday Party, Sat Dec 12';
+        sendEmail_(g.email, email);
+        setCells_(data.sheet, data.col, g.row, { 'Emails Sent': addTag_(g.emailsSent, 'resend') });
+        sent++;
+      } catch (err) { console.error('Resend failed for ' + g.email + ': ' + err); }
+      SpreadsheetApp.flush();
+    });
+    return { sent: sent, remaining: list.length - batch.length };
+  } finally { lock.releaseLock(); }
+}
+
 function previewNudge() {
   requireOwner_();
   return { count: nudgeCandidates_(readGuests_().guests).length, days: CONFIG.NUDGE_AFTER_DAYS };
@@ -1034,6 +1109,7 @@ function previewNudge() {
 function sendNudgeBatch() {
   requireOwner_();
   loadSettings_();
+  requireTracking_();
   var lock = LockService.getDocumentLock();
   if (!lock.tryLock(5000)) throw new Error('Another send is already running.');
   try {
@@ -1147,6 +1223,8 @@ function getDashboard() {
     rows: rows,
     phases: Object.keys(phases).sort(),
     quota: MailApp.getRemainingDailyQuota(),
+    tracking: trackingHealth_(),
+    resendCount: resendCandidates_(guests).length,
     sheetUrl: SpreadsheetApp.getActive().getUrl(),
     daysLeft: daysUntilEvent_(),
     updatedAt: new Date().toISOString()
