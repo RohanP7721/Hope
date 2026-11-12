@@ -22,65 +22,15 @@ Google Sheet (database)  ←→  Apps Script (runs as info@)  ←→  RSVP page 
 
 ## Folders
 
-- `apps-script/`: the code to paste into Google Apps Script (5 files)
-- `rsvp-site/`: the RSVP page investors land on after tapping a button (upload as is)
+- `guide/index.html`: the step-by-step setup guide with copy buttons (rebuild with `python3 guide/build.py` after code changes)
+- `apps-script/Code.gs` + `apps-script/Dashboard.html`: the two files pasted into Google Apps Script
+- `rsvp-site/`: the RSVP page investors land on (`jupiter-rsvp-page.zip` is the same folder, ready to drag onto Netlify)
 - `preview/`: the emails rendered as files you can open in a browser to check them
 
----
+The two web links (API link, RSVP page link) go in the sheet's **Settings** tab, not in code, so no redeploy is needed after setup.
+The RSVP page needs no configuration: every email link carries the Apps Script deployment id (`k=`).
 
-## Setup (about 30 minutes)
-
-Do steps 1 to 4 **logged in as info@jupitertexas.com**. Every email and calendar invite comes from the account that runs the script.
-
-### 1. Get the sheet into info@'s Drive
-Open the Guests sheet as info@ and choose **File → Make a copy**. Use this copy from now on. That way the sheet, the script, Gmail and Calendar all belong to info@.
-
-### 2. Add the code
-1. In the sheet, go to **Extensions → Apps Script**.
-2. Rename the default `Code.gs` file and paste in the contents of `apps-script/Code.gs`.
-3. Click **+ → Script** and create `Config` and `EmailTemplates`. Paste in the matching files.
-4. Click **+ → HTML** and create `Dashboard`. Paste in `apps-script/Dashboard.html`.
-5. Go to **Project Settings (gear icon)**, tick **Show "appsscript.json"**, then open that file and paste in `apps-script/appsscript.json`.
-6. Pick the `setup` function from the dropdown at the top and click **Run**. Approve the permissions it asks for (Sheets, Gmail, Calendar).
-   This creates the sheet columns and turns on the automatic reminders.
-
-### 3. Deploy the two web addresses
-In Apps Script, click **Deploy → New deployment → Select type: Web app**.
-
-**A. The RSVP connection, which is public:**
-- Execute as: **Me (info@jupitertexas.com)**
-- Who has access: **Anyone**
-- Copy the URL (it ends in `/exec`). This is your **API URL**.
-
-**B. The dashboard, which is private:** do **Deploy → New deployment** again.
-- Execute as: **Me**
-- Who has access: **Only myself**
-- Copy this URL and bookmark it. **This is the dashboard.**
-
-> If "Anyone" isn't offered, the Google Workspace admin has blocked public web apps. They can allow it under Admin console → Apps → Google Workspace → Drive and Docs → Sharing settings.
-
-### 4. Put the RSVP page online
-1. Paste the **API URL** into `rsvp-site/config.js`.
-2. Go to <https://app.netlify.com/drop> and drag the whole `rsvp-site` folder onto it. You get an address like `https://something.netlify.app`.
-3. Optional, but it looks far more professional: in Netlify, go to **Domain settings → Add custom domain → `rsvp.jupitertexas.com`**. Then add the `CNAME` record Netlify shows you wherever jupitertexas.com's DNS is managed.
-
-### 5. Finish the config
-In Apps Script, open `Config.gs` and set:
-- `API_URL`: the API URL from step 3A
-- `SITE_URL`: `https://rsvp.jupitertexas.com`, or the Netlify address (no trailing slash)
-
-Then go to **Deploy → Manage deployments**, and for **both** deployments click ✏️ → Version: **New version** → Deploy. The URLs stay the same.
-
-> Any time you change code in Apps Script, repeat this "New version" step or the live site keeps running the old code.
-
-### 6. DMARC: one DNS record, recommended
-Add a TXT record where jupitertexas.com's DNS is managed:
-- Name: `_dmarc`
-- Value: `v=DMARC1; p=none; rua=mailto:info@jupitertexas.com`
-
-SPF and DKIM are already set up for Google Workspace. DMARC is the last piece Gmail and Yahoo check.
-
----
+Follow `guide/index.html` for setup.
 
 ## Before the first real send
 

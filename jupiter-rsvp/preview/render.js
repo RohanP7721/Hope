@@ -3,8 +3,8 @@ const fs = require('fs'), path = require('path'), vm = require('vm');
 const root = path.join(__dirname, '..');
 const ctx = {};
 vm.createContext(ctx);
-for (const f of ['Config.gs', 'EmailTemplates.gs']) vm.runInContext(fs.readFileSync(path.join(root, 'apps-script', f), 'utf8'), ctx);
-vm.runInContext("CONFIG.SITE_URL = '../rsvp-site'; CONFIG.API_URL = 'https://example.invalid/exec';", ctx);
+for (const f of ['Code.gs']) vm.runInContext(fs.readFileSync(path.join(root, 'apps-script', f), 'utf8'), ctx);
+vm.runInContext("CONFIG.SITE_URL = '../rsvp-site'; CONFIG.API_URL = 'https://script.google.com/macros/s/AKfycbEXAMPLEEXAMPLEEXAMPLE/exec';", ctx);
 const out = {
   'invite.html': ctx.buildInviteEmail({ name: 'Raj Mehta', token: 'TEST' }),
   'reminder-yes.html': ctx.buildReminderEmail({ name: 'Raj Mehta', token: 'TEST', rsvp: 'Yes', partySize: '3' }, 3),

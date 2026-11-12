@@ -1,0 +1,1658 @@
+<title>Jupiter RSVP Setup Guide</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400&display=swap">
+<style>
+  /* Layout: one narrow reading column; each step is a card with a tick box, copyable items sit inline. */
+  :root {
+    --bg: #F6F5F1; --surface: #FFFFFF; --ink: #121A33; --muted: #5D6478; --line: #E3E1DA;
+    --navy: #0B1330; --gold: #B97F06; --gold-soft: #FBF1D9; --done: #1F7A48; --done-soft: #E5F3EA;
+    --warn: #8A5A00; --warn-soft: #FFF4DA; --code-bg: #F1EFE9;
+    --display: "Playfair Display", Georgia, serif;
+    --body: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg: #0B1022; --surface: #131A33; --ink: #EEF0F7; --muted: #A2A9C0; --line: #263052;
+    --navy: #F2B01E; --gold: #F2B01E; --gold-soft: #2A2614; --done: #5BC98A; --done-soft: #12301F;
+    --warn: #F5C452; --warn-soft: #2B2412; --code-bg: #0E1430; color-scheme: dark; } }
+  :root[data-theme="dark"] {
+    --bg: #0B1022; --surface: #131A33; --ink: #EEF0F7; --muted: #A2A9C0; --line: #263052;
+    --navy: #F2B01E; --gold: #F2B01E; --gold-soft: #2A2614; --done: #5BC98A; --done-soft: #12301F;
+    --warn: #F5C452; --warn-soft: #2B2412; --code-bg: #0E1430; color-scheme: dark; }
+
+  body { background: var(--bg); color: var(--ink); font: 16px/1.6 var(--body); -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 720px; margin: 0 auto; padding-block: 40px 80px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+  .eyebrow { font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--gold); font-weight: 600; }
+  h1 { font-family: var(--display); font-weight: 500; font-size: clamp(32px, 6vw, 44px); line-height: 1.1; margin: 8px 0 12px; text-wrap: balance; }
+  .intro { color: var(--muted); max-width: 60ch; margin: 0; }
+  .progress { display: flex; align-items: center; gap: 12px; margin: 24px 0 8px; font-size: 14px; color: var(--muted); }
+  .progress .track { flex: 1; height: 6px; background: var(--line); border-radius: 99px; overflow: hidden; }
+  .progress .fill { height: 100%; width: 0; background: var(--gold); transition: width .3s; }
+
+  h2 { font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 600; margin: 48px 0 12px; display: flex; gap: 10px; align-items: baseline; }
+  h2 b { color: var(--gold); }
+  .who { font-size: 12px; letter-spacing: 0; text-transform: none; font-weight: 500; background: var(--gold-soft); color: var(--warn); padding: 2px 8px; border-radius: 99px; }
+
+  .steps { display: grid; gap: 10px; list-style: none; margin: 0; padding: 0; counter-reset: step var(--start, 0); }
+  .step { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 18px 18px 60px; position: relative; counter-increment: step; min-width: 0; }
+  .step::before { content: counter(step); position: absolute; left: 18px; top: 17px; width: 28px; height: 28px; border-radius: 50%;
+    display: grid; place-items: center; font-weight: 700; font-size: 14px; background: var(--gold-soft); color: var(--warn); font-variant-numeric: tabular-nums; }
+  .step.done { border-color: var(--done); }
+  .step.done::before { content: "✓"; background: var(--done-soft); color: var(--done); }
+  .step.done > *:not(.tick) { opacity: .55; }
+  .step p { margin: 0 0 8px; }
+  .step p:last-child { margin-bottom: 0; }
+  .step strong { font-weight: 600; }
+  .step ul { margin: 6px 0 8px; padding-left: 20px; }
+  .step li { margin: 3px 0; }
+  .tick { float: right; margin: -4px -4px 8px 12px; border: 1px solid var(--line); background: transparent; color: var(--muted);
+    border-radius: 99px; padding: 4px 12px; font: 500 13px var(--body); cursor: pointer; }
+  .tick:hover { border-color: var(--muted); }
+  .step.done .tick { color: var(--done); border-color: var(--done); }
+  .tick:focus-visible, .copy:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+  .ui { font-weight: 600; background: var(--code-bg); border: 1px solid var(--line); border-radius: 6px; padding: 1px 7px; white-space: nowrap; font-size: 14px; }
+  .arrow { color: var(--muted); padding: 0 2px; }
+
+  .copyrow { display: flex; align-items: center; gap: 10px; margin: 10px 0; flex-wrap: wrap; }
+  .copyrow code { font: 14px var(--mono); background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .copy { border: 0; background: var(--navy); color: var(--bg); border-radius: 99px; padding: 9px 18px; font: 600 14px var(--body); cursor: pointer; white-space: nowrap; transition: transform .1s; }
+  .copy:active { transform: scale(.97); }
+  .copy.ok { background: var(--done); color: #fff; }
+
+  .bigcopy { margin: 12px 0 4px; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .bigcopy .head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 14px; background: var(--code-bg); flex-wrap: wrap; }
+  .bigcopy .name { font: 14px var(--mono); }
+  .bigcopy .meta { color: var(--muted); font-size: 13px; }
+  .bigcopy pre { margin: 0; padding: 12px 14px; font: 12px/1.5 var(--mono); color: var(--muted); overflow-x: auto; max-height: 110px; overflow-y: hidden;
+    -webkit-mask-image: linear-gradient(#000 50%, transparent); mask-image: linear-gradient(#000 50%, transparent); }
+  .bigcopy textarea { display: block; width: 100%; height: 160px; border: 0; border-top: 1px solid var(--line); font: 12px var(--mono); padding: 12px; background: var(--surface); color: var(--ink); resize: vertical; }
+
+  .tip { background: var(--warn-soft); color: var(--ink); border-radius: 10px; padding: 10px 14px; font-size: 14px; margin: 10px 0 0; }
+  .tip b { color: var(--warn); }
+  .msg { white-space: pre-wrap; font: 14px/1.55 var(--body); background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin: 10px 0; }
+
+  .fix { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 4px 18px; }
+  .fix details { border-bottom: 1px solid var(--line); padding: 12px 0; }
+  .fix details:last-child { border-bottom: 0; }
+  .fix summary { cursor: pointer; font-weight: 600; }
+  .fix p { margin: 8px 0 0; color: var(--muted); }
+  .end { text-align: center; color: var(--muted); margin-top: 48px; font-size: 14px; }
+  @media (prefers-reduced-motion: reduce) { .progress .fill, .copy { transition: none; } }
+</style>
+
+<div class="wrap">
+  <div class="eyebrow">Jupiter Texas · Holiday Party</div>
+  <h1>Setting up the invitations</h1>
+  <p class="intro">Follow the steps in order. Tap <strong>Mark done</strong> on each one as you go; this page remembers where you were. Whenever you see a <strong>Copy</strong> button, press it and paste where the step says.</p>
+  <div class="progress"><div class="track"><div class="fill" id="fill"></div></div><span id="ptext">0 of 0 done</span></div>
+
+  <!-- PART A -->
+  <h2><b>Part A</b> Get the sheet ready <span class="who">10 min</span></h2>
+  <ol class="steps" style="--start:0">
+    <li class="step" data-id="a1"><button class="tick">Mark done</button>
+      <p><strong>From your own Google account</strong>, open the Google Sheet and share it with info@.</p>
+      <p>Click <span class="ui">Share</span> (top right), type this email, set it to <span class="ui">Editor</span>, click <span class="ui">Send</span>.</p>
+      <div class="copyrow"><code>info@jupitertexas.com</code><button class="copy" data-text="info@jupitertexas.com">Copy</button></div>
+    </li>
+    <li class="step" data-id="a2"><button class="tick">Mark done</button>
+      <p><strong>Log in as info@jupitertexas.com.</strong> From here on, everything happens in that account.</p>
+      <p>Easiest way: open Chrome, click your profile picture (top right) <span class="arrow">→</span> <span class="ui">Add</span> <span class="arrow">→</span> sign in as info@jupitertexas.com. A separate window opens just for that account.</p>
+      <p class="tip"><b>Why:</b> invitations are sent by whichever account sets this up. If you do it from your own account, the emails go out from your address.</p>
+    </li>
+    <li class="step" data-id="a3"><button class="tick">Mark done</button>
+      <p>In the info@ window, open Gmail, find the "shared with you" email for the sheet and open the sheet.</p>
+      <p>Click <span class="ui">File</span> <span class="arrow">→</span> <span class="ui">Make a copy</span>. Name it as below, then click <span class="ui">Make a copy</span>.</p>
+      <div class="copyrow"><code>Jupiter Holiday Party RSVPs</code><button class="copy" data-text="Jupiter Holiday Party RSVPs">Copy</button></div>
+      <p>The copy opens in a new tab. <strong>Use only this copy from now on.</strong></p>
+    </li>
+  </ol>
+
+  <!-- PART B -->
+  <h2><b>Part B</b> Add the code <span class="who">10 min</span></h2>
+  <ol class="steps" style="--start:3">
+    <li class="step" data-id="b1"><button class="tick">Mark done</button>
+      <p>In the copied sheet, click <span class="ui">Extensions</span> <span class="arrow">→</span> <span class="ui">Apps Script</span>. A new tab opens with a code editor.</p>
+      <p>Click <span class="ui">Untitled project</span> at the top left and rename it:</p>
+      <div class="copyrow"><code>Jupiter RSVP</code><button class="copy" data-text="Jupiter RSVP">Copy</button></div>
+    </li>
+    <li class="step" data-id="b2"><button class="tick">Mark done</button>
+      <p>You'll see a file called <span class="ui">Code.gs</span> with a few lines in it. Click inside the code, press <span class="ui">Ctrl + A</span> (Mac: <span class="ui">Cmd + A</span>) and then <span class="ui">Delete</span>, so it's empty.</p>
+      <p>Press the button below, then click in the empty editor and paste (<span class="ui">Ctrl + V</span> / <span class="ui">Cmd + V</span>).</p>
+      <div class="bigcopy">
+        <div class="head"><span><span class="name">Code.gs</span> <span class="meta">· 858 lines</span></span><button class="copy" data-src="code-gs">Copy all of Code.gs</button></div>
+        <pre aria-hidden="true">/**
+ * Jupiter Texas Holiday Party: invitations, RSVP tracking and reminders.
+ * The two web links (API link, RSVP page link) live in the sheet&#x27;s &quot;Settings&quot; tab, not here.
+ */
+var CONFIG = {
+  // Only this Google account can open the dashboard.
+  OWNER_EMAIL: &#x27;info@jupitertexas.com&#x27;,
+</pre>
+        <textarea id="code-gs" readonly hidden aria-label="Code.gs">/**
+ * Jupiter Texas Holiday Party: invitations, RSVP tracking and reminders.
+ * The two web links (API link, RSVP page link) live in the sheet's "Settings" tab, not here.
+ */
+var CONFIG = {
+  // Only this Google account can open the dashboard.
+  OWNER_EMAIL: 'info@jupitertexas.com',
+
+  // How the sender appears in the investor's inbox.
+  SENDER_NAME: 'Jupiter Texas',
+  REPLY_TO: 'info@jupitertexas.com',
+  SUBJECT: "You're invited: The Jupiter Texas Holiday Party, Sat Dec 12",
+
+  // Filled in at run time from the "Settings" tab of the sheet.
+  API_URL: '',
+  SITE_URL: '',
+
+  EVENT: {
+    TITLE: 'The Jupiter Texas Holiday Party',
+    // Plano, TX is US Central time. 6 PM CST = 00:00 UTC the next day.
+    START_ISO: '2026-12-12T18:00:00-06:00',
+    END_ISO: '2026-12-12T23:00:00-06:00',
+    DATE_LABEL: 'Saturday, December 12, 2026',
+    TIME_LABEL: '6 PM onwards',
+    VENUE_NAME: 'Elegance Ballroom &amp; Event Center (Hello India)',
+    VENUE_ADDRESS: '8740 Ohio Dr A1, Plano, TX 75024',
+    MAP_URL: 'https://maps.google.com/?q=8740+Ohio+Dr+A1,+Plano,+TX+75024',
+    RSVP_BY_LABEL: 'Saturday, December 5',
+    WEBSITE: 'https://jupitertexas.com'
+  },
+
+  // Reminder emails go to everyone who said Yes or Maybe, this many days before.
+  REMINDER_DAYS: [7, 3, 1],
+
+  // "Nudge" emails go only to people who got the invite this many days ago and haven't answered.
+  NUDGE_AFTER_DAYS: 4,
+
+  MAYBE_REASONS: ['Schedule clash', 'Travelling', 'Checking with family', 'Other'],
+
+  TIMEZONE: 'America/Chicago'
+};
+
+/**
+ * Email HTML. Plain JavaScript with no Apps Script calls, so it can also be
+ * previewed outside Google (see preview/render.js).
+ *
+ * Email clients are strict: tables, inline styles, no scripts, no web fonts
+ * that Outlook would break. Georgia stands in for the poster's serif.
+ */
+
+var EMAIL_COLORS = {
+  navy: '#0B1330',
+  navyCard: '#121C40',
+  gold: '#F2B01E',
+  goldDeep: '#D99A0B',
+  ink: '#FFFFFF',
+  muted: '#B7BED6',
+  line: '#26305A'
+};
+
+function escapeHtml_(value) {
+  return String(value == null ? '' : value)
+    .replace(/&amp;/g, '&amp;amp;').replace(/&lt;/g, '&amp;lt;').replace(/&gt;/g, '&amp;gt;')
+    .replace(/"/g, '&amp;quot;').replace(/'/g, '&amp;#39;');
+}
+
+function firstName_(name) {
+  var clean = String(name || '').trim();
+  if (!clean) return 'there';
+  return clean.split(/\s+/)[0];
+}
+
+function rsvpLinks_(guest) {
+  // k = the Apps Script deployment id, so the RSVP page knows where to save answers without any setup of its own.
+  var key = (CONFIG.API_URL.match(/\/s\/([A-Za-z0-9_-]+)\/exec/) || [])[1] || '';
+  var manage = CONFIG.SITE_URL + '/?k=' + encodeURIComponent(key) + '&amp;t=' + encodeURIComponent(guest.token);
+  var base = manage + '&amp;a=';
+  return {
+    yes: base + 'yes',
+    maybe: base + 'maybe',
+    no: base + 'no',
+    manage: manage,
+    pixel: CONFIG.API_URL + '?api=o&amp;t=' + encodeURIComponent(guest.token),
+    poster: CONFIG.SITE_URL + '/poster.jpg'
+  };
+}
+
+function emailShell_(opts) {
+  var c = EMAIL_COLORS;
+  return '' +
+'&lt;!DOCTYPE html&gt;&lt;html lang="en"&gt;&lt;head&gt;&lt;meta charset="utf-8"&gt;' +
+'&lt;meta name="viewport" content="width=device-width,initial-scale=1"&gt;' +
+'&lt;meta name="color-scheme" content="dark light"&gt;&lt;meta name="supported-color-schemes" content="dark light"&gt;' +
+'&lt;title&gt;' + escapeHtml_(opts.title) + '&lt;/title&gt;' +
+'&lt;style&gt;' +
+'@media only screen and (max-width:620px){' +
+'.wrap{width:100%!important}.pad{padding-left:24px!important;padding-right:24px!important}' +
+'.btn-cell{display:block!important;width:100%!important;padding:0 0 10px 0!important}' +
+'.btn-a{display:block!important}.h1{font-size:30px!important;line-height:36px!important}}' +
+'&lt;/style&gt;&lt;/head&gt;' +
+'&lt;body style="margin:0;padding:0;background:' + c.navy + ';"&gt;' +
+'&lt;div style="display:none;max-height:0;overflow:hidden;opacity:0;color:' + c.navy + ';"&gt;' +
+  escapeHtml_(opts.preheader) + '&amp;#8199;&amp;#65279;&amp;#847;&amp;#8199;&amp;#65279;&amp;#847;&amp;#8199;&amp;#65279;&amp;#847;&lt;/div&gt;' +
+'&lt;table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:' + c.navy + ';"&gt;' +
+'&lt;tr&gt;&lt;td align="center" style="padding:24px 12px 40px;"&gt;' +
+'&lt;table role="presentation" class="wrap" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:600px;background:' + c.navy + ';"&gt;' +
+  opts.body +
+  footer_() +
+'&lt;/table&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;' +
+(opts.pixel ? '&lt;img src="' + escapeHtml_(opts.pixel) + '" width="1" height="1" alt="" style="display:block;width:1px;height:1px;border:0;opacity:0;"&gt;' : '') +
+'&lt;/body&gt;&lt;/html&gt;';
+}
+
+function footer_() {
+  var c = EMAIL_COLORS;
+  return '' +
+'&lt;tr&gt;&lt;td class="pad" style="padding:36px 48px 0;border-top:1px solid ' + c.line + ';font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:19px;color:' + c.muted + ';text-align:center;"&gt;' +
+  '&lt;strong style="color:' + c.ink + ';letter-spacing:2px;"&gt;JUPITER TEXAS&lt;/strong&gt;&lt;br&gt;' +
+  '&lt;span style="letter-spacing:1.5px;"&gt;REAL ESTATE GROUP &amp;middot; &lt;/span&gt;&lt;span style="color:' + c.gold + ';letter-spacing:1.5px;"&gt;CASH TO CASHFLOW&lt;/span&gt;&lt;br&gt;&lt;br&gt;' +
+  'You are receiving this invitation as a valued Jupiter Texas investor.&lt;br&gt;' +
+  'Questions? Just reply to this email or write to ' +
+  '&lt;a href="mailto:' + CONFIG.REPLY_TO + '" style="color:' + c.gold + ';text-decoration:none;"&gt;' + CONFIG.REPLY_TO + '&lt;/a&gt;&lt;br&gt;' +
+  '&lt;a href="' + CONFIG.EVENT.WEBSITE + '" style="color:' + c.muted + ';"&gt;jupitertexas.com&lt;/a&gt;' +
+'&lt;/td&gt;&lt;/tr&gt;';
+}
+
+function detailsBlock_() {
+  var c = EMAIL_COLORS, e = CONFIG.EVENT;
+  var label = 'font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:2px;color:' + c.gold + ';font-weight:bold;';
+  var value = 'font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:24px;color:' + c.ink + ';';
+  return '' +
+'&lt;table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:' + c.navyCard + ';border:1px solid ' + c.line + ';border-radius:12px;"&gt;' +
+'&lt;tr&gt;&lt;td style="padding:22px 24px 6px;"&gt;&lt;div style="' + label + '"&gt;WHEN&lt;/div&gt;' +
+  '&lt;div style="' + value + '"&gt;' + escapeHtml_(e.DATE_LABEL) + '&lt;br&gt;&lt;span style="color:' + c.muted + ';"&gt;' + escapeHtml_(e.TIME_LABEL) + '&lt;/span&gt;&lt;/div&gt;&lt;/td&gt;&lt;/tr&gt;' +
+'&lt;tr&gt;&lt;td style="padding:16px 24px 22px;"&gt;&lt;div style="' + label + '"&gt;WHERE&lt;/div&gt;' +
+  '&lt;div style="' + value + '"&gt;' + escapeHtml_(e.VENUE_NAME) + '&lt;br&gt;' +
+  '&lt;a href="' + e.MAP_URL + '" style="color:' + c.muted + ';text-decoration:underline;"&gt;' + escapeHtml_(e.VENUE_ADDRESS) + '&lt;/a&gt;&lt;/div&gt;&lt;/td&gt;&lt;/tr&gt;' +
+'&lt;/table&gt;';
+}
+
+function button_(href, text, primary) {
+  var c = EMAIL_COLORS;
+  var bg = primary ? c.gold : 'transparent';
+  var color = primary ? c.navy : c.ink;
+  var border = primary ? c.gold : '#5A6590';
+  return '&lt;td class="btn-cell" style="padding:0 5px;"&gt;' +
+    '&lt;a class="btn-a" href="' + escapeHtml_(href) + '" target="_blank" style="display:inline-block;background:' + bg + ';border:1.5px solid ' + border +
+    ';border-radius:999px;padding:14px 22px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;color:' + color +
+    ';text-decoration:none;text-align:center;mso-padding-alt:0;"&gt;' + text + '&lt;/a&gt;&lt;/td&gt;';
+}
+
+function rsvpButtons_(links, which) {
+  which = which || ['yes', 'maybe', 'no'];
+  var labels = { yes: 'Yes, I&amp;rsquo;ll be there', maybe: 'Maybe', no: 'Can&amp;rsquo;t make it' };
+  var cells = which.map(function (key) { return button_(links[key], labels[key], key === 'yes'); }).join('');
+  return '&lt;table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"&gt;&lt;tr&gt;' + cells + '&lt;/tr&gt;&lt;/table&gt;';
+}
+
+function paragraph_(html) {
+  return '&lt;p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:26px;color:' + EMAIL_COLORS.ink + ';"&gt;' + html + '&lt;/p&gt;';
+}
+
+/** The main invitation. */
+function buildInviteEmail(guest) {
+  var c = EMAIL_COLORS, e = CONFIG.EVENT, links = rsvpLinks_(guest);
+  var body = '' +
+'&lt;tr&gt;&lt;td style="padding:0;"&gt;' +
+  '&lt;a href="' + escapeHtml_(links.yes) + '" target="_blank"&gt;&lt;img src="' + links.poster + '" width="600" alt="Jupiter Texas Real Estate Group invites you and your family to The Holiday Party, Saturday December 12, 6 PM onwards, Elegance Ballroom, Plano TX" ' +
+  'style="display:block;width:100%;max-width:600px;height:auto;border:0;border-radius:14px;"&gt;&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;' +
+'&lt;tr&gt;&lt;td class="pad" style="padding:40px 48px 8px;"&gt;' +
+  paragraph_('Dear ' + escapeHtml_(firstName_(guest.name)) + ',') +
+  paragraph_('As the year comes to a close, we would love to celebrate it with the people who made it possible: our investors. ' +
+             'Please join us for an evening of food, music and festive cheer, and bring your family and friends along.') +
+'&lt;/td&gt;&lt;/tr&gt;' +
+'&lt;tr&gt;&lt;td class="pad" style="padding:8px 48px 0;"&gt;' + detailsBlock_() + '&lt;/td&gt;&lt;/tr&gt;' +
+'&lt;tr&gt;&lt;td class="pad" style="padding:40px 48px 8px;text-align:center;"&gt;' +
+  '&lt;div class="h1" style="font-family:Georgia,\'Times New Roman\',serif;font-size:34px;line-height:40px;color:' + c.gold + ';"&gt;Will you join us?&lt;/div&gt;' +
+  '&lt;div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:22px;color:' + c.muted + ';padding:8px 0 24px;"&gt;Kindly RSVP by ' + escapeHtml_(e.RSVP_BY_LABEL) + '&lt;/div&gt;' +
+  rsvpButtons_(links) +
+  '&lt;div style="font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:20px;color:' + c.muted + ';padding:20px 0 0;"&gt;One tap is all it takes. Your calendar invite follows automatically.&lt;/div&gt;' +
+'&lt;/td&gt;&lt;/tr&gt;' +
+'&lt;tr&gt;&lt;td class="pad" style="padding:36px 48px 40px;"&gt;' +
+  paragraph_('Warm regards,&lt;br&gt;&lt;strong&gt;The Jupiter Texas Team&lt;/strong&gt;') +
+'&lt;/td&gt;&lt;/tr&gt;';
+
+  return {
+    subject: CONFIG.SUBJECT,
+    html: emailShell_({
+      title: CONFIG.SUBJECT,
+      preheader: 'You and your family are invited. ' + e.DATE_LABEL + ', ' + e.TIME_LABEL + ', Plano TX. RSVP by ' + e.RSVP_BY_LABEL + '.',
+      body: body,
+      pixel: links.pixel
+    }),
+    text: 'Dear ' + firstName_(guest.name) + ',\n\n' +
+      'Jupiter Texas Real Estate Group invites you and your family to ' + e.TITLE + '.\n\n' +
+      'When: ' + e.DATE_LABEL + ', ' + e.TIME_LABEL + '\nWhere: ' + e.VENUE_NAME + ', ' + e.VENUE_ADDRESS + '\n\n' +
+      'Kindly RSVP by ' + e.RSVP_BY_LABEL + ':\n' +
+      'Yes, I will be there: ' + links.yes + '\nMaybe: ' + links.maybe + '\nCan\'t make it: ' + links.no + '\n\n' +
+      'Warm regards,\nThe Jupiter Texas Team'
+  };
+}
+
+/** Countdown reminder for people who said Yes or Maybe. */
+function buildReminderEmail(guest, daysLeft) {
+  var c = EMAIL_COLORS, e = CONFIG.EVENT, links = rsvpLinks_(guest);
+  var when = daysLeft === 1 ? 'tomorrow' : 'in ' + daysLeft + ' days';
+  var isMaybe = guest.rsvp === 'Maybe';
+  var headline = isMaybe ? 'Still deciding?' : 'See you ' + when + '!';
+  var intro = isMaybe
+    ? 'The Jupiter Texas Holiday Party is ' + when + ' and we would still love to have you there. Let us know when you can, it helps us plan seating and food.'
+    : 'Just a reminder that the Jupiter Texas Holiday Party is ' + when + '. We have you down for ' +
+      (guest.partySize &amp;&amp; guest.partySize !== '1' ? 'a party of ' + guest.partySize : 'one') + '. Family and friends are welcome.';
+  var buttons = isMaybe
+    ? rsvpButtons_(links, ['yes', 'no'])
+    : '&lt;table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"&gt;&lt;tr&gt;' +
+      button_(links.manage, 'View or change my RSVP', false) + '&lt;/tr&gt;&lt;/table&gt;';
+
+  var body = '' +
+'&lt;tr&gt;&lt;td class="pad" style="padding:40px 48px 8px;text-align:center;"&gt;' +
+  '&lt;div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;letter-spacing:3px;color:' + c.muted + ';"&gt;JUPITER TEXAS &amp;middot; HOLIDAY PARTY&lt;/div&gt;' +
+  '&lt;div class="h1" style="font-family:Georgia,\'Times New Roman\',serif;font-size:38px;line-height:46px;color:' + c.gold + ';padding:14px 0 0;"&gt;' + headline + '&lt;/div&gt;' +
+'&lt;/td&gt;&lt;/tr&gt;' +
+'&lt;tr&gt;&lt;td class="pad" style="padding:24px 48px 8px;"&gt;' +
+  paragraph_('Dear ' + escapeHtml_(firstName_(guest.name)) + ',') + paragraph_(intro) +
+'&lt;/td&gt;&lt;/tr&gt;' +
+'&lt;tr&gt;&lt;td class="pad" style="padding:8px 48px 0;"&gt;' + detailsBlock_() + '&lt;/td&gt;&lt;/tr&gt;' +
+'&lt;tr&gt;&lt;td class="pad" style="padding:32px 48px 40px;text-align:center;"&gt;' + buttons + '&lt;/td&gt;&lt;/tr&gt;';
+
+  var subject = isMaybe ? 'Still deciding? The Jupiter Texas Holiday Party is ' + when
+                        : 'See you ' + when + ': Jupiter Texas Holiday Party';
+  return {
+    subject: subject,
+    html: emailShell_({ title: subject, preheader: e.DATE_LABEL + ', ' + e.TIME_LABEL + ', ' + e.VENUE_ADDRESS, body: body, pixel: null }),
+    text: 'Dear ' + firstName_(guest.name) + ',\n\n' + intro + '\n\nWhen: ' + e.DATE_LABEL + ', ' + e.TIME_LABEL +
+      '\nWhere: ' + e.VENUE_NAME + ', ' + e.VENUE_ADDRESS + '\n\n' +
+      (isMaybe ? 'Yes: ' + links.yes + '\nCan\'t make it: ' + links.no : 'View or change your RSVP: ' + links.manage) +
+      '\n\nWarm regards,\nThe Jupiter Texas Team'
+  };
+}
+
+/** Gentle follow-up for people who haven't answered. Same buttons, shorter note. */
+function buildNudgeEmail(guest) {
+  var c = EMAIL_COLORS, e = CONFIG.EVENT, links = rsvpLinks_(guest);
+  var body = '' +
+'&lt;tr&gt;&lt;td class="pad" style="padding:40px 48px 8px;"&gt;' +
+  paragraph_('Dear ' + escapeHtml_(firstName_(guest.name)) + ',') +
+  paragraph_('We would love to see you and your family at our Holiday Party on &lt;strong&gt;' + escapeHtml_(e.DATE_LABEL) + '&lt;/strong&gt;. ' +
+             'Could you let us know if you can make it? It is a single tap.') +
+'&lt;/td&gt;&lt;/tr&gt;' +
+'&lt;tr&gt;&lt;td class="pad" style="padding:8px 48px 0;"&gt;' + detailsBlock_() + '&lt;/td&gt;&lt;/tr&gt;' +
+'&lt;tr&gt;&lt;td class="pad" style="padding:32px 48px 40px;text-align:center;"&gt;' + rsvpButtons_(links) + '&lt;/td&gt;&lt;/tr&gt;';
+  var subject = 'Will we see you on December 12?';
+  return {
+    subject: subject,
+    html: emailShell_({ title: subject, preheader: 'One tap to RSVP for the Jupiter Texas Holiday Party.', body: body, pixel: links.pixel }),
+    text: 'Dear ' + firstName_(guest.name) + ',\n\nCould you let us know if you can make our Holiday Party on ' + e.DATE_LABEL + '?\n\n' +
+      'Yes: ' + links.yes + '\nMaybe: ' + links.maybe + '\nCan\'t make it: ' + links.no + '\n\nWarm regards,\nThe Jupiter Texas Team'
+  };
+}
+
+/* The Google Sheet this script is attached to is the database.
+ * Runs as info@jupitertexas.com, so every email and calendar invite comes from that account. */
+
+var GUEST_SHEET = 'Guests';
+var SETTINGS_SHEET = 'Settings';
+var HEADERS = [
+  'Name', 'Email', 'Phase', 'Token', 'Invite Status', 'Sent At',
+  'Opened', 'First Opened', 'Open Count', 'RSVP', 'Party Size', 'Maybe Reason',
+  'RSVP At', 'Calendar Event ID', 'Emails Sent', 'Last Activity'
+];
+var TEST_TOKEN = 'TEST';
+var EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+var SEND_BATCH = 25;
+
+/* ------------------------------------------------------------------ */
+/* Sheet menu and one-time setup                                       */
+/* ------------------------------------------------------------------ */
+
+function onOpen() {
+  SpreadsheetApp.getUi().createMenu('Jupiter RSVP')
+    .addItem('1. Set up sheet &amp; reminders', 'setup')
+    .addItem('Send me a test invite', 'menuSendTest')
+    .addToUi();
+}
+
+function setup() {
+  var ss = SpreadsheetApp.getActive();
+  var sheet = ss.getSheetByName(GUEST_SHEET);
+  if (!sheet) {
+    var first = ss.getSheets()[0];
+    sheet = first.getLastRow() === 0 ? first.setName(GUEST_SHEET) : ss.insertSheet(GUEST_SHEET, 0);
+  }
+  var existing = sheet.getLastColumn() ? sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0] : [];
+  if (String(existing[0] || '') !== 'Name') {
+    if (sheet.getLastRow() &gt; 0) sheet.insertRowBefore(1);
+    sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
+  } else {
+    // Add any missing columns at the end without disturbing data.
+    HEADERS.forEach(function (h) {
+      if (existing.indexOf(h) === -1) sheet.getRange(1, sheet.getLastColumn() + 1).setValue(h);
+    });
+  }
+  var header = sheet.getRange(1, 1, 1, sheet.getLastColumn());
+  header.setFontWeight('bold').setBackground('#0B1330').setFontColor('#F2B01E');
+  sheet.setFrozenRows(1);
+  sheet.setColumnWidth(1, 200);
+  sheet.setColumnWidth(2, 260);
+  // Columns D onward are filled by the system; tint them so nobody types there by accident.
+  sheet.getRange(2, 4, Math.max(sheet.getMaxRows() - 1, 1), HEADERS.length - 3).setBackground('#F4F5F9');
+
+  setupSettings_();
+  installTriggers_();
+  ensureTokens_();
+  SpreadsheetApp.getActive().toast('Sheet and reminders are ready. Paste Name, Email and Phase into columns A to C.', 'Jupiter RSVP', 8);
+}
+
+function setupSettings_() {
+  var ss = SpreadsheetApp.getActive();
+  if (ss.getSheetByName(SETTINGS_SHEET)) return;
+  var sheet = ss.insertSheet(SETTINGS_SHEET);
+  sheet.getRange(1, 1, 3, 3).setValues([
+    ['Setting', 'Paste here', 'What it is'],
+    ['API link', '', 'From Apps Script: Deploy &gt; New deployment &gt; Web app &gt; Who has access: Anyone. Ends in /exec'],
+    ['RSVP page link', '', 'Your Netlify address, e.g. https://jupitertexas-rsvp.netlify.app']
+  ]);
+  sheet.getRange(1, 1, 1, 3).setFontWeight('bold').setBackground('#0B1330').setFontColor('#F2B01E');
+  sheet.getRange(2, 2, 2, 1).setBackground('#FFF6DF');
+  sheet.setColumnWidth(1, 140); sheet.setColumnWidth(2, 420); sheet.setColumnWidth(3, 520);
+}
+
+/** Reads the two links from the Settings tab. Throws a plain-English error if they are missing. */
+function loadSettings_() {
+  var sheet = SpreadsheetApp.getActive().getSheetByName(SETTINGS_SHEET);
+  if (!sheet) throw new Error('Run setup first.');
+  var api = String(sheet.getRange('B2').getValue()).trim();
+  var site = String(sheet.getRange('B3').getValue()).trim().replace(/\/+$/, '');
+  var id = (api.match(/^https:\/\/script\.google\.com\/(?:a\/macros\/[^\/]+|macros)\/s\/([A-Za-z0-9_-]+)\/exec/) || [])[1];
+  if (!id) {
+    throw new Error('The "API link" in the Settings tab is missing or wrong. It should start with https://script.google.com and end with /exec.');
+  }
+  if (!/^https:\/\//.test(site)) throw new Error('The "RSVP page link" in the Settings tab is missing. Paste your Netlify address there.');
+  // Workspace gives /a/macros/&lt;domain&gt;/ links, which can force a login. The plain form works for everyone.
+  CONFIG.API_URL = 'https://script.google.com/macros/s/' + id + '/exec';
+  CONFIG.SITE_URL = site;
+}
+
+function installTriggers_() {
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    if (t.getHandlerFunction() === 'hourlyJobs') ScriptApp.deleteTrigger(t);
+  });
+  ScriptApp.newTrigger('hourlyJobs').timeBased().everyHours(1).create();
+}
+
+function menuSendTest() {
+  loadSettings_();
+  var to = Session.getActiveUser().getEmail();
+  sendEmail_(to, buildInviteEmail({ name: 'Test Investor', token: TEST_TOKEN }));
+  var result = { to: to };
+  SpreadsheetApp.getActive().toast('Test invite sent to ' + result.to, 'Jupiter RSVP', 6);
+}
+
+/* ------------------------------------------------------------------ */
+/* Sheet access                                                        */
+/* ------------------------------------------------------------------ */
+
+function guestSheet_() {
+  var sheet = SpreadsheetApp.getActive().getSheetByName(GUEST_SHEET);
+  if (!sheet) throw new Error('Run "Jupiter RSVP &gt; Set up sheet" first.');
+  return sheet;
+}
+
+function columnMap_(sheet) {
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var map = {};
+  headers.forEach(function (h, i) { map[String(h).trim()] = i + 1; });
+  HEADERS.forEach(function (h) { if (!map[h]) throw new Error('Missing column "' + h + '". Run setup again.'); });
+  return map;
+}
+
+function newToken_() {
+  return Utilities.getUuid().replace(/-/g, '').slice(0, 22);
+}
+
+/** Gives every row with an email a private token for its RSVP links. */
+function ensureTokens_() {
+  var sheet = guestSheet_(), col = columnMap_(sheet), last = sheet.getLastRow();
+  if (last &lt; 2) return;
+  var emails = sheet.getRange(2, col['Email'], last - 1, 1).getValues();
+  var tokenRange = sheet.getRange(2, col['Token'], last - 1, 1);
+  var tokens = tokenRange.getValues();
+  var changed = false;
+  for (var i = 0; i &lt; tokens.length; i++) {
+    if (!tokens[i][0] &amp;&amp; String(emails[i][0]).trim()) { tokens[i][0] = newToken_(); changed = true; }
+  }
+  if (changed) tokenRange.setValues(tokens);
+}
+
+function rowToGuest_(values, col, rowNumber) {
+  function v(name) { return values[col[name] - 1]; }
+  function iso(x) { return x instanceof Date ? x.toISOString() : (x ? String(x) : ''); }
+  return {
+    row: rowNumber,
+    name: String(v('Name') || '').trim(),
+    email: String(v('Email') || '').trim().toLowerCase(),
+    phase: String(v('Phase') || '').trim(),
+    token: String(v('Token') || ''),
+    status: String(v('Invite Status') || ''),
+    sentAt: iso(v('Sent At')),
+    opened: String(v('Opened') || '') === 'Yes',
+    firstOpened: iso(v('First Opened')),
+    openCount: Number(v('Open Count')) || 0,
+    rsvp: String(v('RSVP') || ''),
+    partySize: String(v('Party Size') || ''),
+    reason: String(v('Maybe Reason') || ''),
+    rsvpAt: iso(v('RSVP At')),
+    eventId: String(v('Calendar Event ID') || ''),
+    emailsSent: String(v('Emails Sent') || ''),
+    lastActivity: iso(v('Last Activity'))
+  };
+}
+
+function readGuests_() {
+  ensureTokens_();
+  var sheet = guestSheet_(), col = columnMap_(sheet), last = sheet.getLastRow();
+  if (last &lt; 2) return { sheet: sheet, col: col, guests: [] };
+  var values = sheet.getRange(2, 1, last - 1, sheet.getLastColumn()).getValues();
+  var guests = [];
+  values.forEach(function (r, i) {
+    var g = rowToGuest_(r, col, i + 2);
+    if (g.email || g.name) guests.push(g);
+  });
+  return { sheet: sheet, col: col, guests: guests };
+}
+
+function findGuestByToken_(token) {
+  if (!token) return null;
+  var sheet = guestSheet_(), col = columnMap_(sheet), last = sheet.getLastRow();
+  if (last &lt; 2) return null;
+  var cell = sheet.getRange(2, col['Token'], last - 1, 1)
+    .createTextFinder(token).matchEntireCell(true).matchCase(true).findNext();
+  if (!cell) return null;
+  var r = cell.getRow();
+  var values = sheet.getRange(r, 1, 1, sheet.getLastColumn()).getValues()[0];
+  return { sheet: sheet, col: col, guest: rowToGuest_(values, col, r) };
+}
+
+function setCells_(sheet, col, row, fields) {
+  Object.keys(fields).forEach(function (k) { sheet.getRange(row, col[k]).setValue(fields[k]); });
+}
+
+function addTag_(existing, tag) {
+  var tags = existing ? existing.split(',') : [];
+  if (tags.indexOf(tag) === -1) tags.push(tag);
+  return tags.join(',');
+}
+
+/* ------------------------------------------------------------------ */
+/* Web entry point: public RSVP API + private dashboard                */
+/* ------------------------------------------------------------------ */
+
+function doGet(e) {
+  var p = (e &amp;&amp; e.parameter) || {};
+  try {
+    switch (p.api) {
+      case 'o': trackOpen_(p.t); return ContentService.createTextOutput('');
+      case 'rsvp': return json_(handleRsvp_(p.t, p.a));
+      case 'party': return json_(handleParty_(p.t, p.n));
+      case 'reason': return json_(handleReason_(p.t, p.r));
+      case 'get': return json_(handleGet_(p.t));
+    }
+  } catch (err) {
+    console.error(err);
+    return json_({ ok: false, error: 'Something went wrong. Please try again.' });
+  }
+
+  if (!isOwner_()) {
+    return HtmlService.createHtmlOutput('&lt;p style="font-family:sans-serif;padding:40px"&gt;This page is private.&lt;/p&gt;');
+  }
+  return HtmlService.createTemplateFromFile('Dashboard').evaluate()
+    .setTitle('Jupiter Holiday Party · RSVPs')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
+function json_(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}
+
+function isOwner_() {
+  var user = Session.getActiveUser().getEmail();
+  return !!user &amp;&amp; user.toLowerCase() === CONFIG.OWNER_EMAIL.toLowerCase();
+}
+
+function requireOwner_() {
+  if (!isOwner_()) throw new Error('Only ' + CONFIG.OWNER_EMAIL + ' can do this.');
+}
+
+function publicGuest_(g, extra) {
+  var out = {
+    ok: true,
+    firstName: firstName_(g.name),
+    email: g.email,
+    rsvp: g.rsvp,
+    partySize: g.partySize,
+    reason: g.reason,
+    reasons: CONFIG.MAYBE_REASONS
+  };
+  Object.keys(extra || {}).forEach(function (k) { out[k] = extra[k]; });
+  return out;
+}
+
+function demoGuest_(fields) {
+  return publicGuest_({ name: 'Test Investor', email: CONFIG.OWNER_EMAIL, rsvp: '', partySize: '', reason: '' }, fields);
+}
+
+function trackOpen_(token) {
+  if (!token || token === TEST_TOKEN) return;
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(10000)) return;
+  try {
+    var found = findGuestByToken_(token);
+    if (!found) return;
+    var g = found.guest, now = new Date(), fields = { 'Open Count': g.openCount + 1, 'Last Activity': now };
+    if (!g.opened) { fields['Opened'] = 'Yes'; fields['First Opened'] = now; }
+    setCells_(found.sheet, found.col, g.row, fields);
+  } finally { lock.releaseLock(); }
+}
+
+function handleGet_(token) {
+  if (token === TEST_TOKEN) return demoGuest_({});
+  var found = findGuestByToken_(token);
+  return found ? publicGuest_(found.guest) : { ok: false, error: 'We could not find your invitation.' };
+}
+
+function handleRsvp_(token, action) {
+  var choice = { yes: 'Yes', maybe: 'Maybe', no: 'No' }[String(action || '').toLowerCase()];
+  if (!choice) return { ok: false, error: 'Unknown response.' };
+  if (token === TEST_TOKEN) return demoGuest_({ rsvp: choice, partySize: choice === 'Yes' ? '1' : '', calendar: choice === 'No' ? 'none' : 'sent' });
+
+  var lock = LockService.getScriptLock();
+  lock.waitLock(25000);
+  try {
+    var found = findGuestByToken_(token);
+    if (!found) return { ok: false, error: 'We could not find your invitation.' };
+    var g = found.guest, now = new Date();
+    var fields = { 'RSVP': choice, 'RSVP At': now, 'Last Activity': now };
+    // Tapping a button proves the email was opened, even if images were blocked.
+    if (!g.opened) { fields['Opened'] = 'Yes'; fields['First Opened'] = now; fields['Open Count'] = g.openCount + 1; }
+    if (choice === 'Yes' &amp;&amp; !g.partySize) fields['Party Size'] = '1';
+    if (choice !== 'Maybe') fields['Maybe Reason'] = '';
+
+    var calendar = 'none';
+    if (choice === 'No' &amp;&amp; g.eventId) {
+      removeCalendarInvite_(g.eventId);
+      fields['Calendar Event ID'] = '';
+      calendar = 'removed';
+    } else if (choice !== 'No') {
+      if (g.eventId) {
+        calendar = 'existing';
+      } else {
+        try {
+          fields['Calendar Event ID'] = createCalendarInvite_(g);
+          calendar = 'sent';
+        } catch (err) {
+          console.error('Calendar invite failed for ' + g.email + ': ' + err);
+          calendar = 'failed';
+        }
+      }
+    }
+    setCells_(found.sheet, found.col, g.row, fields);
+    g.rsvp = choice;
+    g.partySize = fields['Party Size'] || g.partySize;
+    if (choice !== 'Maybe') g.reason = '';
+    return publicGuest_(g, { calendar: calendar });
+  } finally { lock.releaseLock(); }
+}
+
+function handleParty_(token, size) {
+  var allowed = ['1', '2', '3', '4+'];
+  if (allowed.indexOf(String(size)) === -1) return { ok: false, error: 'Unknown party size.' };
+  if (token === TEST_TOKEN) return demoGuest_({ rsvp: 'Yes', partySize: String(size) });
+  var found = findGuestByToken_(token);
+  if (!found) return { ok: false, error: 'We could not find your invitation.' };
+  setCells_(found.sheet, found.col, found.guest.row, { 'Party Size': String(size), 'Last Activity': new Date() });
+  found.guest.partySize = String(size);
+  return publicGuest_(found.guest);
+}
+
+function handleReason_(token, reason) {
+  if (CONFIG.MAYBE_REASONS.indexOf(reason) === -1) return { ok: false, error: 'Unknown reason.' };
+  if (token === TEST_TOKEN) return demoGuest_({ rsvp: 'Maybe', reason: reason });
+  var found = findGuestByToken_(token);
+  if (!found) return { ok: false, error: 'We could not find your invitation.' };
+  setCells_(found.sheet, found.col, found.guest.row, { 'Maybe Reason': reason, 'Last Activity': new Date() });
+  found.guest.reason = reason;
+  return publicGuest_(found.guest);
+}
+
+/* ------------------------------------------------------------------ */
+/* Calendar                                                            */
+/* ------------------------------------------------------------------ */
+
+/**
+ * One event per guest on info@'s calendar, with just that guest invited.
+ * Google sends the guest a real calendar invitation; Gmail and Outlook put it
+ * in their calendar automatically. Guests never see each other.
+ */
+function createCalendarInvite_(guest) {
+  var e = CONFIG.EVENT;
+  var event = CalendarApp.getDefaultCalendar().createEvent(
+    e.TITLE, new Date(e.START_ISO), new Date(e.END_ISO), {
+      location: e.VENUE_NAME + ', ' + e.VENUE_ADDRESS,
+      description: 'Jupiter Texas Real Estate Group invites you and your family.\n' +
+        'Friends are welcome too.\n\n' + e.DATE_LABEL + ', ' + e.TIME_LABEL + '\n' +
+        e.VENUE_NAME + '\n' + e.VENUE_ADDRESS + '\nDirections: ' + e.MAP_URL + '\n\n' +
+        'Questions? Write to ' + CONFIG.REPLY_TO,
+      guests: guest.email,
+      sendInvites: true
+    });
+  event.setGuestsCanSeeGuests(false);
+  event.setGuestsCanInviteOthers(false);
+  event.setGuestsCanModify(false);
+  event.setColor(CalendarApp.EventColor.YELLOW);
+  return event.getId();
+}
+
+function removeCalendarInvite_(eventId) {
+  try {
+    var event = CalendarApp.getDefaultCalendar().getEventById(eventId);
+    if (event) event.deleteEvent();
+  } catch (err) {
+    console.error('Could not remove calendar event ' + eventId + ': ' + err);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Sending invitations (called from the dashboard)                     */
+/* ------------------------------------------------------------------ */
+
+function sendableGuests_(guests, phase) {
+  var seen = {}, report = { inPhase: 0, alreadySent: 0, invalid: [], duplicates: [], toSend: [] };
+  guests.forEach(function (g) {
+    var inPhase = phase === 'ALL' || g.phase === phase;
+    var dupe = g.email &amp;&amp; seen[g.email];
+    if (g.email) seen[g.email] = true;
+    if (!inPhase) return;
+    report.inPhase++;
+    if (!EMAIL_PATTERN.test(g.email)) { report.invalid.push(g.name || g.email || 'Row ' + g.row); return; }
+    if (dupe) { report.duplicates.push(g.email); return; }
+    if (g.status &amp;&amp; g.status.indexOf('Failed') !== 0) { report.alreadySent++; return; }
+    report.toSend.push(g);
+  });
+  return report;
+}
+
+function previewPhase(phase) {
+  requireOwner_();
+  loadSettings_();
+  var report = sendableGuests_(readGuests_().guests, phase);
+  return {
+    phase: phase,
+    inPhase: report.inPhase,
+    alreadySent: report.alreadySent,
+    invalid: report.invalid,
+    duplicates: report.duplicates,
+    toSend: report.toSend.length,
+    quota: MailApp.getRemainingDailyQuota()
+  };
+}
+
+/** Sends up to one batch; the dashboard keeps calling until remaining is 0. */
+function sendPhaseBatch(phase) {
+  requireOwner_();
+  loadSettings_();
+  var lock = LockService.getDocumentLock();
+  if (!lock.tryLock(5000)) throw new Error('Another send is already running. Wait for it to finish.');
+  try {
+    var data = readGuests_(), report = sendableGuests_(data.guests, phase);
+    var batch = report.toSend.slice(0, SEND_BATCH), sent = 0, failed = 0;
+    for (var i = 0; i &lt; batch.length; i++) {
+      if (MailApp.getRemainingDailyQuota() &lt; 1) throw new Error('Daily Gmail sending limit reached. Sending resumes tomorrow.');
+      var g = batch[i];
+      try {
+        sendEmail_(g.email, buildInviteEmail(g));
+        setCells_(data.sheet, data.col, g.row, { 'Invite Status': 'Sent', 'Sent At': new Date(), 'Emails Sent': addTag_(g.emailsSent, 'invite') });
+        sent++;
+      } catch (err) {
+        setCells_(data.sheet, data.col, g.row, { 'Invite Status': 'Failed: ' + String(err.message || err).slice(0, 80) });
+        failed++;
+      }
+      SpreadsheetApp.flush(); // Save after each email so a timeout never causes a double send.
+    }
+    return { sent: sent, failed: failed, remaining: report.toSend.length - batch.length };
+  } finally { lock.releaseLock(); }
+}
+
+function sendEmail_(to, email) {
+  GmailApp.sendEmail(to, email.subject, email.text, {
+    htmlBody: email.html,
+    name: CONFIG.SENDER_NAME,
+    replyTo: CONFIG.REPLY_TO
+  });
+}
+
+function sendTestToMe() {
+  requireOwner_();
+  loadSettings_();
+  var to = Session.getActiveUser().getEmail();
+  sendEmail_(to, buildInviteEmail({ name: 'Test Investor', token: TEST_TOKEN }));
+  return { to: to };
+}
+
+function getEmailPreview(kind) {
+  requireOwner_();
+  loadSettings_();
+  var demo = { name: 'Test Investor', token: TEST_TOKEN, rsvp: kind === 'reminder-maybe' ? 'Maybe' : 'Yes', partySize: '3' };
+  if (kind === 'nudge') return buildNudgeEmail(demo).html;
+  if (kind &amp;&amp; kind.indexOf('reminder') === 0) return buildReminderEmail(demo, 3).html;
+  return buildInviteEmail(demo).html;
+}
+
+/* ------------------------------------------------------------------ */
+/* Nudges for people who haven't answered (manual, from dashboard)     */
+/* ------------------------------------------------------------------ */
+
+function nudgeCandidates_(guests) {
+  var cutoff = Date.now() - CONFIG.NUDGE_AFTER_DAYS * 86400000;
+  return guests.filter(function (g) {
+    return g.status === 'Sent' &amp;&amp; !g.rsvp &amp;&amp; g.sentAt &amp;&amp; new Date(g.sentAt).getTime() &lt; cutoff &amp;&amp;
+      g.emailsSent.split(',').indexOf('nudge') === -1;
+  });
+}
+
+function previewNudge() {
+  requireOwner_();
+  return { count: nudgeCandidates_(readGuests_().guests).length, days: CONFIG.NUDGE_AFTER_DAYS };
+}
+
+function sendNudgeBatch() {
+  requireOwner_();
+  loadSettings_();
+  var lock = LockService.getDocumentLock();
+  if (!lock.tryLock(5000)) throw new Error('Another send is already running.');
+  try {
+    var data = readGuests_(), list = nudgeCandidates_(data.guests), batch = list.slice(0, SEND_BATCH), sent = 0;
+    batch.forEach(function (g) {
+      try {
+        sendEmail_(g.email, buildNudgeEmail(g));
+        setCells_(data.sheet, data.col, g.row, { 'Emails Sent': addTag_(g.emailsSent, 'nudge') });
+        sent++;
+      } catch (err) { console.error('Nudge failed for ' + g.email + ': ' + err); }
+      SpreadsheetApp.flush();
+    });
+    return { sent: sent, remaining: list.length - batch.length };
+  } finally { lock.releaseLock(); }
+}
+
+/* ------------------------------------------------------------------ */
+/* Hourly jobs: countdown reminders + bounce detection                 */
+/* ------------------------------------------------------------------ */
+
+function hourlyJobs() {
+  try { markBounces_(); } catch (err) { console.error('Bounce check failed: ' + err); }
+  var hour = Number(Utilities.formatDate(new Date(), CONFIG.TIMEZONE, 'H'));
+  if (hour &gt;= 10 &amp;&amp; hour &lt;= 19) { loadSettings_(); sendReminders_(); }
+}
+
+function daysUntilEvent_() {
+  var today = Utilities.formatDate(new Date(), CONFIG.TIMEZONE, 'yyyy-MM-dd').split('-');
+  var event = CONFIG.EVENT.START_ISO.slice(0, 10).split('-');
+  return Math.round((Date.UTC(event[0], event[1] - 1, event[2]) - Date.UTC(today[0], today[1] - 1, today[2])) / 86400000);
+}
+
+/**
+ * Picks the reminder window we're in (7, 3 or 1 day) and sends it once to every
+ * Yes/Maybe guest who RSVP'd before that window opened.
+ */
+function sendReminders_() {
+  var daysLeft = daysUntilEvent_();
+  var windows = CONFIG.REMINDER_DAYS.slice().sort(function (a, b) { return a - b; });
+  var stage = null;
+  for (var i = 0; i &lt; windows.length; i++) { if (daysLeft &gt;= 1 &amp;&amp; daysLeft &lt;= windows[i]) { stage = windows[i]; break; } }
+  if (!stage) return;
+
+  var tag = stage + 'd';
+  var eventDay = new Date(CONFIG.EVENT.START_ISO);
+  var windowOpens = new Date(eventDay.getTime() - stage * 86400000);
+  var data = readGuests_(), budget = 120;
+
+  data.guests.forEach(function (g) {
+    if (budget &lt;= 0) return;
+    if (g.rsvp !== 'Yes' &amp;&amp; g.rsvp !== 'Maybe') return;
+    if (!EMAIL_PATTERN.test(g.email) || g.status === 'Bounced') return;
+    var tags = g.emailsSent.split(',');
+    if (tags.indexOf(tag) !== -1) return;
+    // Skip anyone who already got a closer reminder, or RSVP'd inside this window (they just heard from us).
+    if (windows.some(function (d) { return d &lt; stage &amp;&amp; tags.indexOf(d + 'd') !== -1; })) return;
+    if (g.rsvpAt &amp;&amp; new Date(g.rsvpAt) &gt; windowOpens) return;
+    try {
+      sendEmail_(g.email, buildReminderEmail(g, daysLeft));
+      setCells_(data.sheet, data.col, g.row, { 'Emails Sent': addTag_(g.emailsSent, tag) });
+      budget--;
+    } catch (err) { console.error('Reminder failed for ' + g.email + ': ' + err); }
+  });
+}
+
+/** Reads "Delivery Status Notification" emails in info@'s inbox and marks those guests as Bounced. */
+function markBounces_() {
+  var threads = GmailApp.search('from:(mailer-daemon OR postmaster) newer_than:3d', 0, 50);
+  if (!threads.length) return;
+  var bodies = [];
+  threads.forEach(function (t) { t.getMessages().forEach(function (m) { bodies.push(m.getPlainBody().toLowerCase()); }); });
+  var text = bodies.join('\n');
+  var data = readGuests_();
+  data.guests.forEach(function (g) {
+    if (g.status === 'Sent' &amp;&amp; g.email &amp;&amp; text.indexOf(g.email) !== -1) {
+      setCells_(data.sheet, data.col, g.row, { 'Invite Status': 'Bounced' });
+    }
+  });
+}
+
+/* ------------------------------------------------------------------ */
+/* Dashboard data                                                      */
+/* ------------------------------------------------------------------ */
+
+function getDashboard() {
+  requireOwner_();
+  var guests = readGuests_().guests;
+  var phases = {};
+  var stats = { total: 0, sent: 0, opened: 0, yes: 0, maybe: 0, no: 0, noResponse: 0, bounced: 0, headcount: 0 };
+  var rows = guests.map(function (g) {
+    stats.total++;
+    if (g.phase) phases[g.phase] = true;
+    var sent = g.status === 'Sent' || g.status === 'Bounced';
+    if (sent) stats.sent++;
+    if (g.status === 'Bounced') stats.bounced++;
+    if (g.opened) stats.opened++;
+    if (g.rsvp === 'Yes') { stats.yes++; stats.headcount += g.partySize === '4+' ? 4 : (Number(g.partySize) || 1); }
+    else if (g.rsvp === 'Maybe') stats.maybe++;
+    else if (g.rsvp === 'No') stats.no++;
+    else if (g.status === 'Sent') stats.noResponse++;
+    return {
+      name: g.name, email: g.email, phase: g.phase,
+      status: g.status || 'Not sent', sentAt: g.sentAt,
+      opened: g.opened, firstOpened: g.firstOpened, openCount: g.openCount,
+      rsvp: g.rsvp, partySize: g.partySize, reason: g.reason, rsvpAt: g.rsvpAt,
+      calendar: !!g.eventId, emailsSent: g.emailsSent, lastActivity: g.lastActivity
+    };
+  });
+  return {
+    stats: stats,
+    rows: rows,
+    phases: Object.keys(phases).sort(),
+    quota: MailApp.getRemainingDailyQuota(),
+    sheetUrl: SpreadsheetApp.getActive().getUrl(),
+    daysLeft: daysUntilEvent_(),
+    updatedAt: new Date().toISOString()
+  };
+}
+</textarea>
+      </div>
+      <p>Press <span class="ui">Ctrl + S</span> (Mac: <span class="ui">Cmd + S</span>) to save.</p>
+    </li>
+    <li class="step" data-id="b3"><button class="tick">Mark done</button>
+      <p>On the left, next to <strong>Files</strong>, click the <span class="ui">+</span> <span class="arrow">→</span> <span class="ui">HTML</span>. Type this name exactly (with a capital D) and press <span class="ui">Enter</span>:</p>
+      <div class="copyrow"><code>Dashboard</code><button class="copy" data-text="Dashboard">Copy</button></div>
+      <p>Delete the few lines it starts with (<span class="ui">Ctrl + A</span>, <span class="ui">Delete</span>), then paste this:</p>
+      <div class="bigcopy">
+        <div class="head"><span><span class="name">Dashboard.html</span> <span class="meta">· 440 lines</span></span><button class="copy" data-src="dash-html">Copy all of Dashboard.html</button></div>
+        <pre aria-hidden="true">&lt;!DOCTYPE html&gt;
+&lt;html lang=&quot;en&quot;&gt;
+&lt;head&gt;
+&lt;base target=&quot;_top&quot;&gt;
+&lt;meta charset=&quot;utf-8&quot;&gt;
+&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1&quot;&gt;
+&lt;title&gt;Jupiter Holiday Party · RSVPs&lt;/title&gt;
+&lt;style&gt;</pre>
+        <textarea id="dash-html" readonly hidden aria-label="Dashboard.html">&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+&lt;base target="_top"&gt;
+&lt;meta charset="utf-8"&gt;
+&lt;meta name="viewport" content="width=device-width, initial-scale=1"&gt;
+&lt;title&gt;Jupiter Holiday Party · RSVPs&lt;/title&gt;
+&lt;style&gt;
+  :root {
+    --bg: #F5F5F7; --card: #FFFFFF; --ink: #1D1D1F; --muted: #6E6E73; --line: #E5E5EA;
+    --navy: #0B1330; --gold: #D99A0B; --gold-soft: #FFF6DF;
+    --green: #1F8A4C; --green-soft: #E6F4EC; --amber: #A86A00; --amber-soft: #FFF3D6;
+    --red: #C2362B; --red-soft: #FCE9E7; --blue: #0A5BD3; --blue-soft: #E8F0FD;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 14px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased; }
+  button { font: inherit; cursor: pointer; }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 28px 24px 60px; }
+
+  header { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
+  .eyebrow { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); font-weight: 600; }
+  h1 { margin: 4px 0 0; font-size: 28px; letter-spacing: -.02em; font-weight: 700; }
+  .sub { color: var(--muted); margin-top: 4px; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .btn { border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 999px; padding: 9px 16px; font-weight: 500; transition: background .15s, transform .1s; }
+  .btn:hover { background: #F0F0F2; }
+  .btn:active { transform: scale(.97); }
+  .btn.primary { background: var(--navy); border-color: var(--navy); color: #fff; }
+  .btn.primary:hover { background: #18234A; }
+  .btn.gold { background: var(--gold); border-color: var(--gold); color: #fff; }
+  .btn[disabled] { opacity: .45; cursor: not-allowed; }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .stat { background: var(--card); border-radius: var(--radius); padding: 16px 18px; border: 1px solid var(--line); cursor: pointer; transition: border-color .15s; }
+  .stat:hover { border-color: #C7C7CC; }
+  .stat .label { color: var(--muted); font-size: 12px; font-weight: 500; }
+  .stat .value { font-size: 28px; font-weight: 700; letter-spacing: -.02em; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .stat .note { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .stat.hero { background: var(--navy); border-color: var(--navy); color: #fff; }
+  .stat.hero .label, .stat.hero .note { color: #B7BED6; }
+  .stat.hero .value { color: #F2B01E; }
+
+  .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+  .chip { border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 6px 12px; font-size: 13px; color: var(--ink); }
+  .chip.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .chip .n { color: var(--muted); margin-left: 4px; font-variant-numeric: tabular-nums; }
+  .chip.on .n { color: #C7C7CC; }
+  input[type=search], select { border: 1px solid var(--line); background: var(--card); border-radius: 10px; padding: 8px 12px; font: inherit; color: var(--ink); }
+  input[type=search] { width: 240px; }
+
+  .table-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  .scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; min-width: 920px; }
+  th { text-align: left; font-size: 12px; font-weight: 600; color: var(--muted); padding: 12px 14px; border-bottom: 1px solid var(--line); background: #FAFAFC; white-space: nowrap; cursor: pointer; user-select: none; }
+  th .arrow { opacity: .5; }
+  td { padding: 12px 14px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  tr:last-child td { border-bottom: 0; }
+  tbody tr:hover { background: #FAFAFC; }
+  .name { font-weight: 600; }
+  .email { color: var(--muted); font-size: 13px; }
+  .time { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .p-yes { background: var(--green-soft); color: var(--green); }
+  .p-maybe { background: var(--amber-soft); color: var(--amber); }
+  .p-no { background: var(--red-soft); color: var(--red); }
+  .p-sent { background: var(--blue-soft); color: var(--blue); }
+  .p-none { background: #F0F0F2; color: var(--muted); }
+  .p-open { background: var(--gold-soft); color: var(--amber); }
+  .empty { padding: 48px; text-align: center; color: var(--muted); }
+  .foot { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; margin-top: 10px; flex-wrap: wrap; gap: 8px; }
+  .foot a { color: var(--muted); }
+
+  /* Modal */
+  .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.35); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 10; }
+  .scrim.show { display: flex; }
+  .modal { background: var(--card); border-radius: 18px; width: 100%; max-width: 480px; padding: 24px; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+  .modal.wide { max-width: 700px; padding: 0; overflow: hidden; }
+  .modal h2 { margin: 0 0 4px; font-size: 20px; letter-spacing: -.01em; }
+  .modal p { color: var(--muted); margin: 0 0 16px; }
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+  .field select { width: 100%; }
+  .summary { background: var(--bg); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; }
+  .summary .big { font-size: 22px; font-weight: 700; letter-spacing: -.01em; }
+  .summary ul { margin: 8px 0 0; padding-left: 18px; color: var(--muted); }
+  .bar { height: 8px; border-radius: 99px; background: var(--line); overflow: hidden; margin: 12px 0 6px; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--gold); transition: width .3s; }
+  .row-end { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+  .modal-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  iframe { width: 100%; height: 70vh; border: 0; display: block; background: #0B1330; }
+
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 12px; opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; z-index: 20; max-width: 90vw; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .loading { opacity: .5; pointer-events: none; }
+
+  @media (max-width: 640px) {
+    .wrap { padding: 20px 16px 48px; }
+    input[type=search] { width: 100%; }
+    h1 { font-size: 24px; }
+  }
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;div class="wrap" id="app"&gt;
+  &lt;header&gt;
+    &lt;div&gt;
+      &lt;div class="eyebrow"&gt;Jupiter Texas · Holiday Party&lt;/div&gt;
+      &lt;h1&gt;Invitations &amp; RSVPs&lt;/h1&gt;
+      &lt;div class="sub" id="sub"&gt;Loading…&lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div class="actions"&gt;
+      &lt;button class="btn" onclick="openPreview('invite')"&gt;Preview emails&lt;/button&gt;
+      &lt;button class="btn" onclick="openNudge()"&gt;Nudge non-responders&lt;/button&gt;
+      &lt;button class="btn primary" onclick="openSend()"&gt;Send invitations&lt;/button&gt;
+    &lt;/div&gt;
+  &lt;/header&gt;
+
+  &lt;section class="stats" id="stats"&gt;&lt;/section&gt;
+
+  &lt;div class="toolbar"&gt;
+    &lt;div class="chips" id="chips"&gt;&lt;/div&gt;
+    &lt;select id="phaseFilter" onchange="render()"&gt;&lt;option value=""&gt;All phases&lt;/option&gt;&lt;/select&gt;
+    &lt;input type="search" id="search" placeholder="Search name or email" oninput="render()"&gt;
+  &lt;/div&gt;
+
+  &lt;div class="table-card"&gt;
+    &lt;div class="scroll"&gt;
+      &lt;table&gt;
+        &lt;thead&gt;&lt;tr id="thead"&gt;&lt;/tr&gt;&lt;/thead&gt;
+        &lt;tbody id="tbody"&gt;&lt;/tbody&gt;
+      &lt;/table&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div class="foot"&gt;
+    &lt;span id="count"&gt;&lt;/span&gt;
+    &lt;span&gt;&lt;a href="#" onclick="exportCsv();return false;"&gt;Export CSV&lt;/a&gt; · &lt;a id="sheetLink" href="#" target="_blank"&gt;Open Google Sheet&lt;/a&gt; · &lt;span id="updated"&gt;&lt;/span&gt;&lt;/span&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;!-- Send invitations --&gt;
+&lt;div class="scrim" id="sendModal"&gt;
+  &lt;div class="modal"&gt;
+    &lt;h2&gt;Send invitations&lt;/h2&gt;
+    &lt;p&gt;Pick a phase. Nobody is ever invited twice.&lt;/p&gt;
+    &lt;div class="field"&gt;
+      &lt;label for="sendPhase"&gt;Phase&lt;/label&gt;
+      &lt;select id="sendPhase" onchange="loadSendPreview()"&gt;&lt;/select&gt;
+    &lt;/div&gt;
+    &lt;div class="summary" id="sendSummary"&gt;Pick a phase.&lt;/div&gt;
+    &lt;div id="sendProgress" style="display:none"&gt;
+      &lt;div class="bar"&gt;&lt;i id="sendBar"&gt;&lt;/i&gt;&lt;/div&gt;
+      &lt;div class="time" id="sendStatus"&gt;&lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div class="row-end" style="margin-top:16px"&gt;
+      &lt;button class="btn" onclick="sendTest()"&gt;Send test to me&lt;/button&gt;
+      &lt;button class="btn" onclick="closeModal('sendModal')" id="sendCancel"&gt;Close&lt;/button&gt;
+      &lt;button class="btn gold" id="sendGo" disabled onclick="startSend()"&gt;Send&lt;/button&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;!-- Nudge --&gt;
+&lt;div class="scrim" id="nudgeModal"&gt;
+  &lt;div class="modal"&gt;
+    &lt;h2&gt;Nudge non-responders&lt;/h2&gt;
+    &lt;p id="nudgeText"&gt;Checking…&lt;/p&gt;
+    &lt;div id="nudgeProgress" style="display:none"&gt;&lt;div class="bar"&gt;&lt;i id="nudgeBar"&gt;&lt;/i&gt;&lt;/div&gt;&lt;/div&gt;
+    &lt;div class="row-end"&gt;
+      &lt;button class="btn" onclick="openPreview('nudge')"&gt;Preview nudge&lt;/button&gt;
+      &lt;button class="btn" onclick="closeModal('nudgeModal')"&gt;Close&lt;/button&gt;
+      &lt;button class="btn gold" id="nudgeGo" disabled onclick="startNudge()"&gt;Send nudge&lt;/button&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;!-- Email preview --&gt;
+&lt;div class="scrim" id="previewModal"&gt;
+  &lt;div class="modal wide"&gt;
+    &lt;div class="modal-head"&gt;
+      &lt;div class="tabs"&gt;
+        &lt;button class="chip" data-kind="invite" onclick="openPreview('invite')"&gt;Invitation&lt;/button&gt;
+        &lt;button class="chip" data-kind="nudge" onclick="openPreview('nudge')"&gt;Nudge&lt;/button&gt;
+        &lt;button class="chip" data-kind="reminder-yes" onclick="openPreview('reminder-yes')"&gt;Reminder · Yes&lt;/button&gt;
+        &lt;button class="chip" data-kind="reminder-maybe" onclick="openPreview('reminder-maybe')"&gt;Reminder · Maybe&lt;/button&gt;
+      &lt;/div&gt;
+      &lt;button class="btn" onclick="closeModal('previewModal')"&gt;Done&lt;/button&gt;
+    &lt;/div&gt;
+    &lt;iframe id="previewFrame" title="Email preview"&gt;&lt;/iframe&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;div class="toast" id="toast"&gt;&lt;/div&gt;
+
+&lt;script&gt;
+  var DATA = null;
+  var FILTER = 'all';
+  var SORT = { key: 'lastActivity', dir: -1 };
+
+  var FILTERS = [
+    ['all', 'All', function () { return true; }],
+    ['notsent', 'Not sent', function (r) { return r.status === 'Not sent' || r.status.indexOf('Failed') === 0; }],
+    ['unopened', 'Sent, not opened', function (r) { return r.status === 'Sent' &amp;&amp; !r.opened; }],
+    ['opened', 'Opened, no RSVP', function (r) { return r.opened &amp;&amp; !r.rsvp; }],
+    ['yes', 'Attending', function (r) { return r.rsvp === 'Yes'; }],
+    ['maybe', 'Maybe', function (r) { return r.rsvp === 'Maybe'; }],
+    ['no', "Can't make it", function (r) { return r.rsvp === 'No'; }],
+    ['bounced', 'Bounced', function (r) { return r.status === 'Bounced'; }]
+  ];
+
+  var COLUMNS = [
+    ['name', 'Investor'], ['phase', 'Phase'], ['status', 'Invite'], ['opened', 'Opened'],
+    ['rsvp', 'RSVP'], ['partySize', 'Party'], ['reason', 'Maybe reason'], ['lastActivity', 'Last activity']
+  ];
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&amp;&lt;&gt;"']/g, function (c) { return { '&amp;': '&amp;amp;', '&lt;': '&amp;lt;', '&gt;': '&amp;gt;', '"': '&amp;quot;', "'": '&amp;#39;' }[c]; }); }
+  function when(iso) {
+    if (!iso) return '';
+    var d = new Date(iso), now = new Date(), mins = Math.round((now - d) / 60000);
+    if (mins &lt; 1) return 'just now';
+    if (mins &lt; 60) return mins + 'm ago';
+    if (mins &lt; 60 * 24) return Math.round(mins / 60) + 'h ago';
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ', ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  }
+  function toast(msg) { var t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(function () { t.classList.remove('show'); }, 3500); }
+  function fail(err) { toast(err &amp;&amp; err.message ? err.message : String(err)); }
+  function call(fn) {
+    var args = Array.prototype.slice.call(arguments, 1);
+    return new Promise(function (resolve, reject) {
+      var runner = google.script.run.withSuccessHandler(resolve).withFailureHandler(reject);
+      runner[fn].apply(runner, args);
+    });
+  }
+
+  function load() {
+    return call('getDashboard').then(function (data) { DATA = data; renderAll(); }).catch(fail);
+  }
+
+  function renderAll() {
+    var s = DATA.stats;
+    var pct = function (n, d) { return d ? Math.round(n / d * 100) + '%' : '—'; };
+    $('sub').textContent = DATA.daysLeft &gt; 0 ? DATA.daysLeft + ' days to the party · Saturday, December 12' : (DATA.daysLeft === 0 ? 'The party is today' : 'The party has happened');
+    $('stats').innerHTML = [
+      ['hero', 'yes', 'Attending', s.yes, 'Expected headcount ' + s.headcount],
+      ['', 'all', 'Invited', s.sent, 'of ' + s.total + ' on the list'],
+      ['', 'opened', 'Opened', s.opened, pct(s.opened, s.sent) + ' of invited'],
+      ['', 'maybe', 'Maybe', s.maybe, ''],
+      ['', 'no', "Can't make it", s.no, ''],
+      ['', 'unopened', 'No response yet', s.noResponse, pct(s.yes + s.maybe + s.no, s.sent) + ' have replied'],
+      ['', 'bounced', 'Bounced', s.bounced, s.bounced ? 'Check these emails' : 'All delivered']
+    ].map(function (c) {
+      return '&lt;div class="stat ' + c[0] + '" onclick="setFilter(\'' + c[1] + '\')"&gt;&lt;div class="label"&gt;' + c[2] + '&lt;/div&gt;&lt;div class="value"&gt;' + c[3] + '&lt;/div&gt;&lt;div class="note"&gt;' + esc(c[4]) + '&lt;/div&gt;&lt;/div&gt;';
+    }).join('');
+
+    var current = $('phaseFilter').value;
+    $('phaseFilter').innerHTML = '&lt;option value=""&gt;All phases&lt;/option&gt;' + DATA.phases.map(function (p) { return '&lt;option value="' + esc(p) + '"&gt;Phase ' + esc(p) + '&lt;/option&gt;'; }).join('');
+    $('phaseFilter').value = current;
+    $('sheetLink').href = DATA.sheetUrl;
+    $('updated').textContent = 'Updated ' + new Date(DATA.updatedAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+    render();
+  }
+
+  function setFilter(key) { FILTER = key; render(); }
+  function setSort(key) { SORT = { key: key, dir: SORT.key === key ? -SORT.dir : 1 }; render(); }
+
+  function visibleRows() {
+    var q = $('search').value.trim().toLowerCase(), phase = $('phaseFilter').value;
+    var test = FILTERS.filter(function (f) { return f[0] === FILTER; })[0][2];
+    return DATA.rows.filter(function (r) {
+      if (phase &amp;&amp; r.phase !== phase) return false;
+      if (q &amp;&amp; (r.name + ' ' + r.email).toLowerCase().indexOf(q) === -1) return false;
+      return test(r);
+    });
+  }
+
+  function render() {
+    if (!DATA) return;
+    var phase = $('phaseFilter').value;
+    var base = DATA.rows.filter(function (r) { return !phase || r.phase === phase; });
+    $('chips').innerHTML = FILTERS.map(function (f) {
+      var n = base.filter(f[2]).length;
+      return '&lt;button class="chip ' + (FILTER === f[0] ? 'on' : '') + '" onclick="setFilter(\'' + f[0] + '\')"&gt;' + f[1] + '&lt;span class="n"&gt;' + n + '&lt;/span&gt;&lt;/button&gt;';
+    }).join('');
+
+    $('thead').innerHTML = COLUMNS.map(function (c) {
+      var arrow = SORT.key === c[0] ? (SORT.dir &gt; 0 ? ' ↑' : ' ↓') : '';
+      return '&lt;th onclick="setSort(\'' + c[0] + '\')"&gt;' + c[1] + '&lt;span class="arrow"&gt;' + arrow + '&lt;/span&gt;&lt;/th&gt;';
+    }).join('');
+
+    var rows = visibleRows().sort(function (a, b) {
+      var x = a[SORT.key], y = b[SORT.key];
+      if (typeof x === 'boolean') { x = x ? 1 : 0; y = y ? 1 : 0; }
+      x = x || ''; y = y || '';
+      return (x &gt; y ? 1 : x &lt; y ? -1 : 0) * SORT.dir;
+    });
+
+    $('tbody').innerHTML = rows.length ? rows.map(rowHtml).join('') :
+      '&lt;tr&gt;&lt;td colspan="8" class="empty"&gt;' + (DATA.rows.length ? 'Nobody matches this view.' : 'No investors yet. Paste Name, Email and Phase into the Google Sheet.') + '&lt;/td&gt;&lt;/tr&gt;';
+    $('count').textContent = 'Showing ' + rows.length + ' of ' + DATA.rows.length + ' investors';
+  }
+
+  function rowHtml(r) {
+    var status = r.status === 'Sent' ? '&lt;span class="pill p-sent"&gt;Sent&lt;/span&gt;&lt;div class="time"&gt;' + when(r.sentAt) + '&lt;/div&gt;'
+      : r.status === 'Bounced' ? '&lt;span class="pill p-no"&gt;Bounced&lt;/span&gt;'
+      : r.status.indexOf('Failed') === 0 ? '&lt;span class="pill p-no" title="' + esc(r.status) + '"&gt;Failed&lt;/span&gt;'
+      : '&lt;span class="pill p-none"&gt;Not sent&lt;/span&gt;';
+    var opened = r.opened ? '&lt;span class="pill p-open"&gt;Opened&lt;/span&gt;&lt;div class="time"&gt;' + when(r.firstOpened) + (r.openCount &gt; 1 ? ' · ' + r.openCount + '×' : '') + '&lt;/div&gt;'
+      : (r.status === 'Sent' ? '&lt;span class="pill p-none"&gt;Not yet&lt;/span&gt;' : '');
+    var rsvpClass = { Yes: 'p-yes', Maybe: 'p-maybe', No: 'p-no' }[r.rsvp];
+    var rsvpLabel = { Yes: 'Attending', Maybe: 'Maybe', No: "Can't make it" }[r.rsvp];
+    var rsvp = r.rsvp ? '&lt;span class="pill ' + rsvpClass + '"&gt;' + rsvpLabel + '&lt;/span&gt;&lt;div class="time"&gt;' + when(r.rsvpAt) + (r.calendar ? ' · 📅' : '') + '&lt;/div&gt;'
+      : (r.opened ? '&lt;span class="pill p-none"&gt;No RSVP&lt;/span&gt;' : '');
+    var party = r.rsvp === 'Yes' ? (r.partySize === '1' ? 'Just them' : r.partySize === '4+' ? '4 or more' : r.partySize ? r.partySize + ' people' : '') : '';
+    return '&lt;tr&gt;' +
+      '&lt;td&gt;&lt;div class="name"&gt;' + esc(r.name || '—') + '&lt;/div&gt;&lt;div class="email"&gt;' + esc(r.email) + '&lt;/div&gt;&lt;/td&gt;' +
+      '&lt;td&gt;' + esc(r.phase) + '&lt;/td&gt;&lt;td&gt;' + status + '&lt;/td&gt;&lt;td&gt;' + opened + '&lt;/td&gt;&lt;td&gt;' + rsvp + '&lt;/td&gt;' +
+      '&lt;td&gt;' + party + '&lt;/td&gt;&lt;td&gt;' + esc(r.rsvp === 'Maybe' ? r.reason : '') + '&lt;/td&gt;' +
+      '&lt;td class="time"&gt;' + when(r.lastActivity) + '&lt;/td&gt;&lt;/tr&gt;';
+  }
+
+  function exportCsv() {
+    var head = ['Name', 'Email', 'Phase', 'Invite', 'Sent at', 'Opened', 'First opened', 'RSVP', 'Party size', 'Maybe reason', 'RSVP at'];
+    var lines = [head].concat(visibleRows().map(function (r) {
+      return [r.name, r.email, r.phase, r.status, r.sentAt, r.opened ? 'Yes' : 'No', r.firstOpened, r.rsvp, r.partySize, r.reason, r.rsvpAt];
+    })).map(function (cols) { return cols.map(function (c) { return '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"'; }).join(','); });
+    var blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'jupiter-holiday-party-rsvps.csv';
+    a.click();
+  }
+
+  /* ---- Modals ---- */
+  function openModal(id) { $(id).classList.add('show'); }
+  function closeModal(id) { $(id).classList.remove('show'); }
+  document.querySelectorAll('.scrim').forEach(function (s) {
+    s.addEventListener('click', function (e) { if (e.target === s &amp;&amp; !s.dataset.busy) closeModal(s.id); });
+  });
+
+  function openSend() {
+    var phases = DATA ? DATA.phases : [];
+    $('sendPhase').innerHTML = phases.map(function (p) { return '&lt;option value="' + esc(p) + '"&gt;Phase ' + esc(p) + '&lt;/option&gt;'; }).join('') +
+      '&lt;option value="ALL"&gt;Everyone on the list&lt;/option&gt;';
+    $('sendProgress').style.display = 'none';
+    openModal('sendModal');
+    loadSendPreview();
+  }
+
+  function loadSendPreview() {
+    var phase = $('sendPhase').value;
+    $('sendGo').disabled = true;
+    $('sendSummary').innerHTML = 'Checking the list…';
+    call('previewPhase', phase).then(function (p) {
+      var label = phase === 'ALL' ? 'the whole list' : 'Phase ' + esc(phase);
+      var notes = [];
+      if (p.alreadySent) notes.push(p.alreadySent + ' already invited, will be skipped');
+      if (p.invalid.length) notes.push(p.invalid.length + ' invalid email' + (p.invalid.length &gt; 1 ? 's' : '') + ': ' + esc(p.invalid.slice(0, 3).join(', ')) + (p.invalid.length &gt; 3 ? '…' : ''));
+      if (p.duplicates.length) notes.push(p.duplicates.length + ' duplicate' + (p.duplicates.length &gt; 1 ? 's' : '') + ' removed');
+      if (p.toSend &gt; p.quota) notes.push('Gmail allows ' + p.quota + ' more today. The rest go tomorrow.');
+      $('sendSummary').innerHTML = '&lt;div&gt;' + label + ' has &lt;strong&gt;' + p.inPhase + '&lt;/strong&gt; investor' + (p.inPhase === 1 ? '' : 's') + '.&lt;/div&gt;' +
+        '&lt;div class="big"&gt;' + (p.toSend ? 'Ready to send ' + p.toSend : 'Nothing new to send') + '&lt;/div&gt;' +
+        (notes.length ? '&lt;ul&gt;&lt;li&gt;' + notes.join('&lt;/li&gt;&lt;li&gt;') + '&lt;/li&gt;&lt;/ul&gt;' : '');
+      $('sendGo').textContent = p.toSend ? 'Send ' + p.toSend + ' invitation' + (p.toSend === 1 ? '' : 's') : 'Send';
+      $('sendGo').disabled = !p.toSend;
+      $('sendGo').dataset.total = p.toSend;
+    }).catch(function (e) { $('sendSummary').textContent = e.message; });
+  }
+
+  function startSend() {
+    var phase = $('sendPhase').value, total = Number($('sendGo').dataset.total), done = 0, failed = 0;
+    if (!confirm('Send ' + total + ' invitations from ' + '&lt;?= CONFIG.OWNER_EMAIL ?&gt;' + ' now?')) return;
+    $('sendModal').dataset.busy = '1';
+    $('sendGo').disabled = true; $('sendPhase').disabled = true; $('sendCancel').disabled = true;
+    $('sendProgress').style.display = 'block';
+    (function next() {
+      $('sendStatus').textContent = 'Sending… ' + done + ' of ' + total;
+      call('sendPhaseBatch', phase).then(function (r) {
+        done += r.sent; failed += r.failed;
+        $('sendBar').style.width = Math.min(100, Math.round((done + failed) / total * 100)) + '%';
+        if (r.remaining &gt; 0 &amp;&amp; (r.sent + r.failed) &gt; 0) return next();
+        finish();
+      }).catch(function (e) { fail(e); finish(); });
+    })();
+    function finish() {
+      delete $('sendModal').dataset.busy;
+      $('sendPhase').disabled = false; $('sendCancel').disabled = false;
+      $('sendStatus').textContent = 'Done. ' + done + ' sent' + (failed ? ', ' + failed + ' failed (see Invite column)' : '') + '.';
+      toast(done + ' invitations sent');
+      load(); loadSendPreview();
+    }
+  }
+
+  function sendTest() {
+    call('sendTestToMe').then(function (r) { toast('Test invite sent to ' + r.to); }).catch(fail);
+  }
+
+  function openNudge() {
+    openModal('nudgeModal');
+    $('nudgeGo').disabled = true; $('nudgeProgress').style.display = 'none';
+    $('nudgeText').textContent = 'Checking…';
+    call('previewNudge').then(function (p) {
+      $('nudgeText').innerHTML = p.count
+        ? '&lt;strong&gt;' + p.count + '&lt;/strong&gt; investor' + (p.count === 1 ? '' : 's') + ' got the invite more than ' + p.days + ' days ago and haven\'t answered. Each gets one short follow-up, never more.'
+        : 'Nobody to nudge right now. People become eligible ' + p.days + ' days after their invite, if they haven\'t answered.';
+      $('nudgeGo').disabled = !p.count;
+      $('nudgeGo').dataset.total = p.count;
+    }).catch(fail);
+  }
+
+  function startNudge() {
+    var total = Number($('nudgeGo').dataset.total), done = 0;
+    $('nudgeGo').disabled = true; $('nudgeProgress').style.display = 'block';
+    (function next() {
+      call('sendNudgeBatch').then(function (r) {
+        done += r.sent;
+        $('nudgeBar').style.width = Math.min(100, Math.round(done / total * 100)) + '%';
+        if (r.remaining &gt; 0 &amp;&amp; r.sent &gt; 0) return next();
+        $('nudgeText').textContent = 'Done. ' + done + ' nudges sent.';
+        load();
+      }).catch(fail);
+    })();
+  }
+
+  function openPreview(kind) {
+    openModal('previewModal');
+    document.querySelectorAll('#previewModal .chip').forEach(function (c) { c.classList.toggle('on', c.dataset.kind === kind); });
+    call('getEmailPreview', kind).then(function (html) { $('previewFrame').srcdoc = html; }).catch(fail);
+  }
+
+  load();
+  setInterval(function () { if (!document.hidden &amp;&amp; !document.querySelector('.scrim.show')) load(); }, 60000);
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</textarea>
+      </div>
+      <p>Save again (<span class="ui">Ctrl + S</span>).</p>
+    </li>
+    <li class="step" data-id="b4"><button class="tick">Mark done</button>
+      <p>At the top of the editor there's a dropdown next to <span class="ui">▷ Run</span>. Click <span class="ui">Code.gs</span> on the left first, then choose <span class="ui">setup</span> in that dropdown and click <span class="ui">▷ Run</span>.</p>
+      <p>Google asks for permission:</p>
+      <ul>
+        <li><span class="ui">Review permissions</span> <span class="arrow">→</span> pick <strong>info@jupitertexas.com</strong></li>
+        <li>If you see "Google hasn't verified this app": click <span class="ui">Advanced</span> <span class="arrow">→</span> <span class="ui">Go to Jupiter RSVP (unsafe)</span>. It's safe: it's your own code.</li>
+        <li>Click <span class="ui">Allow</span></li>
+      </ul>
+      <p>Wait until the bottom says <strong>Execution completed</strong>. Go back to the sheet tab: you'll now see two tabs at the bottom, <strong>Guests</strong> and <strong>Settings</strong>.</p>
+    </li>
+  </ol>
+
+  <!-- PART C -->
+  <h2><b>Part C</b> Create the two links <span class="who">5 min</span></h2>
+  <ol class="steps" style="--start:7">
+    <li class="step" data-id="c1"><button class="tick">Mark done</button>
+      <p><strong>Link 1: the RSVP link (public).</strong> In Apps Script, click the blue <span class="ui">Deploy</span> button (top right) <span class="arrow">→</span> <span class="ui">New deployment</span>.</p>
+      <ul>
+        <li>Click the <span class="ui">⚙ gear</span> next to "Select type" <span class="arrow">→</span> <span class="ui">Web app</span></li>
+        <li>Description: <span class="ui">RSVP</span></li>
+        <li>Execute as: <span class="ui">Me (info@jupitertexas.com)</span></li>
+        <li>Who has access: <span class="ui">Anyone</span></li>
+        <li>Click <span class="ui">Deploy</span> (click <span class="ui">Authorize access</span> and <span class="ui">Allow</span> again if asked)</li>
+      </ul>
+      <p>Under <strong>Web app</strong>, click <span class="ui">Copy</span>. Go to the sheet <span class="arrow">→</span> <strong>Settings</strong> tab <span class="arrow">→</span> click cell <span class="ui">B2</span> (yellow, next to "API link") <span class="arrow">→</span> paste.</p>
+      <p class="tip"><b>No "Anyone" option?</b> Jupiter's Google admin has turned it off. Send them the message in the "If something goes wrong" section at the bottom.</p>
+    </li>
+    <li class="step" data-id="c2"><button class="tick">Mark done</button>
+      <p><strong>Link 2: your dashboard (private).</strong> Click <span class="ui">Deploy</span> <span class="arrow">→</span> <span class="ui">New deployment</span> again.</p>
+      <ul>
+        <li><span class="ui">⚙ gear</span> <span class="arrow">→</span> <span class="ui">Web app</span></li>
+        <li>Description: <span class="ui">Dashboard</span></li>
+        <li>Execute as: <span class="ui">Me</span></li>
+        <li>Who has access: <span class="ui">Only myself</span></li>
+        <li><span class="ui">Deploy</span></li>
+      </ul>
+      <p>Copy this Web app link, paste it into a new Chrome tab (in the info@ window) and press Enter. That's your dashboard. <strong>Bookmark it</strong> (<span class="ui">Ctrl + D</span> / <span class="ui">Cmd + D</span>).</p>
+    </li>
+  </ol>
+
+  <!-- PART D -->
+  <h2><b>Part D</b> Put the RSVP page online <span class="who">5 min</span></h2>
+  <ol class="steps" style="--start:9">
+    <li class="step" data-id="d1"><button class="tick">Mark done</button>
+      <p>Download <strong>jupiter-rsvp-page.zip</strong> (the file Claude sent you in the chat) to your computer.</p>
+      <p>Double-click it to unzip. On Windows: right-click <span class="arrow">→</span> <span class="ui">Extract All</span>. You now have a folder called <strong>jupiter-rsvp-page</strong>.</p>
+    </li>
+    <li class="step" data-id="d2"><button class="tick">Mark done</button>
+      <p>Go to Netlify's sign-up page and click <span class="ui">Sign up with Google</span>. Use info@jupitertexas.com so Jupiter owns it. It's free.</p>
+      <div class="copyrow"><code>https://app.netlify.com/signup</code><button class="copy" data-text="https://app.netlify.com/signup">Copy</button></div>
+      <p>If it asks questions about your team or project, pick anything and skip ahead.</p>
+    </li>
+    <li class="step" data-id="d3"><button class="tick">Mark done</button>
+      <p>Open the drop page and <strong>drag the jupiter-rsvp-page folder</strong> onto the box in the middle.</p>
+      <div class="copyrow"><code>https://app.netlify.com/drop</code><button class="copy" data-text="https://app.netlify.com/drop">Copy</button></div>
+      <p>After a few seconds you get a link like <strong>https://random-words-123.netlify.app</strong>.</p>
+    </li>
+    <li class="step" data-id="d4"><button class="tick">Mark done</button>
+      <p><strong>Give it a proper name</strong>, since investors will briefly see it: <span class="ui">Site configuration</span> <span class="arrow">→</span> <span class="ui">Change site name</span> <span class="arrow">→</span> paste the name below <span class="arrow">→</span> <span class="ui">Save</span>.</p>
+      <div class="copyrow"><code>jupitertexas-rsvp</code><button class="copy" data-text="jupitertexas-rsvp">Copy</button></div>
+      <p>If that name is taken, try <strong>jupitertexas-events</strong>.</p>
+    </li>
+    <li class="step" data-id="d5"><button class="tick">Mark done</button>
+      <p>Copy the site's link (for example <strong>https://jupitertexas-rsvp.netlify.app</strong>). In the sheet's <strong>Settings</strong> tab, paste it into cell <span class="ui">B3</span>.</p>
+      <p>Open the link once in your browser: you should see the Holiday Party poster.</p>
+    </li>
+  </ol>
+
+  <!-- PART E -->
+  <h2><b>Part E</b> Test it on yourself <span class="who">10 min</span></h2>
+  <ol class="steps" style="--start:14">
+    <li class="step" data-id="e1"><button class="tick">Mark done</button>
+      <p>Open your dashboard bookmark. Click <span class="ui">Send invitations</span> <span class="arrow">→</span> <span class="ui">Send test to me</span>.</p>
+      <p>Check info@'s inbox. Open the test email and tap <strong>Yes, I'll be there</strong>. A page saying <strong>"You're in, Test."</strong> should open. The test saves nothing, so tap all the buttons freely.</p>
+    </li>
+    <li class="step" data-id="e2"><button class="tick">Mark done</button>
+      <p><strong>Real test.</strong> In the sheet's <strong>Guests</strong> tab, on row 2, type your own name, your <strong>personal</strong> email (not info@), and <strong>0</strong> as the phase.</p>
+      <p>Refresh the dashboard <span class="arrow">→</span> <span class="ui">Send invitations</span> <span class="arrow">→</span> choose <span class="ui">Phase 0</span> <span class="arrow">→</span> <span class="ui">Send 1 invitation</span>.</p>
+    </li>
+    <li class="step" data-id="e3"><button class="tick">Mark done</button>
+      <p>On your phone, open the email. Check that:</p>
+      <ul>
+        <li>It's in your main inbox, not Spam or Promotions</li>
+        <li>Tapping <strong>Yes</strong> opens the page and a calendar invite from info@ arrives within a minute</li>
+        <li>Picking a party size shows "Perfect. We're planning for…"</li>
+        <li>After a refresh, the dashboard shows you as <strong>Opened</strong> and <strong>Attending</strong></li>
+        <li>Tapping <strong>Can't make it</strong> at the bottom of the page removes the calendar event</li>
+      </ul>
+      <p>All good? Delete your test row (right-click row 2 <span class="arrow">→</span> <span class="ui">Delete row</span>).</p>
+    </li>
+  </ol>
+
+  <!-- PART F -->
+  <h2><b>Part F</b> Send to investors</h2>
+  <ol class="steps" style="--start:17">
+    <li class="step" data-id="f1"><button class="tick">Mark done</button>
+      <p>In the <strong>Guests</strong> tab, paste your investors starting at cell <span class="ui">A2</span>:</p>
+      <ul>
+        <li>Column A: <strong>Name</strong> (e.g. Raj Mehta)</li>
+        <li>Column B: <strong>Email</strong></li>
+        <li>Column C: <strong>Phase</strong> (1, 2, 3…)</li>
+      </ul>
+      <p>From Excel: select those three columns of data (no header row), <span class="ui">Ctrl + C</span>, click A2 in the sheet, <span class="ui">Ctrl + V</span>. Leave the grey columns empty; the system fills them.</p>
+    </li>
+    <li class="step" data-id="f2"><button class="tick">Mark done</button>
+      <p>Dashboard <span class="arrow">→</span> <span class="ui">Send invitations</span> <span class="arrow">→</span> choose <span class="ui">Phase 1</span>. It shows how many it found and how many it will send. Click <span class="ui">Send</span> and keep the tab open until it says <strong>Done</strong>.</p>
+      <p>Repeat for each phase when you're ready. Nobody is ever sent the invite twice.</p>
+    </li>
+    <li class="step" data-id="f3"><button class="tick">Mark done</button>
+      <p><strong>After that, it runs itself.</strong></p>
+      <ul>
+        <li>Reminder emails go out 7, 3 and 1 day before, to everyone who said Yes or Maybe</li>
+        <li>Bounced emails are marked within the hour</li>
+        <li>4 or more days after a phase goes out, use <span class="ui">Nudge non-responders</span> on the dashboard to follow up once</li>
+      </ul>
+    </li>
+  </ol>
+
+  <!-- DMARC -->
+  <h2><b>Part G</b> One request to Jupiter's IT person</h2>
+  <ol class="steps" style="--start:20">
+    <li class="step" data-id="g1"><button class="tick">Mark done</button>
+      <p>This helps keep invitations out of spam. It isn't required to start, but do it this week. Send this message to whoever manages the jupitertexas.com domain (GoDaddy, Google Domains, Cloudflare, etc.):</p>
+      <div class="msg" id="dmarc-msg">Hi, could you add one DNS record to jupitertexas.com? We're sending event invitations from info@ and this helps them reach inboxes.
+
+Type: TXT
+Name / Host: _dmarc
+Value: v=DMARC1; p=none; rua=mailto:info@jupitertexas.com
+
+Thanks!</div>
+      <button class="copy" data-src-text="dmarc-msg">Copy message</button>
+    </li>
+  </ol>
+
+  <!-- Troubleshooting -->
+  <h2>If something goes wrong</h2>
+  <div class="fix">
+    <details><summary>There's no "Anyone" option in step 8</summary>
+      <p>Send this to Jupiter's Google Workspace admin:</p>
+      <div class="msg" id="admin-msg">Hi, could you allow Apps Script web apps to be shared outside our domain? In the Google Admin console: Apps → Google Workspace → Drive and Docs → Sharing settings → Sharing options → allow users to share outside jupitertexas.com. It's for the holiday party RSVP page. Thanks!</div>
+      <button class="copy" data-src-text="admin-msg">Copy message</button>
+    </details>
+    <details><summary>The dashboard says the "API link" or "RSVP page link" is missing or wrong</summary>
+      <p>Check the sheet's Settings tab. B2 must start with https://script.google.com and end with /exec (it's the one from step 8, "Anyone"). B3 must be your Netlify link starting with https://.</p>
+    </details>
+    <details><summary>I changed something in the code and nothing changed</summary>
+      <p>In Apps Script: <span class="ui">Deploy</span> → <span class="ui">Manage deployments</span>. For each of the two deployments: click ✏️ → Version: <span class="ui">New version</span> → <span class="ui">Deploy</span>. The links stay the same.</p>
+    </details>
+    <details><summary>Tapping a button says "We couldn't save that"</summary>
+      <p>Usually the RSVP link (step 8) was made with "Only myself" instead of "Anyone", or B2 has the dashboard link instead of the RSVP link. Redo step 8 and paste the new link into B2. Then send yourself a new test, because emails already sent keep the old link.</p>
+    </details>
+    <details><summary>The emails land in Spam</summary>
+      <p>Do Part G (DMARC). Also ask your test recipients to move the email to the inbox and mark it "Not spam"; it helps the next ones.</p>
+    </details>
+  </div>
+
+  <p class="end">Stuck on a step? Take a screenshot and send it to Claude in the chat.</p>
+</div>
+
+<script>
+(function () {
+  var KEY = 'jupiter-guide-done';
+  var done = {};
+  try { done = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { done = {}; }
+  var steps = Array.prototype.slice.call(document.querySelectorAll('.step'));
+
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(done)); } catch (e) {} }
+  function paint() {
+    var n = 0;
+    steps.forEach(function (s) {
+      var on = !!done[s.dataset.id];
+      s.classList.toggle('done', on);
+      s.querySelector('.tick').textContent = on ? 'Done ✓' : 'Mark done';
+      if (on) n++;
+    });
+    document.getElementById('fill').style.width = Math.round(n / steps.length * 100) + '%';
+    document.getElementById('ptext').textContent = n + ' of ' + steps.length + ' done';
+  }
+  steps.forEach(function (s) {
+    s.querySelector('.tick').addEventListener('click', function () { done[s.dataset.id] = !done[s.dataset.id]; save(); paint(); });
+  });
+  paint();
+
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('.copy');
+    if (!btn) return;
+    var text, area = null;
+    if (btn.dataset.text) text = btn.dataset.text;
+    else if (btn.dataset.src) { area = document.getElementById(btn.dataset.src); text = area.value; }
+    else if (btn.dataset.srcText) text = document.getElementById(btn.dataset.srcText).textContent;
+    var label = btn.textContent;
+    function ok() { btn.classList.add('ok'); btn.textContent = 'Copied ✓'; setTimeout(function () { btn.classList.remove('ok'); btn.textContent = label; }, 2200); }
+    function fallback() {
+      // Clipboard blocked: show the full text selected, so Ctrl+C / Cmd+C works.
+      if (!area) { area = document.createElement('textarea'); area.value = text; area.style.cssText = 'width:100%;height:80px;margin-top:8px;font:13px monospace'; btn.after(area); }
+      area.hidden = false; area.focus(); area.select();
+      btn.textContent = 'Now press Ctrl+C / Cmd+C';
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(ok, fallback);
+    else fallback();
+  });
+})();
+</script>

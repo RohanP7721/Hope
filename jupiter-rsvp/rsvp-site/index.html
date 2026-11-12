@@ -121,6 +121,9 @@
 
   var params = new URLSearchParams(location.search);
   var token = params.get('t');
+  // k = the Apps Script deployment id, carried in every email link. Only script.google.com is ever called.
+  var key = params.get('k') || '';
+  var API_URL = /^[A-Za-z0-9_-]{20,}$/.test(key) ? 'https://script.google.com/macros/s/' + key + '/exec' : window.RSVP_API_URL;
   var action = (params.get('a') || '').toLowerCase();
   var view = document.getElementById('view');
   var state = null;
@@ -136,7 +139,7 @@
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 
   function api(params) {
-    var url = window.RSVP_API_URL + '?' + new URLSearchParams(params).toString();
+    var url = API_URL + '?' + new URLSearchParams(params).toString();
     return fetch(url, { method: 'GET', redirect: 'follow' })
       .then(function (r) { return r.json(); })
       .then(function (d) { if (!d.ok) throw new Error(d.error || 'Something went wrong.'); return d; });
@@ -240,7 +243,7 @@
     view.innerHTML = '<div class="spinner"></div><p class="center">Updating…</p>';
     retry(function () { return api({ api: 'rsvp', t: token, a: choice }); }, 3).then(function (d) {
       state = d;
-      history.replaceState(null, '', '?t=' + encodeURIComponent(token) + '&a=' + choice);
+      history.replaceState(null, '', '?k=' + encodeURIComponent(key) + '&t=' + encodeURIComponent(token) + '&a=' + choice);
       render();
       window.scrollTo(0, 0);
     }).catch(function (e) { showError(e.message); });
@@ -263,7 +266,7 @@
     }
   });
 
-  if (!token) return showPoster();
+  if (!token || !API_URL) return showPoster();
   var first = ['yes', 'maybe', 'no'].indexOf(action) !== -1
     ? function () { return api({ api: 'rsvp', t: token, a: action }); }
     : function () { return api({ api: 'get', t: token }); };
