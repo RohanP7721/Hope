@@ -146,7 +146,13 @@
     </div>
   </header>
 
-  <div class="alert" id="alert" hidden><div><b>One-tap buttons and open tracking are not working yet</b><span id="alertText"></span></div></div>
+  <div class="alert" id="alert" hidden><div style="flex:1;min-width:0"><b>One-tap buttons and open tracking are not working yet</b><span id="alertText"></span>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <input id="trackInput" type="url" placeholder="Paste the Tracking link here (https://script.google.com/…/exec)" style="flex:1;min-width:240px;border:1px solid var(--line);border-radius:10px;padding:9px 12px;font:inherit;color:var(--ink);background:var(--card)">
+      <button class="btn primary" onclick="saveTracking()" id="trackSave">Save</button>
+    </div>
+    <span style="display:block;margin-top:8px;font-size:13px">Where to find it: Apps Script → Deploy → Manage deployments → click <b style="display:inline">Tracking</b> → copy the Web app URL.</span>
+  </div></div>
   <div class="notice" id="resendBox" hidden>
     <div><b id="resendTitle"></b><br><span class="sub" style="margin:0">Their first invitation had the older buttons. This sends a fresh one-tap invitation, once.</span></div>
     <button class="btn gold" onclick="startResend()" id="resendGo">Resend</button>
@@ -465,6 +471,17 @@
       toast(done + ' invitations sent');
       load(); loadSendPreview();
     }
+  }
+
+  function saveTracking() {
+    var v = $('trackInput').value.trim();
+    if (!v) { toast('Paste the link first.'); return; }
+    $('trackSave').disabled = true; $('trackSave').textContent = 'Checking…';
+    call('saveTrackingLink', v).then(function (h) {
+      $('trackSave').disabled = false; $('trackSave').textContent = 'Save';
+      toast(h.ok ? 'Tracking link works. One-tap buttons are on.' : 'Saved, but: ' + h.message);
+      load();
+    }).catch(function (e) { $('trackSave').disabled = false; $('trackSave').textContent = 'Save'; fail(e); });
   }
 
   var RESEND_ARMED = false;

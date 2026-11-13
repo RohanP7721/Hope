@@ -511,7 +511,9 @@ function setupSettings_() {
 function loadSettings_() {
   var sheet = SpreadsheetApp.getActive().getSheetByName(SETTINGS_SHEET);
   if (!sheet) throw new Error('Run setup first.');
-  var api = String(sheet.getRange('B2').getValue()).trim();
+  // Saved from the dashboard first, then the Settings tab's B2, then anywhere in the sheet.
+  var api = (PropertiesService.getScriptProperties().getProperty('TRACKING_URL') || '').trim() ||
+    String(sheet.getRange('B2').getValue()).trim() || findLinkInSheet_();
   if (!api) { CONFIG.API_URL = ''; return; }
   var id = (api.match(/^https:\/\/script\.google\.com\/(?:a\/macros\/[^\/]+|macros)\/s\/([A-Za-z0-9_-]+)\/exec/) || [])[1];
   if (!id) {
@@ -519,6 +521,33 @@ function loadSettings_() {
   }
   // Workspace gives /a/macros/<domain>/ links, which can force a login. The plain form works for everyone.
   CONFIG.API_URL = 'https://script.google.com/macros/s/' + id + '/exec';
+}
+
+/** Finds a pasted Apps Script /exec link anywhere in the spreadsheet (in case it went into the wrong cell). */
+function findLinkInSheet_() {
+  var sheets = SpreadsheetApp.getActive().getSheets();
+  for (var i = 0; i < sheets.length; i++) {
+    var cells = sheets[i].createTextFinder('script.google.com').findAll();
+    for (var j = 0; j < cells.length; j++) {
+      var m = String(cells[j].getValue()).match(/https:\/\/script\.google\.com\/\S+?\/exec/);
+      if (m) return m[0];
+    }
+  }
+  return '';
+}
+
+/** Saves the Tracking link pasted into the dashboard's warning box. */
+function saveTrackingLink(url) {
+  requireOwner_();
+  url = String(url || '').trim();
+  if (!/^https:\/\/script\.google\.com\/(?:a\/macros\/[^\/]+|macros)\/s\/[A-Za-z0-9_-]+\/exec/.test(url)) {
+    throw new Error('That isn\'t the Tracking link. It starts with https://script.google.com and ends with /exec. Copy it from Deploy > Manage deployments > Tracking.');
+  }
+  url = url.replace(/\/exec.*$/, '/exec');
+  PropertiesService.getScriptProperties().setProperty('TRACKING_URL', url);
+  var settings = SpreadsheetApp.getActive().getSheetByName(SETTINGS_SHEET);
+  if (settings) settings.getRange('B2').setValue(url);
+  return trackingHealth_();
 }
 
 /* Poster: downloaded once into info@'s Drive, then attached inside each invitation. */
@@ -690,7 +719,7 @@ var PING_REPLY = 'jupiter-rsvp-ok-v4';
 function trackingHealth_() {
   loadSettings_();
   if (!CONFIG.API_URL) {
-    return { ok: false, message: 'The Tracking link is missing. Paste it into the Settings tab, cell B2 (guide Part C, step 8).' };
+    return { ok: false, missing: true, message: 'The Tracking link is missing. Paste it in the box below and click Save.' };
   }
   var cache = CacheService.getScriptCache(), key = 'health:' + CONFIG.API_URL;
   var cached = cache.get(key);

@@ -119,7 +119,7 @@
       <p>Click <span class="ui">Code.gs</span> on the left. Click inside the code, press <span class="ui">Cmd + A</span> (Windows: <span class="ui">Ctrl + A</span>), then <span class="ui">Delete</span>, so it's completely empty.</p>
       <p>Press the button below, click in the empty editor, and paste (<span class="ui">Cmd + V</span> / <span class="ui">Ctrl + V</span>).</p>
       <div class="bigcopy">
-        <div class="head"><span><span class="name">Code.gs</span> <span class="meta">· 1391 lines</span></span><button class="copy" data-src="code-gs">Copy all of Code.gs</button></div>
+        <div class="head"><span><span class="name">Code.gs</span> <span class="meta">· 1420 lines</span></span><button class="copy" data-src="code-gs">Copy all of Code.gs</button></div>
         <pre aria-hidden="true">/**
  * Jupiter Texas Holiday Party: invitations, RSVP tracking and reminders.
  * Investors answer from inside their email: each button opens a ready-made reply to info@.
@@ -641,7 +641,9 @@ function setupSettings_() {
 function loadSettings_() {
   var sheet = SpreadsheetApp.getActive().getSheetByName(SETTINGS_SHEET);
   if (!sheet) throw new Error('Run setup first.');
-  var api = String(sheet.getRange('B2').getValue()).trim();
+  // Saved from the dashboard first, then the Settings tab's B2, then anywhere in the sheet.
+  var api = (PropertiesService.getScriptProperties().getProperty('TRACKING_URL') || '').trim() ||
+    String(sheet.getRange('B2').getValue()).trim() || findLinkInSheet_();
   if (!api) { CONFIG.API_URL = ''; return; }
   var id = (api.match(/^https:\/\/script\.google\.com\/(?:a\/macros\/[^\/]+|macros)\/s\/([A-Za-z0-9_-]+)\/exec/) || [])[1];
   if (!id) {
@@ -649,6 +651,33 @@ function loadSettings_() {
   }
   // Workspace gives /a/macros/&lt;domain&gt;/ links, which can force a login. The plain form works for everyone.
   CONFIG.API_URL = 'https://script.google.com/macros/s/' + id + '/exec';
+}
+
+/** Finds a pasted Apps Script /exec link anywhere in the spreadsheet (in case it went into the wrong cell). */
+function findLinkInSheet_() {
+  var sheets = SpreadsheetApp.getActive().getSheets();
+  for (var i = 0; i &lt; sheets.length; i++) {
+    var cells = sheets[i].createTextFinder('script.google.com').findAll();
+    for (var j = 0; j &lt; cells.length; j++) {
+      var m = String(cells[j].getValue()).match(/https:\/\/script\.google\.com\/\S+?\/exec/);
+      if (m) return m[0];
+    }
+  }
+  return '';
+}
+
+/** Saves the Tracking link pasted into the dashboard's warning box. */
+function saveTrackingLink(url) {
+  requireOwner_();
+  url = String(url || '').trim();
+  if (!/^https:\/\/script\.google\.com\/(?:a\/macros\/[^\/]+|macros)\/s\/[A-Za-z0-9_-]+\/exec/.test(url)) {
+    throw new Error('That isn\'t the Tracking link. It starts with https://script.google.com and ends with /exec. Copy it from Deploy &gt; Manage deployments &gt; Tracking.');
+  }
+  url = url.replace(/\/exec.*$/, '/exec');
+  PropertiesService.getScriptProperties().setProperty('TRACKING_URL', url);
+  var settings = SpreadsheetApp.getActive().getSheetByName(SETTINGS_SHEET);
+  if (settings) settings.getRange('B2').setValue(url);
+  return trackingHealth_();
 }
 
 /* Poster: downloaded once into info@'s Drive, then attached inside each invitation. */
@@ -820,7 +849,7 @@ var PING_REPLY = 'jupiter-rsvp-ok-v4';
 function trackingHealth_() {
   loadSettings_();
   if (!CONFIG.API_URL) {
-    return { ok: false, message: 'The Tracking link is missing. Paste it into the Settings tab, cell B2 (guide Part C, step 8).' };
+    return { ok: false, missing: true, message: 'The Tracking link is missing. Paste it in the box below and click Save.' };
   }
   var cache = CacheService.getScriptCache(), key = 'health:' + CONFIG.API_URL;
   var cached = cache.get(key);
@@ -1529,7 +1558,7 @@ function getDashboard() {
       <div class="copyrow"><code>Dashboard</code><button class="copy" data-text="Dashboard">Copy</button></div>
       <p>Delete the lines it starts with (<span class="ui">Cmd + A</span>, <span class="ui">Delete</span>), then paste this:</p>
       <div class="bigcopy">
-        <div class="head"><span><span class="name">Dashboard.html</span> <span class="meta">· 606 lines</span></span><button class="copy" data-src="dash-html">Copy all of Dashboard.html</button></div>
+        <div class="head"><span><span class="name">Dashboard.html</span> <span class="meta">· 623 lines</span></span><button class="copy" data-src="dash-html">Copy all of Dashboard.html</button></div>
         <pre aria-hidden="true">&lt;!DOCTYPE html&gt;
 &lt;html lang=&quot;en&quot;&gt;
 &lt;head&gt;
@@ -1686,7 +1715,13 @@ function getDashboard() {
     &lt;/div&gt;
   &lt;/header&gt;
 
-  &lt;div class="alert" id="alert" hidden&gt;&lt;div&gt;&lt;b&gt;One-tap buttons and open tracking are not working yet&lt;/b&gt;&lt;span id="alertText"&gt;&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;
+  &lt;div class="alert" id="alert" hidden&gt;&lt;div style="flex:1;min-width:0"&gt;&lt;b&gt;One-tap buttons and open tracking are not working yet&lt;/b&gt;&lt;span id="alertText"&gt;&lt;/span&gt;
+    &lt;div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"&gt;
+      &lt;input id="trackInput" type="url" placeholder="Paste the Tracking link here (https://script.google.com/…/exec)" style="flex:1;min-width:240px;border:1px solid var(--line);border-radius:10px;padding:9px 12px;font:inherit;color:var(--ink);background:var(--card)"&gt;
+      &lt;button class="btn primary" onclick="saveTracking()" id="trackSave"&gt;Save&lt;/button&gt;
+    &lt;/div&gt;
+    &lt;span style="display:block;margin-top:8px;font-size:13px"&gt;Where to find it: Apps Script → Deploy → Manage deployments → click &lt;b style="display:inline"&gt;Tracking&lt;/b&gt; → copy the Web app URL.&lt;/span&gt;
+  &lt;/div&gt;&lt;/div&gt;
   &lt;div class="notice" id="resendBox" hidden&gt;
     &lt;div&gt;&lt;b id="resendTitle"&gt;&lt;/b&gt;&lt;br&gt;&lt;span class="sub" style="margin:0"&gt;Their first invitation had the older buttons. This sends a fresh one-tap invitation, once.&lt;/span&gt;&lt;/div&gt;
     &lt;button class="btn gold" onclick="startResend()" id="resendGo"&gt;Resend&lt;/button&gt;
@@ -2005,6 +2040,17 @@ function getDashboard() {
       toast(done + ' invitations sent');
       load(); loadSendPreview();
     }
+  }
+
+  function saveTracking() {
+    var v = $('trackInput').value.trim();
+    if (!v) { toast('Paste the link first.'); return; }
+    $('trackSave').disabled = true; $('trackSave').textContent = 'Checking…';
+    call('saveTrackingLink', v).then(function (h) {
+      $('trackSave').disabled = false; $('trackSave').textContent = 'Save';
+      toast(h.ok ? 'Tracking link works. One-tap buttons are on.' : 'Saved, but: ' + h.message);
+      load();
+    }).catch(function (e) { $('trackSave').disabled = false; $('trackSave').textContent = 'Save'; fail(e); });
   }
 
   var RESEND_ARMED = false;
