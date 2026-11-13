@@ -119,7 +119,7 @@
       <p>Click <span class="ui">Code.gs</span> on the left. Click inside the code, press <span class="ui">Cmd + A</span> (Windows: <span class="ui">Ctrl + A</span>), then <span class="ui">Delete</span>, so it's completely empty.</p>
       <p>Press the button below, click in the empty editor, and paste (<span class="ui">Cmd + V</span> / <span class="ui">Ctrl + V</span>).</p>
       <div class="bigcopy">
-        <div class="head"><span><span class="name">Code.gs</span> <span class="meta">· 1232 lines</span></span><button class="copy" data-src="code-gs">Copy all of Code.gs</button></div>
+        <div class="head"><span><span class="name">Code.gs</span> <span class="meta">· 1391 lines</span></span><button class="copy" data-src="code-gs">Copy all of Code.gs</button></div>
         <pre aria-hidden="true">/**
  * Jupiter Texas Holiday Party: invitations, RSVP tracking and reminders.
  * Investors answer from inside their email: each button opens a ready-made reply to info@.
@@ -183,6 +183,130 @@ var CONFIG = {
   TIMEZONE: 'America/Chicago'
 };
 
+/* ------------------------------------------------------------------ */
+/* All wording investors see. Editable from the dashboard              */
+/* ("Edit text &amp; poster"); saved changes become the new default.       */
+/* Placeholders in {curly brackets} are filled in per person.          */
+/* ------------------------------------------------------------------ */
+
+var TEXT_FIELDS = [
+  // group, key, label, default, hint
+  ['Event details', 'event_date', 'Date', 'Saturday, December 12, 2026', 'Shown in every email and the calendar invite. The calendar time itself is fixed in the code.'],
+  ['Event details', 'event_time', 'Time', '6 PM onwards', ''],
+  ['Event details', 'event_venue', 'Venue', 'Elegance Ballroom &amp; Event Center (Hello India)', ''],
+  ['Event details', 'event_address', 'Address', '8740 Ohio Dr A1, Plano, TX 75024', 'Tapping it opens Google Maps.'],
+  ['Event details', 'rsvp_by', 'RSVP deadline', 'Saturday, December 5', ''],
+
+  ['Invitation email', 'invite_subject', 'Subject line', "You're invited: The Jupiter Texas Holiday Party, Sat Dec 12", ''],
+  ['Invitation email', 'invite_preview', 'Inbox preview line', 'You and your family are invited. {date}, {time}, Plano TX. RSVP by {rsvp_by}.', 'The grey line shown next to the subject in the inbox.'],
+  ['Invitation email', 'invite_greeting', 'Greeting', 'Dear {first_name},', ''],
+  ['Invitation email', 'invite_body', 'Message', 'As the year comes to a close, we would love to celebrate it with the people who made it possible: our investors. Please join us for an evening of food, music and festive cheer, and bring your family and friends along.', 'Leave an empty line between paragraphs. Put **two stars** around words to make them bold.'],
+  ['Invitation email', 'invite_question', 'Big heading above the buttons', 'Will you join us?', ''],
+  ['Invitation email', 'invite_rsvp_line', 'Line under the heading', 'Kindly RSVP by {rsvp_by}', ''],
+  ['Invitation email', 'resend_subject', 'Subject when resending', 'RSVP in one tap: The Jupiter Texas Holiday Party, Sat Dec 12', 'Used by the "Resend" button for people who got the older buttons.'],
+
+  ['Buttons', 'buttons_heading', 'Label above the buttons', 'COMING? TAP HOW MANY OF YOU', ''],
+  ['Buttons', 'button_1', 'Button: 1 person', 'Just me', ''],
+  ['Buttons', 'button_2', 'Button: 2 people', 'Me +1', ''],
+  ['Buttons', 'button_3', 'Button: 3 people', 'Me +2', ''],
+  ['Buttons', 'button_4', 'Button: 4 or more', 'Me +3 or more', ''],
+  ['Buttons', 'button_maybe', 'Button: Maybe', 'Maybe', ''],
+  ['Buttons', 'button_no', "Button: Can't make it", "Can't make it", ''],
+  ['Buttons', 'button_changed', 'Button in "Yes" reminders', 'Plans changed? Let us know', ''],
+  ['Buttons', 'buttons_note', 'Small note under the buttons', 'One tap is all it takes. Your calendar invite follows automatically.', ''],
+
+  ['Sign-off &amp; footer', 'signoff', 'Sign-off', 'Warm regards,\n**The Jupiter Texas Team**', ''],
+  ['Sign-off &amp; footer', 'footer_note', 'Footer note', 'You are receiving this invitation as a valued Jupiter Texas investor.', ''],
+
+  ['Nudge email', 'nudge_subject', 'Subject line', 'Will we see you at the Jupiter Texas Holiday Party?', 'Sent once, from the "Nudge non-responders" button.'],
+  ['Nudge email', 'nudge_body', 'Message', 'We would love to see you and your family at our Holiday Party on **{date}**. Could you let us know if you can make it? Just tap a button below.', ''],
+
+  ['Reminder: said Yes', 'reminder_yes_subject', 'Subject line', 'See you {when}: Jupiter Texas Holiday Party', '{when} becomes "in 7 days", "in 3 days" or "tomorrow".'],
+  ['Reminder: said Yes', 'reminder_yes_headline', 'Big heading', 'See you {when}!', ''],
+  ['Reminder: said Yes', 'reminder_yes_body', 'Message', 'Just a reminder that the Jupiter Texas Holiday Party is {when}. We have you down for {party}. Family and friends are welcome.', '{party} becomes "just you", "2 people", "3 people" or "4 or more people".'],
+
+  ['Reminder: said Maybe', 'reminder_maybe_subject', 'Subject line', 'Still deciding? The Jupiter Texas Holiday Party is {when}', ''],
+  ['Reminder: said Maybe', 'reminder_maybe_headline', 'Big heading', 'Still deciding?', ''],
+  ['Reminder: said Maybe', 'reminder_maybe_body', 'Message', 'The Jupiter Texas Holiday Party is {when} and we would still love to have you there. Let us know when you can, it helps us plan seating and food.', ''],
+
+  ['Page after tapping a button', 'page_yes_title', 'Yes: heading', "You're in, {first_name}.", 'Shown for a moment after an investor taps a button.'],
+  ['Page after tapping a button', 'page_yes_body', 'Yes: message', "We're planning for {party}. A calendar invite is on its way to your email. You can close this page.", ''],
+  ['Page after tapping a button', 'page_maybe_title', 'Maybe: heading', "We've pencilled you in, {first_name}.", ''],
+  ['Page after tapping a button', 'page_maybe_body', 'Maybe: message', "A calendar hold is on its way so the date doesn't slip away. Tap an answer below whenever you know.", ''],
+  ['Page after tapping a button', 'page_no_title', "Can't make it: heading", "We'll miss you, {first_name}.", ''],
+  ['Page after tapping a button', 'page_no_body', "Can't make it: message", 'Thank you for letting us know. If your plans change, tap a new answer below.', ''],
+
+  ['Reply to email RSVPs', 'thanks_yes', 'Yes', "Thank you, {first_name}! You're confirmed for {party}. A calendar invite is on its way, and we'll send a reminder before the day.", 'Only used when someone answers by typing a reply instead of tapping.'],
+  ['Reply to email RSVPs', 'thanks_maybe', 'Maybe', "Thanks, {first_name}. We've pencilled you in and sent a calendar hold so the date doesn't slip away. Just reply \"Yes\" or \"No\" here whenever you know.", ''],
+  ['Reply to email RSVPs', 'thanks_no', "Can't make it", "Thank you for letting us know, {first_name}. We'll miss you! If your plans change, just reply \"Yes\" here.", ''],
+
+  ['Calendar invite', 'calendar_title', 'Event name', 'The Jupiter Texas Holiday Party', ''],
+  ['Calendar invite', 'calendar_description', 'Description', 'Jupiter Texas Real Estate Group invites you and your family. Friends are welcome too.\n\n{date}, {time}\n{venue}\n{address}\n\nQuestions? Write to info@jupitertexas.com', '']
+];
+
+var TEXTS_ = null;
+
+/** Default wording merged with whatever was saved from the dashboard (and unsaved preview edits, if given). */
+function loadTexts_(overrides) {
+  var texts = {};
+  TEXT_FIELDS.forEach(function (f) { texts[f[1]] = f[3]; });
+  if (typeof PropertiesService !== 'undefined') {
+    var saved = PropertiesService.getScriptProperties().getProperties();
+    Object.keys(saved).forEach(function (k) {
+      if (k.indexOf('TEXT_') === 0 &amp;&amp; texts.hasOwnProperty(k.slice(5))) texts[k.slice(5)] = saved[k];
+    });
+  }
+  Object.keys(overrides || {}).forEach(function (k) {
+    if (texts.hasOwnProperty(k) &amp;&amp; typeof overrides[k] === 'string') texts[k] = overrides[k];
+  });
+  TEXTS_ = texts;
+  var e = CONFIG.EVENT;
+  e.DATE_LABEL = texts.event_date;
+  e.TIME_LABEL = texts.event_time;
+  e.VENUE_NAME = texts.event_venue;
+  e.VENUE_ADDRESS = texts.event_address;
+  e.RSVP_BY_LABEL = texts.rsvp_by;
+  e.TITLE = texts.calendar_title;
+  e.MAP_URL = 'https://maps.google.com/?q=' + encodeURIComponent(texts.event_address);
+  return texts;
+}
+
+function event_() {
+  if (!TEXTS_) loadTexts_();
+  return CONFIG.EVENT;
+}
+
+/** Plain text of one field with {placeholders} filled in. */
+function T_(key, vars) {
+  if (!TEXTS_) loadTexts_();
+  var e = CONFIG.EVENT;
+  var all = { date: e.DATE_LABEL, time: e.TIME_LABEL, venue: e.VENUE_NAME, address: e.VENUE_ADDRESS, rsvp_by: e.RSVP_BY_LABEL };
+  Object.keys(vars || {}).forEach(function (k) { all[k] = vars[k]; });
+  return String(TEXTS_[key] == null ? '' : TEXTS_[key]).replace(/\{(\w+)\}/g, function (m, name) {
+    return all.hasOwnProperty(name) ? String(all[name]) : m;
+  });
+}
+
+/** Same, as safe HTML: **bold**, line breaks kept. */
+function TH_(key, vars) {
+  return escapeHtml_(T_(key, vars)).replace(/\*\*(.+?)\*\*/g, '&lt;strong&gt;$1&lt;/strong&gt;').replace(/\n/g, '&lt;br&gt;');
+}
+
+/** Message fields: blank lines start a new paragraph. */
+function paragraphs_(key, vars) {
+  return T_(key, vars).split(/\n\s*\n/).map(function (p) {
+    return paragraph_(escapeHtml_(p.trim()).replace(/\*\*(.+?)\*\*/g, '&lt;strong&gt;$1&lt;/strong&gt;').replace(/\n/g, '&lt;br&gt;'));
+  }).join('');
+}
+
+function plain_(key, vars) {
+  return T_(key, vars).replace(/\*\*(.+?)\*\*/g, '$1');
+}
+
+function partyWords_(size) {
+  return { '1': 'just you', '2': '2 people', '3': '3 people', '4+': '4 or more people' }[size] || 'you';
+}
+
 /**
  * Email HTML. Plain JavaScript with no Apps Script calls, so it can also be
  * previewed outside Google (see preview/render.js).
@@ -232,9 +356,9 @@ function rsvpLinks_(guest) {
       'I might make it.\n\n(Optional: tell us what is holding you back, then press Send.)'),
     no: mailto_(CONFIG.RSVP_SUBJECT + ': Can\'t make it' + tag,
       'Sorry, I can\'t make it this time.\n\n' + REPLY_HINT),
-    party: CONFIG.PARTY_OPTIONS.map(function (o) {
+    party: CONFIG.PARTY_OPTIONS.map(function (o, i) {
       return {
-        label: o.button,
+        label: TH_('button_' + (i + 1)),
         href: mailto_(CONFIG.RSVP_SUBJECT + ': Yes, ' + o.words + tag,
           'Count me in! We will be ' + (o.size === '1' ? 'just me' : o.words) + '.\n\n' + REPLY_HINT)
       };
@@ -289,15 +413,15 @@ function footer_() {
 '&lt;tr&gt;&lt;td class="pad" style="padding:36px 48px 0;border-top:1px solid ' + c.line + ';font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:19px;color:' + c.muted + ';text-align:center;"&gt;' +
   '&lt;strong style="color:' + c.ink + ';letter-spacing:2px;"&gt;JUPITER TEXAS&lt;/strong&gt;&lt;br&gt;' +
   '&lt;span style="letter-spacing:1.5px;"&gt;REAL ESTATE GROUP &amp;middot; &lt;/span&gt;&lt;span style="color:' + c.gold + ';letter-spacing:1.5px;"&gt;CASH TO CASHFLOW&lt;/span&gt;&lt;br&gt;&lt;br&gt;' +
-  'You are receiving this invitation as a valued Jupiter Texas investor.&lt;br&gt;' +
+  TH_('footer_note') + '&lt;br&gt;' +
   'Questions? Just reply to this email or write to ' +
   '&lt;a href="mailto:' + CONFIG.REPLY_TO + '" style="color:' + c.gold + ';text-decoration:none;"&gt;' + CONFIG.REPLY_TO + '&lt;/a&gt;&lt;br&gt;' +
-  '&lt;a href="' + CONFIG.EVENT.WEBSITE + '" style="color:' + c.muted + ';"&gt;jupitertexas.com&lt;/a&gt;' +
+  '&lt;a href="' + event_().WEBSITE + '" style="color:' + c.muted + ';"&gt;jupitertexas.com&lt;/a&gt;' +
 '&lt;/td&gt;&lt;/tr&gt;';
 }
 
 function detailsBlock_() {
-  var c = EMAIL_COLORS, e = CONFIG.EVENT;
+  var c = EMAIL_COLORS, e = event_();
   var label = 'font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:2px;color:' + c.gold + ';font-weight:bold;';
   var value = 'font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:24px;color:' + c.ink + ';';
   return '' +
@@ -336,17 +460,17 @@ function rsvpButtons_(links, which) {
   which = which || 'all';
   var html = '';
   if (which !== 'yes-reminder') {
-    html += smallLabel_('COMING? TAP HOW MANY OF YOU') +
+    html += smallLabel_(TH_('buttons_heading')) +
       buttonRow_(links.party.slice(0, 2).map(function (p) { return button_(p.href, p.label, true); }).join('')) +
       '&lt;div style="height:10px;line-height:10px;"&gt;&amp;nbsp;&lt;/div&gt;' +
       buttonRow_(links.party.slice(2).map(function (p) { return button_(p.href, p.label, true); }).join('')) +
       '&lt;div style="height:24px;line-height:24px;"&gt;&amp;nbsp;&lt;/div&gt;';
   }
-  var others = which === 'all' ? button_(links.maybe, 'Maybe', false) + button_(links.no, 'Can&amp;rsquo;t make it', false)
-    : button_(links.no, which === 'yes-reminder' ? 'Plans changed? Let us know' : 'Can&amp;rsquo;t make it', false);
+  var others = which === 'all' ? button_(links.maybe, TH_('button_maybe'), false) + button_(links.no, TH_('button_no'), false)
+    : button_(links.no, which === 'yes-reminder' ? TH_('button_changed') : TH_('button_no'), false);
   html += buttonRow_(others);
   html += '&lt;div style="font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:20px;color:' + EMAIL_COLORS.muted + ';padding:20px 0 0;"&gt;' +
-    (links.oneTap ? 'One tap is all it takes. Your calendar invite follows automatically.'
+    (links.oneTap ? TH_('buttons_note')
       : 'Each button opens a ready-made reply. Just press &lt;strong style="color:' + EMAIL_COLORS.ink + ';"&gt;Send&lt;/strong&gt;.') + '&lt;/div&gt;';
   return html;
 }
@@ -360,96 +484,84 @@ function paragraph_(html) {
   return '&lt;p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:26px;color:' + EMAIL_COLORS.ink + ';"&gt;' + html + '&lt;/p&gt;';
 }
 
+function signoffRow_() {
+  return '&lt;tr&gt;&lt;td class="pad" style="padding:36px 48px 40px;"&gt;' + paragraph_(TH_('signoff')) + '&lt;/td&gt;&lt;/tr&gt;';
+}
+
 /** The main invitation. */
 function buildInviteEmail(guest) {
-  var c = EMAIL_COLORS, e = CONFIG.EVENT, links = rsvpLinks_(guest);
+  var c = EMAIL_COLORS, e = event_(), links = rsvpLinks_(guest);
+  var who = { first_name: firstName_(guest.name) };
+  var subject = plain_('invite_subject', who);
   var body = '' +
 '&lt;tr&gt;&lt;td style="padding:0;"&gt;' +
-  '&lt;img src="' + links.poster + '" width="600" alt="Jupiter Texas Real Estate Group invites you and your family to The Holiday Party, Saturday December 12, 6 PM onwards, Elegance Ballroom, Plano TX" ' +
+  '&lt;img src="' + links.poster + '" width="600" alt="' + escapeHtml_(e.TITLE + ', ' + e.DATE_LABEL + ', ' + e.TIME_LABEL + ', ' + e.VENUE_NAME) + '" ' +
   'style="display:block;width:100%;max-width:600px;height:auto;border:0;border-radius:14px;"&gt;&lt;/td&gt;&lt;/tr&gt;' +
 '&lt;tr&gt;&lt;td class="pad" style="padding:40px 48px 8px;"&gt;' +
-  paragraph_('Dear ' + escapeHtml_(firstName_(guest.name)) + ',') +
-  paragraph_('As the year comes to a close, we would love to celebrate it with the people who made it possible: our investors. ' +
-             'Please join us for an evening of food, music and festive cheer, and bring your family and friends along.') +
+  paragraph_(TH_('invite_greeting', who)) + paragraphs_('invite_body', who) +
 '&lt;/td&gt;&lt;/tr&gt;' +
 '&lt;tr&gt;&lt;td class="pad" style="padding:8px 48px 0;"&gt;' + detailsBlock_() + '&lt;/td&gt;&lt;/tr&gt;' +
 '&lt;tr&gt;&lt;td class="pad" style="padding:40px 48px 8px;text-align:center;"&gt;' +
-  '&lt;div class="h1" style="font-family:Georgia,\'Times New Roman\',serif;font-size:34px;line-height:40px;color:' + c.gold + ';"&gt;Will you join us?&lt;/div&gt;' +
-  '&lt;div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:22px;color:' + c.muted + ';padding:8px 0 24px;"&gt;Kindly RSVP by ' + escapeHtml_(e.RSVP_BY_LABEL) + '&lt;/div&gt;' +
+  '&lt;div class="h1" style="font-family:Georgia,\'Times New Roman\',serif;font-size:34px;line-height:40px;color:' + c.gold + ';"&gt;' + TH_('invite_question', who) + '&lt;/div&gt;' +
+  '&lt;div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:22px;color:' + c.muted + ';padding:8px 0 24px;"&gt;' + TH_('invite_rsvp_line', who) + '&lt;/div&gt;' +
   rsvpButtons_(links, 'all') +
-'&lt;/td&gt;&lt;/tr&gt;' +
-'&lt;tr&gt;&lt;td class="pad" style="padding:36px 48px 40px;"&gt;' +
-  paragraph_('Warm regards,&lt;br&gt;&lt;strong&gt;The Jupiter Texas Team&lt;/strong&gt;') +
-'&lt;/td&gt;&lt;/tr&gt;';
+'&lt;/td&gt;&lt;/tr&gt;' + signoffRow_();
 
   return {
-    subject: CONFIG.SUBJECT,
-    html: emailShell_({
-      title: CONFIG.SUBJECT,
-      preheader: 'You and your family are invited. ' + e.DATE_LABEL + ', ' + e.TIME_LABEL + ', Plano TX. RSVP by ' + e.RSVP_BY_LABEL + '.',
-      body: body,
-      pixel: links.pixel
-    }),
-    text: 'Dear ' + firstName_(guest.name) + ',\n\n' +
-      'Jupiter Texas Real Estate Group invites you and your family to ' + e.TITLE + '.\n\n' +
+    subject: subject,
+    html: emailShell_({ title: subject, preheader: plain_('invite_preview', who), body: body, pixel: links.pixel }),
+    text: plain_('invite_greeting', who) + '\n\n' + plain_('invite_body', who) + '\n\n' +
       'When: ' + e.DATE_LABEL + ', ' + e.TIME_LABEL + '\nWhere: ' + e.VENUE_NAME + ', ' + e.VENUE_ADDRESS + '\n\n' +
-      'Kindly RSVP by ' + e.RSVP_BY_LABEL + '.\n' + textButtons_() + '\n' +
-      'Warm regards,\nThe Jupiter Texas Team'
+      plain_('invite_rsvp_line', who) + '.\n' + textButtons_() + '\n' + plain_('signoff')
   };
 }
 
 /** Countdown reminder for people who said Yes or Maybe. */
 function buildReminderEmail(guest, daysLeft) {
-  var c = EMAIL_COLORS, e = CONFIG.EVENT, links = rsvpLinks_(guest);
-  var when = daysLeft === 1 ? 'tomorrow' : 'in ' + daysLeft + ' days';
-  var isMaybe = guest.rsvp === 'Maybe';
-  var headline = isMaybe ? 'Still deciding?' : 'See you ' + when + '!';
-  var intro = isMaybe
-    ? 'The Jupiter Texas Holiday Party is ' + when + ' and we would still love to have you there. Let us know when you can, it helps us plan seating and food.'
-    : 'Just a reminder that the Jupiter Texas Holiday Party is ' + when + '. We have you down for ' +
-      (guest.partySize &amp;&amp; guest.partySize !== '1' ? 'a party of ' + guest.partySize : 'one') + '. Family and friends are welcome.';
-  var buttons = rsvpButtons_(links, isMaybe ? 'maybe-reminder' : 'yes-reminder');
-
+  var c = EMAIL_COLORS, e = event_(), links = rsvpLinks_(guest);
+  var isMaybe = guest.rsvp === 'Maybe', kind = isMaybe ? 'reminder_maybe_' : 'reminder_yes_';
+  var vars = {
+    first_name: firstName_(guest.name),
+    when: daysLeft === 1 ? 'tomorrow' : 'in ' + daysLeft + ' days',
+    party: partyWords_(guest.partySize || '1')
+  };
+  var subject = plain_(kind + 'subject', vars);
   var body = '' +
 '&lt;tr&gt;&lt;td class="pad" style="padding:40px 48px 8px;text-align:center;"&gt;' +
   '&lt;div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;letter-spacing:3px;color:' + c.muted + ';"&gt;JUPITER TEXAS &amp;middot; HOLIDAY PARTY&lt;/div&gt;' +
-  '&lt;div class="h1" style="font-family:Georgia,\'Times New Roman\',serif;font-size:38px;line-height:46px;color:' + c.gold + ';padding:14px 0 0;"&gt;' + headline + '&lt;/div&gt;' +
+  '&lt;div class="h1" style="font-family:Georgia,\'Times New Roman\',serif;font-size:38px;line-height:46px;color:' + c.gold + ';padding:14px 0 0;"&gt;' + TH_(kind + 'headline', vars) + '&lt;/div&gt;' +
 '&lt;/td&gt;&lt;/tr&gt;' +
 '&lt;tr&gt;&lt;td class="pad" style="padding:24px 48px 8px;"&gt;' +
-  paragraph_('Dear ' + escapeHtml_(firstName_(guest.name)) + ',') + paragraph_(intro) +
+  paragraph_(TH_('invite_greeting', vars)) + paragraphs_(kind + 'body', vars) +
 '&lt;/td&gt;&lt;/tr&gt;' +
 '&lt;tr&gt;&lt;td class="pad" style="padding:8px 48px 0;"&gt;' + detailsBlock_() + '&lt;/td&gt;&lt;/tr&gt;' +
-'&lt;tr&gt;&lt;td class="pad" style="padding:32px 48px 40px;text-align:center;"&gt;' + buttons + '&lt;/td&gt;&lt;/tr&gt;';
+'&lt;tr&gt;&lt;td class="pad" style="padding:32px 48px 8px;text-align:center;"&gt;' + rsvpButtons_(links, isMaybe ? 'maybe-reminder' : 'yes-reminder') + '&lt;/td&gt;&lt;/tr&gt;' +
+  signoffRow_();
 
-  var subject = isMaybe ? 'Still deciding? The Jupiter Texas Holiday Party is ' + when
-                        : 'See you ' + when + ': Jupiter Texas Holiday Party';
   return {
     subject: subject,
     html: emailShell_({ title: subject, preheader: e.DATE_LABEL + ', ' + e.TIME_LABEL + ', ' + e.VENUE_ADDRESS, body: body, pixel: null }),
-    text: 'Dear ' + firstName_(guest.name) + ',\n\n' + intro + '\n\nWhen: ' + e.DATE_LABEL + ', ' + e.TIME_LABEL +
+    text: plain_('invite_greeting', vars) + '\n\n' + plain_(kind + 'body', vars) + '\n\nWhen: ' + e.DATE_LABEL + ', ' + e.TIME_LABEL +
       '\nWhere: ' + e.VENUE_NAME + ', ' + e.VENUE_ADDRESS + '\n\n' +
-      (isMaybe ? textButtons_() : 'Plans changed? Just reply to this email and let us know.') +
-      '\n\nWarm regards,\nThe Jupiter Texas Team'
+      (isMaybe ? textButtons_() : 'Plans changed? Just reply to this email and let us know.') + '\n\n' + plain_('signoff')
   };
 }
 
-/** Gentle follow-up for people who haven't answered. Same buttons, shorter note. */
+/** Gentle follow-up for people who haven't answered. */
 function buildNudgeEmail(guest) {
-  var c = EMAIL_COLORS, e = CONFIG.EVENT, links = rsvpLinks_(guest);
+  var e = event_(), links = rsvpLinks_(guest), who = { first_name: firstName_(guest.name) };
+  var subject = plain_('nudge_subject', who);
   var body = '' +
 '&lt;tr&gt;&lt;td class="pad" style="padding:40px 48px 8px;"&gt;' +
-  paragraph_('Dear ' + escapeHtml_(firstName_(guest.name)) + ',') +
-  paragraph_('We would love to see you and your family at our Holiday Party on &lt;strong&gt;' + escapeHtml_(e.DATE_LABEL) + '&lt;/strong&gt;. ' +
-             'Could you let us know if you can make it? Tap a button below and press Send.') +
+  paragraph_(TH_('invite_greeting', who)) + paragraphs_('nudge_body', who) +
 '&lt;/td&gt;&lt;/tr&gt;' +
 '&lt;tr&gt;&lt;td class="pad" style="padding:8px 48px 0;"&gt;' + detailsBlock_() + '&lt;/td&gt;&lt;/tr&gt;' +
-'&lt;tr&gt;&lt;td class="pad" style="padding:32px 48px 40px;text-align:center;"&gt;' + rsvpButtons_(links, 'all') + '&lt;/td&gt;&lt;/tr&gt;';
-  var subject = 'Will we see you at the Jupiter Texas Holiday Party?';
+'&lt;tr&gt;&lt;td class="pad" style="padding:32px 48px 8px;text-align:center;"&gt;' + rsvpButtons_(links, 'all') + '&lt;/td&gt;&lt;/tr&gt;' +
+  signoffRow_();
   return {
     subject: subject,
-    html: emailShell_({ title: subject, preheader: 'Tap a button to RSVP for the Jupiter Texas Holiday Party on December 12.', body: body, pixel: links.pixel }),
-    text: 'Dear ' + firstName_(guest.name) + ',\n\nCould you let us know if you can make our Holiday Party on ' + e.DATE_LABEL + '?\n\n' +
-      textButtons_() + '\nWarm regards,\nThe Jupiter Texas Team'
+    html: emailShell_({ title: subject, preheader: plain_('invite_preview', who), body: body, pixel: links.pixel }),
+    text: plain_('invite_greeting', who) + '\n\n' + plain_('nudge_body', who) + '\n\n' + textButtons_() + '\n' + plain_('signoff')
   };
 }
 
@@ -742,15 +854,21 @@ function requireTracking_() {
  * The answer is saved by the page's script, not by simply opening the link, so email security
  * scanners that pre-open every link in an email can't register a fake RSVP.
  */
-function tapPage_(token, action, size) {
-  loadSettings_();
+function tapPage_(token, action, size, preview) {
+  if (!preview) loadSettings_();
   var boot = {
     t: String(token || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 40),
     r: ['yes', 'maybe', 'no'].indexOf(String(action).toLowerCase()) !== -1 ? String(action).toLowerCase() : '',
     n: ['1', '2', '3', '4p'].indexOf(String(size)) !== -1 ? String(size) : '',
-    base: CONFIG.API_URL
+    base: CONFIG.API_URL,
+    text: {},
+    preview: preview || null
   };
-  var e = CONFIG.EVENT;
+  ['page_yes_title', 'page_yes_body', 'page_maybe_title', 'page_maybe_body', 'page_no_title', 'page_no_body',
+   'button_1', 'button_2', 'button_3', 'button_4', 'button_maybe', 'button_no'].forEach(function (k) {
+    boot.text[k] = plain_(k); // placeholders like {first_name} are filled in on the page
+  });
+  var e = event_();
   var html = TAP_PAGE_HTML
     .replace('__BOOT__', JSON.stringify(boot))
     .replace(/__DATE__/g, escapeHtml_(e.DATE_LABEL)).replace(/__TIME__/g, escapeHtml_(e.TIME_LABEL))
@@ -798,19 +916,20 @@ var TAP_PAGE_HTML = [
 '  function link(r,n,label){return \'&lt;a target="_top" href="\'+B.base+"?t="+B.t+"&amp;r="+r+(n?"&amp;n="+n:"")+\'"&gt;\'+label+"&lt;/a&gt;";}',
 '  var details = \'&lt;div class="card"&gt;&lt;div class="row"&gt;&lt;div class="k"&gt;__DATE__&lt;/div&gt;&lt;div class="v"&gt;__TIME__&lt;/div&gt;&lt;/div&gt;\' +',
 '    \'&lt;div class="row"&gt;&lt;div class="k"&gt;__VENUE__&lt;/div&gt;&lt;div class="v"&gt;&lt;a target="_blank" href="__MAP__"&gt;__ADDRESS__&lt;/a&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;\';',
+'  function fill(key, d, nameAsGold){',
+'    var name = esc(d.firstName), party = {"1":"just you","2":"2 people","3":"3 people","4+":"4 or more people"}[d.partySize] || "you";',
+'    return esc(B.text[key]).replace(/\{first_name\}/g, nameAsGold ? "&lt;em&gt;"+name+"&lt;/em&gt;" : name).replace(/\{party\}/g, party);',
+'  }',
 '  function show(d){',
-'    var name = esc(d.firstName), party = {"1":"just you","2":"2 people","3":"3 people","4+":"4 or more"}[d.partySize];',
-'    var change = \'&lt;div class="change"&gt;Change your answer:&lt;br&gt;\' + link("yes","1","Just me") + link("yes","2","Me +1") + link("yes","3","Me +2") +',
-'      link("yes","4p","Me +3 or more") + "&lt;br&gt;" + link("maybe","","Maybe") + link("no","","Can\\\'t make it") + "&lt;/div&gt;";',
-'    if (d.rsvp === "Yes") view.innerHTML = \'&lt;div class="icon"&gt;✓&lt;/div&gt;&lt;h1&gt;You\\\'re in, &lt;em&gt;\'+name+"&lt;/em&gt;.&lt;/h1&gt;" +',
-'      \'&lt;p class="lede"&gt;We\\\'re planning for \'+(party||"you")+". A calendar invite is on its way to your email. You can close this page.&lt;/p&gt;" + details + change;',
-'    else if (d.rsvp === "Maybe") view.innerHTML = \'&lt;div class="icon"&gt;✓&lt;/div&gt;&lt;h1&gt;We\\\'ve pencilled you in, &lt;em&gt;\'+name+"&lt;/em&gt;.&lt;/h1&gt;" +',
-'      \'&lt;p class="lede"&gt;A calendar hold is on its way so the date doesn\\\'t slip away. Tap an answer below whenever you know.&lt;/p&gt;\' + details + change;',
-'    else view.innerHTML = \'&lt;div class="icon"&gt;♡&lt;/div&gt;&lt;h1&gt;We\\\'ll miss you, &lt;em&gt;\'+name+"&lt;/em&gt;.&lt;/h1&gt;" +',
-'      \'&lt;p class="lede"&gt;Thank you for letting us know. If your plans change, tap a new answer below.&lt;/p&gt;\' + change;',
+'    var change = \'&lt;div class="change"&gt;Change your answer:&lt;br&gt;\' + link("yes","1",esc(B.text.button_1)) + link("yes","2",esc(B.text.button_2)) + link("yes","3",esc(B.text.button_3)) +',
+'      link("yes","4p",esc(B.text.button_4)) + "&lt;br&gt;" + link("maybe","",esc(B.text.button_maybe)) + link("no","",esc(B.text.button_no)) + "&lt;/div&gt;";',
+'    var k = d.rsvp === "Yes" ? "yes" : d.rsvp === "Maybe" ? "maybe" : "no";',
+'    view.innerHTML = \'&lt;div class="icon"&gt;\' + (k === "no" ? "♡" : "✓") + "&lt;/div&gt;&lt;h1&gt;" + fill("page_" + k + "_title", d, true) + "&lt;/h1&gt;" +',
+'      \'&lt;p class="lede"&gt;\' + fill("page_" + k + "_body", d) + "&lt;/p&gt;" + (k === "no" ? "" : details) + change;',
 '  }',
 '  function fail(){ view.innerHTML = \'&lt;h1 style="margin-top:36px"&gt;We couldn\\\'t &lt;em&gt;save that&lt;/em&gt;.&lt;/h1&gt;&lt;p class="lede"&gt;Please tap the button in your email again, or simply reply to the email with Yes, Maybe or No.&lt;/p&gt;\'; }',
 '  function go(){',
+'    if (B.preview) return show(B.preview);',
 '    if (!B.t || !B.r) return fail();',
 '    google.script.run.withSuccessHandler(function(d){ d &amp;&amp; d.ok ? show(d) : fail(); }).withFailureHandler(fail).tapRsvp(B.t, B.r, B.n);',
 '  }',
@@ -1048,19 +1167,17 @@ function applyRsvp_(guest, parsed) {
 }
 
 function sendThankYou_(msg, guest, parsed) {
-  var name = escapeHtml_(firstName_(guest.name)), e = CONFIG.EVENT;
-  var partyWords = { '1': 'just you', '2': 'the 2 of you', '3': 'the 3 of you', '4+': '4 or more of you' }[parsed.party];
-  var line = {
-    Yes: 'Thank you, ' + name + '! You\'re confirmed' + (partyWords ? ' for ' + partyWords : '') + '. A calendar invite is on its way, and we\'ll send a reminder before the day.',
-    Maybe: 'Thanks, ' + name + '. We\'ve pencilled you in and sent a calendar hold so the date doesn\'t slip away. Just reply "Yes" or "No" here whenever you know.',
-    No: 'Thank you for letting us know, ' + name + '. We\'ll miss you! If your plans change, just reply "Yes" here.'
-  }[parsed.choice];
+  var e = event_();
+  var vars = { first_name: firstName_(guest.name), party: partyWords_(parsed.party || '1') };
+  var line = TH_({ Yes: 'thanks_yes', Maybe: 'thanks_maybe', No: 'thanks_no' }[parsed.choice], vars);
   var html = '&lt;div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:24px;color:#1D1D1F;"&gt;' +
     '&lt;p&gt;' + line + '&lt;/p&gt;' +
     (parsed.choice === 'No' ? '' : '&lt;p&gt;&lt;strong&gt;' + escapeHtml_(e.DATE_LABEL) + ', ' + escapeHtml_(e.TIME_LABEL) + '&lt;/strong&gt;&lt;br&gt;' +
       escapeHtml_(e.VENUE_NAME) + '&lt;br&gt;&lt;a href="' + e.MAP_URL + '"&gt;' + escapeHtml_(e.VENUE_ADDRESS) + '&lt;/a&gt;&lt;/p&gt;') +
-    '&lt;p&gt;Warm regards,&lt;br&gt;The Jupiter Texas Team&lt;/p&gt;&lt;/div&gt;';
-  msg.reply(html.replace(/&lt;[^&gt;]+&gt;/g, ' ').replace(/\s+/g, ' ').trim(), { htmlBody: html, name: CONFIG.SENDER_NAME });
+    '&lt;p&gt;' + TH_('signoff') + '&lt;/p&gt;&lt;/div&gt;';
+  var text = html.replace(/&lt;br&gt;/g, '\n').replace(/&lt;[^&gt;]+&gt;/g, ' ').replace(/[ \t]+/g, ' ').trim()
+    .replace(/&amp;#39;/g, "'").replace(/&amp;quot;/g, '"').replace(/&amp;lt;/g, '&lt;').replace(/&amp;gt;/g, '&gt;').replace(/&amp;amp;/g, '&amp;');
+  msg.reply(text, { htmlBody: html, name: CONFIG.SENDER_NAME });
 }
 
 /* ------------------------------------------------------------------ */
@@ -1073,14 +1190,11 @@ function sendThankYou_(msg, guest, parsed) {
  * in their calendar automatically. Guests never see each other.
  */
 function createCalendarInvite_(guest) {
-  var e = CONFIG.EVENT;
+  var e = event_();
   var event = CalendarApp.getDefaultCalendar().createEvent(
     e.TITLE, new Date(e.START_ISO), new Date(e.END_ISO), {
       location: e.VENUE_NAME + ', ' + e.VENUE_ADDRESS,
-      description: 'Jupiter Texas Real Estate Group invites you and your family.\n' +
-        'Friends are welcome too.\n\n' + e.DATE_LABEL + ', ' + e.TIME_LABEL + '\n' +
-        e.VENUE_NAME + '\n' + e.VENUE_ADDRESS + '\nDirections: ' + e.MAP_URL + '\n\n' +
-        'Questions? Write to ' + CONFIG.REPLY_TO,
+      description: plain_('calendar_description', { first_name: firstName_(guest.name) }) + '\n\nDirections: ' + e.MAP_URL,
       guests: guest.email,
       sendInvites: true
     });
@@ -1178,16 +1292,61 @@ function sendTestToMe() {
   return { to: to };
 }
 
-function getEmailPreview(kind) {
+function posterDataUrl_() {
+  var blob = posterBlob_();
+  return 'data:' + blob.getContentType() + ';base64,' + Utilities.base64Encode(blob.getBytes());
+}
+
+/** Preview any email or the tap page, optionally with unsaved edits from the text editor. */
+function getEmailPreview(kind, overrides) {
   requireOwner_();
   loadSettings_();
-  // Previews can't show the embedded poster, so hand them a data: URL copy.
-  var blob = posterBlob_();
-  CONFIG.POSTER_SRC = 'data:' + blob.getContentType() + ';base64,' + Utilities.base64Encode(blob.getBytes());
-  var demo = { name: 'Test Investor', token: TEST_TOKEN, rsvp: kind === 'reminder-maybe' ? 'Maybe' : 'Yes', partySize: '3' };
+  loadTexts_(overrides);
+  CONFIG.POSTER_SRC = posterDataUrl_(); // previews can't show the embedded poster, so use a copy
+  var demo = { name: 'Raj Mehta', token: TEST_TOKEN, rsvp: kind === 'reminder-maybe' ? 'Maybe' : 'Yes', partySize: '3' };
   if (kind === 'nudge') return buildNudgeEmail(demo).html;
   if (kind &amp;&amp; kind.indexOf('reminder') === 0) return buildReminderEmail(demo, 3).html;
+  if (kind &amp;&amp; kind.indexOf('page-') === 0) {
+    var rsvp = { 'page-yes': 'Yes', 'page-maybe': 'Maybe', 'page-no': 'No' }[kind];
+    return tapPage_('', '', '', { firstName: 'Raj', rsvp: rsvp, partySize: '3' }).getContent();
+  }
   return buildInviteEmail(demo).html;
+}
+
+/** Everything the "Edit text &amp; poster" screen needs. */
+function getTextEditor() {
+  requireOwner_();
+  var texts = loadTexts_();
+  return {
+    fields: TEXT_FIELDS.map(function (f) { return { group: f[0], key: f[1], label: f[2], def: f[3], hint: f[4], value: texts[f[1]] }; }),
+    poster: posterDataUrl_()
+  };
+}
+
+/** Saves edited wording as the new default for every future email. */
+function saveTexts(values) {
+  requireOwner_();
+  var props = PropertiesService.getScriptProperties();
+  TEXT_FIELDS.forEach(function (f) {
+    var key = f[1], value = values[key];
+    if (typeof value !== 'string') return;
+    value = value.replace(/\r\n/g, '\n');
+    if (value.trim() === '' || value === f[3]) props.deleteProperty('TEXT_' + key);
+    else props.setProperty('TEXT_' + key, value);
+  });
+  return getTextEditor();
+}
+
+/** Replaces the poster used in every future invitation. */
+function savePosterUpload(base64, mimeType) {
+  requireOwner_();
+  if (['image/jpeg', 'image/png'].indexOf(mimeType) === -1) throw new Error('Please upload a JPG or PNG image.');
+  var bytes = Utilities.base64Decode(base64);
+  if (bytes.length &gt; 3 * 1024 * 1024) throw new Error('That image is over 3 MB. Please export a smaller JPG (under 1 MB is best for email).');
+  var file = DriveApp.createFile(Utilities.newBlob(bytes, mimeType, 'Jupiter Holiday Party poster ' + new Date().toISOString().slice(0, 10)));
+  PropertiesService.getScriptProperties().setProperty('POSTER_FILE_ID', file.getId());
+  posterBlobCache_ = null;
+  return posterDataUrl_();
 }
 
 /* ------------------------------------------------------------------ */
@@ -1220,7 +1379,7 @@ function sendResendBatch() {
     batch.forEach(function (g) {
       try {
         var email = buildInviteEmail(g);
-        email.subject = 'RSVP in one tap: The Jupiter Texas Holiday Party, Sat Dec 12';
+        email.subject = plain_('resend_subject', { first_name: firstName_(g.name) });
         sendEmail_(g.email, email);
         setCells_(data.sheet, data.col, g.row, { 'Emails Sent': addTag_(g.emailsSent, 'resend') });
         sent++;
@@ -1370,7 +1529,7 @@ function getDashboard() {
       <div class="copyrow"><code>Dashboard</code><button class="copy" data-text="Dashboard">Copy</button></div>
       <p>Delete the lines it starts with (<span class="ui">Cmd + A</span>, <span class="ui">Delete</span>), then paste this:</p>
       <div class="bigcopy">
-        <div class="head"><span><span class="name">Dashboard.html</span> <span class="meta">· 476 lines</span></span><button class="copy" data-src="dash-html">Copy all of Dashboard.html</button></div>
+        <div class="head"><span><span class="name">Dashboard.html</span> <span class="meta">· 606 lines</span></span><button class="copy" data-src="dash-html">Copy all of Dashboard.html</button></div>
         <pre aria-hidden="true">&lt;!DOCTYPE html&gt;
 &lt;html lang=&quot;en&quot;&gt;
 &lt;head&gt;
@@ -1480,6 +1639,26 @@ function getDashboard() {
   .alert b { display: block; margin-bottom: 2px; }
   .alert span { color: var(--ink); font-weight: 400; }
   .notice { background: var(--gold-soft); color: var(--ink); border: 1px solid #F1DDA8; border-radius: var(--radius); padding: 14px 18px; margin-bottom: 20px; display: flex; gap: 12px; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+  .modal.editor { max-width: 1240px; height: 92vh; padding: 0; display: flex; flex-direction: column; overflow: hidden; }
+  .ed-body { flex: 1; display: grid; grid-template-columns: minmax(0, 440px) minmax(0, 1fr); min-height: 0; }
+  .ed-form { overflow-y: auto; padding: 18px 20px 40px; border-right: 1px solid var(--line); }
+  .ed-preview { display: flex; flex-direction: column; min-height: 0; background: #0B1330; }
+  .ed-preview .tabs { padding: 10px 12px; background: var(--card); border-bottom: 1px solid var(--line); }
+  .ed-preview iframe { flex: 1; height: auto; }
+  .ed-group { margin: 22px 0 8px; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--gold); font-weight: 700; }
+  .ed-field { margin-bottom: 14px; }
+  .ed-field label { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 600; margin-bottom: 5px; }
+  .ed-field label a { font-weight: 500; color: var(--blue); text-decoration: none; cursor: pointer; }
+  .ed-field textarea { width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; font: 14px/1.45 inherit; font-family: inherit; color: var(--ink); background: var(--card); resize: vertical; min-height: 40px; }
+  .ed-field textarea:focus { outline: 2px solid var(--gold); outline-offset: 0; border-color: transparent; }
+  .ed-field.changed textarea { border-color: var(--gold); background: var(--gold-soft); }
+  .ed-hint { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .ed-poster { display: flex; gap: 14px; align-items: center; background: var(--bg); border-radius: 12px; padding: 12px; }
+  .ed-poster img { width: 84px; border-radius: 8px; display: block; }
+  .ed-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 18px; border-top: 1px solid var(--line); flex-wrap: wrap; }
+  .ed-vars { font-size: 12px; color: var(--muted); }
+  .ed-vars code { background: var(--bg); padding: 1px 5px; border-radius: 5px; }
+  @media (max-width: 860px) { .ed-body { grid-template-columns: 1fr; grid-template-rows: 1fr 45vh; } .ed-form { border-right: 0; border-bottom: 1px solid var(--line); } }
   .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 12px; opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; z-index: 20; max-width: 90vw; }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   .loading { opacity: .5; pointer-events: none; }
@@ -1500,6 +1679,7 @@ function getDashboard() {
       &lt;div class="sub" id="sub"&gt;Loading…&lt;/div&gt;
     &lt;/div&gt;
     &lt;div class="actions"&gt;
+      &lt;button class="btn" onclick="openEditor()"&gt;Edit text &amp;amp; poster&lt;/button&gt;
       &lt;button class="btn" onclick="openPreview('invite')"&gt;Preview emails&lt;/button&gt;
       &lt;button class="btn" onclick="openNudge()"&gt;Nudge non-responders&lt;/button&gt;
       &lt;button class="btn primary" onclick="openSend()"&gt;Send invitations&lt;/button&gt;
@@ -1583,6 +1763,35 @@ function getDashboard() {
       &lt;button class="btn" onclick="closeModal('previewModal')"&gt;Done&lt;/button&gt;
     &lt;/div&gt;
     &lt;iframe id="previewFrame" title="Email preview"&gt;&lt;/iframe&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;!-- Text &amp; poster editor --&gt;
+&lt;div class="scrim" id="editorModal"&gt;
+  &lt;div class="modal editor"&gt;
+    &lt;div class="modal-head"&gt;
+      &lt;div&gt;&lt;h2 style="margin:0"&gt;Edit text &amp;amp; poster&lt;/h2&gt;&lt;div class="ed-vars"&gt;Placeholders: &lt;code&gt;{first_name}&lt;/code&gt; &lt;code&gt;{date}&lt;/code&gt; &lt;code&gt;{time}&lt;/code&gt; &lt;code&gt;{venue}&lt;/code&gt; &lt;code&gt;{rsvp_by}&lt;/code&gt;. Reminders also: &lt;code&gt;{when}&lt;/code&gt; &lt;code&gt;{party}&lt;/code&gt;. &lt;code&gt;**bold**&lt;/code&gt;&lt;/div&gt;&lt;/div&gt;
+      &lt;button class="btn" onclick="closeEditor()"&gt;Close&lt;/button&gt;
+    &lt;/div&gt;
+    &lt;div class="ed-body"&gt;
+      &lt;div class="ed-form" id="edForm"&gt;Loading…&lt;/div&gt;
+      &lt;div class="ed-preview"&gt;
+        &lt;div class="tabs" id="edTabs"&gt;
+          &lt;button class="chip" data-kind="invite"&gt;Invitation&lt;/button&gt;
+          &lt;button class="chip" data-kind="nudge"&gt;Nudge&lt;/button&gt;
+          &lt;button class="chip" data-kind="reminder-yes"&gt;Reminder · Yes&lt;/button&gt;
+          &lt;button class="chip" data-kind="reminder-maybe"&gt;Reminder · Maybe&lt;/button&gt;
+          &lt;button class="chip" data-kind="page-yes"&gt;Page · Yes&lt;/button&gt;
+          &lt;button class="chip" data-kind="page-maybe"&gt;Page · Maybe&lt;/button&gt;
+          &lt;button class="chip" data-kind="page-no"&gt;Page · Can't&lt;/button&gt;
+        &lt;/div&gt;
+        &lt;iframe id="edFrame" title="Preview"&gt;&lt;/iframe&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div class="ed-foot"&gt;
+      &lt;span class="time" id="edStatus"&gt;No changes&lt;/span&gt;
+      &lt;span style="display:flex;gap:8px"&gt;&lt;button class="btn" onclick="discardEdits()"&gt;Discard changes&lt;/button&gt;&lt;button class="btn gold" id="edSave" onclick="saveEdits()" disabled&gt;Save as default&lt;/button&gt;&lt;/span&gt;
+    &lt;/div&gt;
   &lt;/div&gt;
 &lt;/div&gt;
 
@@ -1850,6 +2059,86 @@ function getDashboard() {
     call('getEmailPreview', kind).then(function (html) { $('previewFrame').srcdoc = html; }).catch(fail);
   }
 
+  /* ---- Text &amp; poster editor ---- */
+  var ED = { fields: [], saved: {}, kind: 'invite', timer: null };
+
+  function openEditor() {
+    openModal('editorModal');
+    $('edForm').textContent = 'Loading…';
+    call('getTextEditor').then(function (d) { renderEditor(d); previewEdits(); }).catch(fail);
+  }
+  function closeEditor() {
+    if (changedKeys().length &amp;&amp; !confirm('You have unsaved changes. Close without saving?')) return;
+    closeModal('editorModal');
+  }
+  function renderEditor(d) {
+    ED.fields = d.fields; ED.saved = {};
+    d.fields.forEach(function (f) { ED.saved[f.key] = f.value; });
+    var html = '&lt;div class="ed-group"&gt;Poster&lt;/div&gt;&lt;div class="ed-poster"&gt;&lt;img id="edPoster" src="' + d.poster + '" alt="Current poster"&gt;' +
+      '&lt;div&gt;&lt;div style="font-weight:600;margin-bottom:6px"&gt;Shown at the top of the invitation&lt;/div&gt;' +
+      '&lt;label class="btn" style="display:inline-block"&gt;Upload new poster&lt;input type="file" id="edPosterFile" accept="image/jpeg,image/png" hidden onchange="uploadPoster(this)"&gt;&lt;/label&gt;' +
+      '&lt;div class="ed-hint"&gt;JPG or PNG, ideally under 1 MB. Takes effect for emails sent after uploading.&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;';
+    var group = '';
+    d.fields.forEach(function (f) {
+      if (f.group !== group) { group = f.group; html += '&lt;div class="ed-group"&gt;' + esc(group) + '&lt;/div&gt;'; }
+      var rows = Math.min(8, Math.max(1, Math.ceil(f.value.length / 48) + (f.value.match(/\n/g) || []).length));
+      html += '&lt;div class="ed-field" id="f-' + f.key + '"&gt;&lt;label for="t-' + f.key + '"&gt;&lt;span&gt;' + esc(f.label) + '&lt;/span&gt;' +
+        '&lt;a onclick="resetField(\'' + f.key + '\')" id="r-' + f.key + '" hidden&gt;Reset to original&lt;/a&gt;&lt;/label&gt;' +
+        '&lt;textarea id="t-' + f.key + '" rows="' + rows + '" data-key="' + f.key + '"&gt;' + esc(f.value) + '&lt;/textarea&gt;' +
+        (f.hint ? '&lt;div class="ed-hint"&gt;' + esc(f.hint) + '&lt;/div&gt;' : '') + '&lt;/div&gt;';
+    });
+    $('edForm').innerHTML = html;
+    ED.fields.forEach(function (f) { markField(f.key); });
+    $('edForm').addEventListener('input', onEdit);
+    updateStatus();
+  }
+  function onEdit(e) {
+    if (!e.target.dataset.key) return;
+    markField(e.target.dataset.key); updateStatus();
+    clearTimeout(ED.timer); ED.timer = setTimeout(previewEdits, 600);
+  }
+  function fieldDef(key) { return ED.fields.filter(function (f) { return f.key === key; })[0]; }
+  function markField(key) {
+    var v = $('t-' + key).value;
+    $('f-' + key).classList.toggle('changed', v !== ED.saved[key]);
+    $('r-' + key).hidden = v === fieldDef(key).def;
+  }
+  function resetField(key) { $('t-' + key).value = fieldDef(key).def; markField(key); updateStatus(); previewEdits(); }
+  function currentValues() { var o = {}; ED.fields.forEach(function (f) { o[f.key] = $('t-' + f.key).value; }); return o; }
+  function changedKeys() { if (!ED.fields.length || !$('t-' + ED.fields[0].key)) return []; return ED.fields.filter(function (f) { return $('t-' + f.key).value !== ED.saved[f.key]; }).map(function (f) { return f.key; }); }
+  function updateStatus() {
+    var n = changedKeys().length;
+    $('edStatus').textContent = n ? n + ' unsaved change' + (n === 1 ? '' : 's') + '. The preview shows them; investors won\'t see them until you save.' : 'No unsaved changes';
+    $('edSave').disabled = !n;
+  }
+  function previewEdits() {
+    document.querySelectorAll('#edTabs .chip').forEach(function (c) { c.classList.toggle('on', c.dataset.kind === ED.kind); });
+    call('getEmailPreview', ED.kind, currentValues()).then(function (html) { $('edFrame').srcdoc = html; }).catch(fail);
+  }
+  document.getElementById('edTabs').addEventListener('click', function (e) {
+    var c = e.target.closest('.chip'); if (!c) return; ED.kind = c.dataset.kind; previewEdits();
+  });
+  function discardEdits() { ED.fields.forEach(function (f) { $('t-' + f.key).value = ED.saved[f.key]; markField(f.key); }); updateStatus(); previewEdits(); }
+  function saveEdits() {
+    var n = changedKeys().length;
+    if (!confirm('Save ' + n + ' change' + (n === 1 ? '' : 's') + ' as the default? Every email sent from now on will use the new wording.')) return;
+    $('edSave').disabled = true; $('edStatus').textContent = 'Saving…';
+    call('saveTexts', currentValues()).then(function (d) { renderEditor(d); previewEdits(); toast('Saved. New emails will use this wording.'); }).catch(function (e) { fail(e); updateStatus(); });
+  }
+  function uploadPoster(input) {
+    var file = input.files[0]; if (!file) return;
+    if (!confirm('Use "' + file.name + '" as the poster for every invitation sent from now on?')) { input.value = ''; return; }
+    var reader = new FileReader();
+    reader.onload = function () {
+      toast('Uploading poster…');
+      call('savePosterUpload', String(reader.result).split(',')[1], file.type).then(function (url) {
+        $('edPoster').src = url; toast('Poster updated.'); previewEdits();
+      }).catch(fail);
+      input.value = '';
+    };
+    reader.readAsDataURL(file);
+  }
+
   load();
   setInterval(function () { if (!document.hidden &amp;&amp; !document.querySelector('.scrim.show')) load(); }, 60000);
 &lt;/script&gt;
@@ -1961,6 +2250,7 @@ function getDashboard() {
         <li>Reminder emails go out 7, 3 and 1 day before, to everyone who said Yes or Maybe</li>
         <li>4 or more days after a phase goes out, use <span class="ui">Nudge non-responders</span> on the dashboard to follow up once</li>
         <li>Every reply is listed in the sheet's <strong>Reply log</strong> tab</li>
+        <li><strong>To change any wording or the poster:</strong> dashboard <span class="arrow">→</span> <span class="ui">Edit text &amp; poster</span>. Edit, check the preview on the right, then <span class="ui">Save as default</span>. Every email sent after that uses the new version.</li>
       </ul>
     </li>
   </ol>

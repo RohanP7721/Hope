@@ -99,6 +99,26 @@
   .alert b { display: block; margin-bottom: 2px; }
   .alert span { color: var(--ink); font-weight: 400; }
   .notice { background: var(--gold-soft); color: var(--ink); border: 1px solid #F1DDA8; border-radius: var(--radius); padding: 14px 18px; margin-bottom: 20px; display: flex; gap: 12px; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+  .modal.editor { max-width: 1240px; height: 92vh; padding: 0; display: flex; flex-direction: column; overflow: hidden; }
+  .ed-body { flex: 1; display: grid; grid-template-columns: minmax(0, 440px) minmax(0, 1fr); min-height: 0; }
+  .ed-form { overflow-y: auto; padding: 18px 20px 40px; border-right: 1px solid var(--line); }
+  .ed-preview { display: flex; flex-direction: column; min-height: 0; background: #0B1330; }
+  .ed-preview .tabs { padding: 10px 12px; background: var(--card); border-bottom: 1px solid var(--line); }
+  .ed-preview iframe { flex: 1; height: auto; }
+  .ed-group { margin: 22px 0 8px; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--gold); font-weight: 700; }
+  .ed-field { margin-bottom: 14px; }
+  .ed-field label { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 600; margin-bottom: 5px; }
+  .ed-field label a { font-weight: 500; color: var(--blue); text-decoration: none; cursor: pointer; }
+  .ed-field textarea { width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; font: 14px/1.45 inherit; font-family: inherit; color: var(--ink); background: var(--card); resize: vertical; min-height: 40px; }
+  .ed-field textarea:focus { outline: 2px solid var(--gold); outline-offset: 0; border-color: transparent; }
+  .ed-field.changed textarea { border-color: var(--gold); background: var(--gold-soft); }
+  .ed-hint { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .ed-poster { display: flex; gap: 14px; align-items: center; background: var(--bg); border-radius: 12px; padding: 12px; }
+  .ed-poster img { width: 84px; border-radius: 8px; display: block; }
+  .ed-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 18px; border-top: 1px solid var(--line); flex-wrap: wrap; }
+  .ed-vars { font-size: 12px; color: var(--muted); }
+  .ed-vars code { background: var(--bg); padding: 1px 5px; border-radius: 5px; }
+  @media (max-width: 860px) { .ed-body { grid-template-columns: 1fr; grid-template-rows: 1fr 45vh; } .ed-form { border-right: 0; border-bottom: 1px solid var(--line); } }
   .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 12px; opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; z-index: 20; max-width: 90vw; }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   .loading { opacity: .5; pointer-events: none; }
@@ -119,6 +139,7 @@
       <div class="sub" id="sub">Loading…</div>
     </div>
     <div class="actions">
+      <button class="btn" onclick="openEditor()">Edit text &amp; poster</button>
       <button class="btn" onclick="openPreview('invite')">Preview emails</button>
       <button class="btn" onclick="openNudge()">Nudge non-responders</button>
       <button class="btn primary" onclick="openSend()">Send invitations</button>
@@ -202,6 +223,35 @@
       <button class="btn" onclick="closeModal('previewModal')">Done</button>
     </div>
     <iframe id="previewFrame" title="Email preview"></iframe>
+  </div>
+</div>
+
+<!-- Text & poster editor -->
+<div class="scrim" id="editorModal">
+  <div class="modal editor">
+    <div class="modal-head">
+      <div><h2 style="margin:0">Edit text &amp; poster</h2><div class="ed-vars">Placeholders: <code>{first_name}</code> <code>{date}</code> <code>{time}</code> <code>{venue}</code> <code>{rsvp_by}</code>. Reminders also: <code>{when}</code> <code>{party}</code>. <code>**bold**</code></div></div>
+      <button class="btn" onclick="closeEditor()">Close</button>
+    </div>
+    <div class="ed-body">
+      <div class="ed-form" id="edForm">Loading…</div>
+      <div class="ed-preview">
+        <div class="tabs" id="edTabs">
+          <button class="chip" data-kind="invite">Invitation</button>
+          <button class="chip" data-kind="nudge">Nudge</button>
+          <button class="chip" data-kind="reminder-yes">Reminder · Yes</button>
+          <button class="chip" data-kind="reminder-maybe">Reminder · Maybe</button>
+          <button class="chip" data-kind="page-yes">Page · Yes</button>
+          <button class="chip" data-kind="page-maybe">Page · Maybe</button>
+          <button class="chip" data-kind="page-no">Page · Can't</button>
+        </div>
+        <iframe id="edFrame" title="Preview"></iframe>
+      </div>
+    </div>
+    <div class="ed-foot">
+      <span class="time" id="edStatus">No changes</span>
+      <span style="display:flex;gap:8px"><button class="btn" onclick="discardEdits()">Discard changes</button><button class="btn gold" id="edSave" onclick="saveEdits()" disabled>Save as default</button></span>
+    </div>
   </div>
 </div>
 
@@ -467,6 +517,86 @@
     openModal('previewModal');
     document.querySelectorAll('#previewModal .chip').forEach(function (c) { c.classList.toggle('on', c.dataset.kind === kind); });
     call('getEmailPreview', kind).then(function (html) { $('previewFrame').srcdoc = html; }).catch(fail);
+  }
+
+  /* ---- Text & poster editor ---- */
+  var ED = { fields: [], saved: {}, kind: 'invite', timer: null };
+
+  function openEditor() {
+    openModal('editorModal');
+    $('edForm').textContent = 'Loading…';
+    call('getTextEditor').then(function (d) { renderEditor(d); previewEdits(); }).catch(fail);
+  }
+  function closeEditor() {
+    if (changedKeys().length && !confirm('You have unsaved changes. Close without saving?')) return;
+    closeModal('editorModal');
+  }
+  function renderEditor(d) {
+    ED.fields = d.fields; ED.saved = {};
+    d.fields.forEach(function (f) { ED.saved[f.key] = f.value; });
+    var html = '<div class="ed-group">Poster</div><div class="ed-poster"><img id="edPoster" src="' + d.poster + '" alt="Current poster">' +
+      '<div><div style="font-weight:600;margin-bottom:6px">Shown at the top of the invitation</div>' +
+      '<label class="btn" style="display:inline-block">Upload new poster<input type="file" id="edPosterFile" accept="image/jpeg,image/png" hidden onchange="uploadPoster(this)"></label>' +
+      '<div class="ed-hint">JPG or PNG, ideally under 1 MB. Takes effect for emails sent after uploading.</div></div></div>';
+    var group = '';
+    d.fields.forEach(function (f) {
+      if (f.group !== group) { group = f.group; html += '<div class="ed-group">' + esc(group) + '</div>'; }
+      var rows = Math.min(8, Math.max(1, Math.ceil(f.value.length / 48) + (f.value.match(/\n/g) || []).length));
+      html += '<div class="ed-field" id="f-' + f.key + '"><label for="t-' + f.key + '"><span>' + esc(f.label) + '</span>' +
+        '<a onclick="resetField(\'' + f.key + '\')" id="r-' + f.key + '" hidden>Reset to original</a></label>' +
+        '<textarea id="t-' + f.key + '" rows="' + rows + '" data-key="' + f.key + '">' + esc(f.value) + '</textarea>' +
+        (f.hint ? '<div class="ed-hint">' + esc(f.hint) + '</div>' : '') + '</div>';
+    });
+    $('edForm').innerHTML = html;
+    ED.fields.forEach(function (f) { markField(f.key); });
+    $('edForm').addEventListener('input', onEdit);
+    updateStatus();
+  }
+  function onEdit(e) {
+    if (!e.target.dataset.key) return;
+    markField(e.target.dataset.key); updateStatus();
+    clearTimeout(ED.timer); ED.timer = setTimeout(previewEdits, 600);
+  }
+  function fieldDef(key) { return ED.fields.filter(function (f) { return f.key === key; })[0]; }
+  function markField(key) {
+    var v = $('t-' + key).value;
+    $('f-' + key).classList.toggle('changed', v !== ED.saved[key]);
+    $('r-' + key).hidden = v === fieldDef(key).def;
+  }
+  function resetField(key) { $('t-' + key).value = fieldDef(key).def; markField(key); updateStatus(); previewEdits(); }
+  function currentValues() { var o = {}; ED.fields.forEach(function (f) { o[f.key] = $('t-' + f.key).value; }); return o; }
+  function changedKeys() { if (!ED.fields.length || !$('t-' + ED.fields[0].key)) return []; return ED.fields.filter(function (f) { return $('t-' + f.key).value !== ED.saved[f.key]; }).map(function (f) { return f.key; }); }
+  function updateStatus() {
+    var n = changedKeys().length;
+    $('edStatus').textContent = n ? n + ' unsaved change' + (n === 1 ? '' : 's') + '. The preview shows them; investors won\'t see them until you save.' : 'No unsaved changes';
+    $('edSave').disabled = !n;
+  }
+  function previewEdits() {
+    document.querySelectorAll('#edTabs .chip').forEach(function (c) { c.classList.toggle('on', c.dataset.kind === ED.kind); });
+    call('getEmailPreview', ED.kind, currentValues()).then(function (html) { $('edFrame').srcdoc = html; }).catch(fail);
+  }
+  document.getElementById('edTabs').addEventListener('click', function (e) {
+    var c = e.target.closest('.chip'); if (!c) return; ED.kind = c.dataset.kind; previewEdits();
+  });
+  function discardEdits() { ED.fields.forEach(function (f) { $('t-' + f.key).value = ED.saved[f.key]; markField(f.key); }); updateStatus(); previewEdits(); }
+  function saveEdits() {
+    var n = changedKeys().length;
+    if (!confirm('Save ' + n + ' change' + (n === 1 ? '' : 's') + ' as the default? Every email sent from now on will use the new wording.')) return;
+    $('edSave').disabled = true; $('edStatus').textContent = 'Saving…';
+    call('saveTexts', currentValues()).then(function (d) { renderEditor(d); previewEdits(); toast('Saved. New emails will use this wording.'); }).catch(function (e) { fail(e); updateStatus(); });
+  }
+  function uploadPoster(input) {
+    var file = input.files[0]; if (!file) return;
+    if (!confirm('Use "' + file.name + '" as the poster for every invitation sent from now on?')) { input.value = ''; return; }
+    var reader = new FileReader();
+    reader.onload = function () {
+      toast('Uploading poster…');
+      call('savePosterUpload', String(reader.result).split(',')[1], file.type).then(function (url) {
+        $('edPoster').src = url; toast('Poster updated.'); previewEdits();
+      }).catch(fail);
+      input.value = '';
+    };
+    reader.readAsDataURL(file);
   }
 
   load();
