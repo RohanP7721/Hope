@@ -500,7 +500,7 @@ function setupSettings_() {
   sheet.getRange(1, 1, 3, 3).setValues([
     ['Setting', 'Paste here', 'What it is'],
     ['API link', '', 'Optional, for open tracking. From Apps Script: Deploy > New deployment > Web app > Who has access: Anyone. Ends in /exec'],
-    ['', '', '']
+    ['Dashboard access', '', 'Other jupitertexas.com emails that may open the dashboard, separated by commas. info@ always can.']
   ]);
   sheet.getRange(1, 1, 1, 3).setFontWeight('bold').setBackground('#0B1330').setFontColor('#F2B01E');
   sheet.getRange(2, 2).setBackground('#FFF6DF');
@@ -699,7 +699,14 @@ function doGet(e) {
   }
 
   if (!isOwner_()) {
-    return HtmlService.createHtmlOutput('<p style="font-family:sans-serif;padding:40px">This page is private.</p>');
+    var who = Session.getActiveUser().getEmail();
+    var msg = who
+      ? 'You are signed in as <b>' + escapeHtml_(who) + '</b>, which isn\'t allowed to open this dashboard. ' +
+        'Ask info@jupitertexas.com to add this email to the sheet\'s Settings tab, cell B3.'
+      : 'This is the <b>Tracking</b> link. It powers the buttons inside the invitation and has no dashboard. ' +
+        'Open your <b>Dashboard</b> link instead (Apps Script: Deploy &gt; Manage deployments &gt; Dashboard).';
+    return HtmlService.createHtmlOutput('<div style="font:16px/1.6 -apple-system,Segoe UI,Roboto,sans-serif;max-width:560px;padding:48px 24px;color:#1D1D1F">' +
+      '<h2 style="margin:0 0 12px">Jupiter Holiday Party dashboard</h2><p>' + msg + '</p></div>').setTitle('Jupiter RSVP');
   }
   return HtmlService.createTemplateFromFile('Dashboard').evaluate()
     .setTitle('Jupiter Holiday Party · RSVPs')
@@ -839,13 +846,28 @@ var TAP_PAGE_HTML = [
 '</script>'
 ].join('\n');
 
+/**
+ * Who may open the dashboard: info@ plus any emails typed into the Settings tab, cell B3
+ * (comma-separated). Everything still runs and sends as info@.
+ */
+function dashboardUsers_() {
+  var users = [CONFIG.OWNER_EMAIL.toLowerCase()];
+  try {
+    var sheet = SpreadsheetApp.getActive().getSheetByName(SETTINGS_SHEET);
+    if (sheet) String(sheet.getRange('B3').getValue()).split(/[\s,;]+/).forEach(function (e) {
+      if (EMAIL_PATTERN.test(e)) users.push(e.toLowerCase());
+    });
+  } catch (err) { /* sheet unavailable: info@ only */ }
+  return users;
+}
+
 function isOwner_() {
-  var user = Session.getActiveUser().getEmail();
-  return !!user && user.toLowerCase() === CONFIG.OWNER_EMAIL.toLowerCase();
+  var user = String(Session.getActiveUser().getEmail() || '').toLowerCase();
+  return !!user && dashboardUsers_().indexOf(user) !== -1;
 }
 
 function requireOwner_() {
-  if (!isOwner_()) throw new Error('Only ' + CONFIG.OWNER_EMAIL + ' can do this.');
+  if (!isOwner_()) throw new Error('This Google account can\'t use the dashboard. Add it to the Settings tab, cell B3.');
 }
 
 function publicGuest_(g, extra) {
