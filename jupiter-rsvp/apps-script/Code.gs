@@ -786,17 +786,126 @@ function tapPage_(token, action, size, preview) {
 }
 
 /** Called by the confirmation page. Public on purpose: it only works with the guest's private token. */
-function tapRsvp(token, action, size) {
-  var result = handleRsvp_(token, action);
-  if (!result.ok || action !== 'yes' || !size) return result;
-  var party = size === '4p' ? '4+' : size;
-  if (['1', '2', '3', '4+'].indexOf(party) === -1) return result;
-  result.partySize = party;
-  if (token !== TEST_TOKEN) {
-    var found = findGuestByToken_(token);
-    if (found) setCells_(found.sheet, found.col, found.guest.row, { 'Party Size': party });
+/* ------------------------------------------------------------------ */
+/* Telling real taps from email security scanners                      */
+/* ------------------------------------------------------------------ */
+
+var ACTIVITY_SHEET = 'Activity log';
+var SCANNER_UA = /headless|phantomjs|bot\b|crawler|spider|slurp|preview|scanner|safelinks|safe links|defender|mimecast|proofpoint|barracuda|forcepoint|symantec|trendmicro|sophos|python|curl|wget|java\/|go-http|okhttp|axios|node-fetch/i;
+var BURST_SECONDS = 60;
+
+function activitySheet_() {
+  var ss = SpreadsheetApp.getActive();
+  var sheet = ss.getSheetByName(ACTIVITY_SHEET);
+  if (!sheet) {
+    sheet = ss.insertSheet(ACTIVITY_SHEET);
+    sheet.getRange(1, 1, 1, 6).setValues([['Time', 'Investor', 'Email', 'Tapped', 'Device', 'Result']])
+      .setFontWeight('bold').setBackground('#0B1330').setFontColor('#F2B01E');
+    sheet.setFrozenRows(1);
+    sheet.setColumnWidth(5, 380); sheet.setColumnWidth(6, 380);
   }
+  return sheet;
+}
+
+function logActivity_(guest, tapped, device, result) {
+  activitySheet_().appendRow([new Date(), guest.name, guest.email, tapped, String(device || '').slice(0, 300), result]);
+}
+
+/** This investor's taps in the last few seconds, newest last. */
+function recentTaps_(email, seconds) {
+  var sheet = activitySheet_(), last = sheet.getLastRow();
+  if (last < 2) return [];
+  var start = Math.max(2, last - 400), cutoff = Date.now() - seconds * 1000;
+  return sheet.getRange(start, 1, last - start + 1, 4).getValues().filter(function (r) {
+    return String(r[2]).toLowerCase() === email && r[0] instanceof Date && r[0].getTime() >= cutoff;
+  });
+}
+
+function tapLabel_(action, size) {
+  if (action === 'yes') return 'Yes, ' + partyWords_(size === '4p' ? '4+' : (size || '1'));
+  return action === 'maybe' ? 'Maybe' : "Can't make it";
+}
+
+/** Called by the confirmation page. Public on purpose: it only works with the guest's private token. */
+function tapRsvp(token, action, size, info) {
+  info = info || {};
+  if (token === TEST_TOKEN) {
+    var demo = handleRsvp_(token, action);
+    if (demo.ok && action === 'yes' && size) demo.partySize = size === '4p' ? '4+' : size;
+    return demo;
+  }
+  var found = findGuestByToken_(token);
+  if (!found) return { ok: false, error: 'We could not find your invitation.' };
+  var g = found.guest, device = String(info.ua || '');
+  var label = tapLabel_(String(action), size);
+  var lock = LockService.getScriptLock();
+  lock.waitLock(25000);
+  try {
+    // 1. Automated link checkers that say what they are.
+    if (info.wd === true || !device || SCANNER_UA.test(device)) {
+      logActivity_(g, label, device, 'Ignored: automatic link checker, not a person');
+      return publicGuest_(g, { calendar: 'none', ignored: true });
+    }
+    // 2. Scanners that hide it press several different buttons within seconds. A person taps one.
+    var recent = recentTaps_(g.email, BURST_SECONDS);
+    var answers = {};
+    recent.forEach(function (r) { answers[r[3]] = true; });
+    answers[label] = true;
+    if (recent.length + 1 >= 3 && Object.keys(answers).length >= 2) {
+      var fields = {};
+      if (g.rsvpAt && Date.now() - new Date(g.rsvpAt).getTime() < (BURST_SECONDS + 30) * 1000) {
+        fields = { 'RSVP': '', 'RSVP At': '', 'Party Size': '', 'Maybe Reason': '' };
+        // The scanner's taps also marked the email as opened; undo that too if it happened in this burst.
+        if (g.firstOpened && Date.now() - new Date(g.firstOpened).getTime() < (BURST_SECONDS + 30) * 1000) {
+          fields['Opened'] = ''; fields['First Opened'] = ''; fields['Open Count'] = 0;
+        }
+        setCells_(found.sheet, found.col, g.row, fields);
+      }
+      logActivity_(g, label, device, 'Ignored: ' + (recent.length + 1) + ' different buttons within ' + BURST_SECONDS +
+        ' seconds (email security scanner). Answer cleared.');
+      return publicGuest_(g, { calendar: 'none', ignored: true });
+    }
+  } finally { lock.releaseLock(); }
+
+  var result = handleRsvp_(token, action);
+  if (result.ok && action === 'yes' && size) {
+    var party = size === '4p' ? '4+' : size;
+    if (['1', '2', '3', '4+'].indexOf(party) !== -1) {
+      result.partySize = party;
+      setCells_(found.sheet, found.col, g.row, { 'Party Size': party });
+    }
+  }
+  logActivity_(g, label, device, result.ok ? 'Saved' : 'Error: ' + result.error);
   return result;
+}
+
+/**
+ * Runs every 5 minutes: sends the calendar invite to Yes/Maybe guests whose answer is at least
+ * 2 minutes old (so scanner bursts have been cleared first).
+ */
+function syncCalendarInvites_() {
+  var data = readGuests_(), settle = Date.now() - 2 * 60 * 1000, made = 0;
+  data.guests.forEach(function (g) {
+    if (made >= 40) return;
+    if ((g.rsvp !== 'Yes' && g.rsvp !== 'Maybe') || g.eventId || !EMAIL_PATTERN.test(g.email)) return;
+    if (!g.rsvpAt || new Date(g.rsvpAt).getTime() > settle) return;
+    try {
+      setCells_(data.sheet, data.col, g.row, { 'Calendar Event ID': createCalendarInvite_(g) });
+      made++;
+    } catch (err) { console.error('Calendar invite failed for ' + g.email + ': ' + err); }
+  });
+}
+
+/** Dashboard: wipe an answer the team believes wasn't real. The calendar event (if any) is kept, so no cancellation email goes out. */
+function clearAnswer(email) {
+  requireOwner_();
+  email = String(email || '').toLowerCase();
+  var data = readGuests_();
+  var g = data.guests.filter(function (x) { return x.email === email; })[0];
+  if (!g) throw new Error('Investor not found.');
+  setCells_(data.sheet, data.col, g.row, { 'RSVP': '', 'RSVP At': '', 'Party Size': '', 'Maybe Reason': '' });
+  logActivity_(g, '(answer cleared)', 'Dashboard: ' + Session.getActiveUser().getEmail(), 'Cleared by the team');
+  return true;
 }
 
 var TAP_PAGE_HTML = [
@@ -837,7 +946,7 @@ var TAP_PAGE_HTML = [
 '  function go(){',
 '    if (B.preview) return show(B.preview);',
 '    if (!B.t || !B.r) return fail();',
-'    google.script.run.withSuccessHandler(function(d){ d && d.ok ? show(d) : fail(); }).withFailureHandler(fail).tapRsvp(B.t, B.r, B.n);',
+'    google.script.run.withSuccessHandler(function(d){ d && d.ok ? show(d) : fail(); }).withFailureHandler(fail).tapRsvp(B.t, B.r, B.n, { ua: navigator.userAgent, wd: navigator.webdriver === true });',
 '  }',
 '  // Wait until a person is actually looking at the page (email scanners open links in hidden browsers).',
 '  if (!document.hidden) setTimeout(go, 200);',
@@ -917,23 +1026,15 @@ function handleRsvp_(token, action) {
     if (choice === 'Yes' && !g.partySize) fields['Party Size'] = '1';
     if (choice !== 'Maybe') fields['Maybe Reason'] = '';
 
+    // The calendar invite is NOT sent here. syncCalendarInvites_ sends it a few minutes later, once the answer
+    // has settled, so an email security scanner pressing every button can never trigger one.
     var calendar = 'none';
     if (choice === 'No' && g.eventId) {
       removeCalendarInvite_(g.eventId);
       fields['Calendar Event ID'] = '';
       calendar = 'removed';
     } else if (choice !== 'No') {
-      if (g.eventId) {
-        calendar = 'existing';
-      } else {
-        try {
-          fields['Calendar Event ID'] = createCalendarInvite_(g);
-          calendar = 'sent';
-        } catch (err) {
-          console.error('Calendar invite failed for ' + g.email + ': ' + err);
-          calendar = 'failed';
-        }
-      }
+      calendar = g.eventId ? 'existing' : 'pending';
     }
     setCells_(found.sheet, found.col, g.row, fields);
     g.rsvp = choice;
@@ -1030,6 +1131,7 @@ function findGuestByEmail_(email) {
 function processReplies() {
   var lock = LockService.getDocumentLock();
   if (!lock.tryLock(1000)) return;
+  try { syncCalendarInvites_(); } catch (err) { console.error('Calendar sync failed: ' + err); }
   try {
     var owner = CONFIG.OWNER_EMAIL.toLowerCase();
     var log = replyLog_();
@@ -1408,7 +1510,18 @@ function getDashboard() {
   requireOwner_();
   var guests = readGuests_().guests;
   var phases = {};
-  var stats = { total: 0, sent: 0, opened: 0, yes: 0, maybe: 0, no: 0, noResponse: 0, bounced: 0, headcount: 0 };
+  var stats = { total: 0, sent: 0, opened: 0, yes: 0, maybe: 0, no: 0, noResponse: 0, bounced: 0, headcount: 0, needsCheck: 0 };
+
+  // Scanner activity per investor, from the Activity log.
+  var ignored = {};
+  var act = SpreadsheetApp.getActive().getSheetByName(ACTIVITY_SHEET);
+  if (act && act.getLastRow() > 1) {
+    act.getRange(2, 3, act.getLastRow() - 1, 4).getValues().forEach(function (r) {
+      if (String(r[3]).indexOf('Ignored') === 0) ignored[String(r[0]).toLowerCase()] = (ignored[String(r[0]).toLowerCase()] || 0) + 1;
+    });
+  }
+  function secondsBetween(a, b) { return a && b ? (new Date(b).getTime() - new Date(a).getTime()) / 1000 : null; }
+
   var rows = guests.map(function (g) {
     stats.total++;
     if (g.phase) phases[g.phase] = true;
@@ -1420,7 +1533,14 @@ function getDashboard() {
     else if (g.rsvp === 'Maybe') stats.maybe++;
     else if (g.rsvp === 'No') stats.no++;
     else if (g.status === 'Sent') stats.noResponse++;
+    // An answer within 2 minutes of sending is usually a security scanner, not a person. Flag it for the team.
+    var answeredIn = secondsBetween(g.sentAt, g.rsvpAt);
+    var check = !!g.rsvp && answeredIn !== null && answeredIn < 120;
+    if (check) stats.needsCheck++;
+    var openedIn = secondsBetween(g.sentAt, g.firstOpened);
     return {
+      check: check, answeredIn: answeredIn, scannerHits: ignored[g.email] || 0,
+      autoOpen: g.opened && openedIn !== null && openedIn < 60,
       name: g.name, email: g.email, phase: g.phase,
       status: g.status || 'Not sent', sentAt: g.sentAt,
       opened: g.opened, firstOpened: g.firstOpened, openCount: g.openCount,

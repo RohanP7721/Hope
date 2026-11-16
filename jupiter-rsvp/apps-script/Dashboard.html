@@ -14,6 +14,7 @@
     --radius: 14px;
   }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   body { margin: 0; background: var(--bg); color: var(--ink);
     font: 14px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased; }
@@ -34,7 +35,7 @@
   .btn.gold { background: var(--gold); border-color: var(--gold); color: #fff; }
   .btn[disabled] { opacity: .45; cursor: not-allowed; }
 
-  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 12px; margin-bottom: 20px; }
   .stat { background: var(--card); border-radius: var(--radius); padding: 16px 18px; border: 1px solid var(--line); cursor: pointer; transition: border-color .15s; }
   .stat:hover { border-color: #C7C7CC; }
   .stat .label { color: var(--muted); font-size: 12px; font-weight: 500; }
@@ -276,7 +277,8 @@
     ['yes', 'Attending', function (r) { return r.rsvp === 'Yes'; }],
     ['maybe', 'Maybe', function (r) { return r.rsvp === 'Maybe'; }],
     ['no', "Can't make it", function (r) { return r.rsvp === 'No'; }],
-    ['bounced', 'Bounced', function (r) { return r.status === 'Bounced'; }]
+    ['bounced', 'Bounced', function (r) { return r.status === 'Bounced'; }],
+    ['check', 'Needs checking', function (r) { return r.check; }]
   ];
 
   var COLUMNS = [
@@ -319,7 +321,8 @@
       ['', 'maybe', 'Maybe', s.maybe, ''],
       ['', 'no', "Can't make it", s.no, ''],
       ['', 'unopened', 'No response yet', s.noResponse, pct(s.yes + s.maybe + s.no, s.sent) + ' have replied'],
-      ['', 'bounced', 'Bounced', s.bounced, s.bounced ? 'Check these emails' : 'All delivered']
+      ['', 'bounced', 'Bounced', s.bounced, s.bounced ? 'Check these emails' : 'All delivered'],
+      ['', 'check', 'Needs checking', s.needsCheck || 0, s.needsCheck ? 'Answered seconds after sending' : 'Nothing suspicious']
     ].map(function (c) {
       return '<div class="stat ' + c[0] + '" onclick="setFilter(\'' + c[1] + '\')"><div class="label">' + c[2] + '</div><div class="value">' + c[3] + '</div><div class="note">' + esc(c[4]) + '</div></div>';
     }).join('');
@@ -382,12 +385,17 @@
       : r.status === 'Bounced' ? '<span class="pill p-no">Bounced</span>'
       : r.status.indexOf('Failed') === 0 ? '<span class="pill p-no" title="' + esc(r.status) + '">Failed</span>'
       : '<span class="pill p-none">Not sent</span>';
-    var opened = r.opened ? '<span class="pill p-open">Opened</span><div class="time">' + when(r.firstOpened) + (r.openCount > 1 ? ' · ' + r.openCount + '×' : '') + '</div>'
+    var opened = r.opened ? '<span class="pill p-open">Opened</span><div class="time">' + when(r.firstOpened) + (r.openCount > 1 ? ' · ' + r.openCount + '×' : '') +
+        (r.autoOpen ? '<br><span title="Opened within a minute of sending. Apple Mail and some company email systems load emails automatically, so this may not be a person.">may be automatic</span>' : '') + '</div>'
       : (r.status === 'Sent' ? '<span class="pill p-none">Not yet</span>' : '');
     var rsvpClass = { Yes: 'p-yes', Maybe: 'p-maybe', No: 'p-no' }[r.rsvp];
     var rsvpLabel = { Yes: 'Attending', Maybe: 'Maybe', No: "Can't make it" }[r.rsvp];
-    var rsvp = r.rsvp ? '<span class="pill ' + rsvpClass + '">' + rsvpLabel + '</span><div class="time">' + when(r.rsvpAt) + (r.calendar ? ' · 📅' : '') + '</div>'
+    var rsvp = r.rsvp ? '<span class="pill ' + rsvpClass + '">' + rsvpLabel + '</span>' +
+        (r.check ? ' <span class="pill p-maybe" title="Answered ' + Math.round(r.answeredIn) + ' seconds after the email was sent. Usually an email security scanner, not a person.">Check</span>' : '') +
+        '<div class="time">' + when(r.rsvpAt) + (r.calendar ? ' · 📅' : '') +
+        ' · <a href="#" onclick="clearRow(\'' + esc(r.email) + '\');return false;" style="color:var(--muted)">Clear answer</a></div>'
       : (r.opened ? '<span class="pill p-none">No RSVP</span>' : '');
+    if (r.scannerHits) rsvp += '<div class="time" title="See the Activity log tab in the sheet">' + r.scannerHits + ' scanner tap' + (r.scannerHits === 1 ? '' : 's') + ' ignored</div>';
     var party = r.rsvp === 'Yes' ? (r.partySize === '1' ? 'Just them' : r.partySize === '4+' ? '4 or more' : r.partySize ? r.partySize + ' people' : '') : '';
     return '<tr>' +
       '<td><div class="name">' + esc(r.name || '—') + '</div><div class="email">' + esc(r.email) + '</div></td>' +
@@ -397,9 +405,10 @@
   }
 
   function exportCsv() {
-    var head = ['Name', 'Email', 'Phase', 'Invite', 'Sent at', 'Opened', 'First opened', 'RSVP', 'Party size', 'Maybe reason', 'RSVP at'];
+    var head = ['Name', 'Email', 'Phase', 'Invite', 'Sent at', 'Opened', 'First opened', 'RSVP', 'Party size', 'Maybe reason', 'RSVP at', 'Needs checking', 'Scanner taps ignored'];
     var lines = [head].concat(visibleRows().map(function (r) {
-      return [r.name, r.email, r.phase, r.status, r.sentAt, r.opened ? 'Yes' : 'No', r.firstOpened, r.rsvp, r.partySize, r.reason, r.rsvpAt];
+      return [r.name, r.email, r.phase, r.status, r.sentAt, r.opened ? (r.autoOpen ? 'Yes (may be automatic)' : 'Yes') : 'No', r.firstOpened, r.rsvp, r.partySize, r.reason, r.rsvpAt,
+        r.check ? 'Yes, answered ' + Math.round(r.answeredIn) + ' seconds after sending' : '', r.scannerHits || ''];
     })).map(function (cols) { return cols.map(function (c) { return '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"'; }).join(','); });
     var blob = new Blob([lines.join('\n')], { type: 'text/csv' });
     var a = document.createElement('a');
@@ -482,6 +491,11 @@
       toast(h.ok ? 'Tracking link works. One-tap buttons are on.' : 'Saved, but: ' + h.message);
       load();
     }).catch(function (e) { $('trackSave').disabled = false; $('trackSave').textContent = 'Save'; fail(e); });
+  }
+
+  function clearRow(email) {
+    if (!confirm('Clear the answer for ' + email + '? They will show as "no response" again. No email is sent to them.')) return;
+    call('clearAnswer', email).then(function () { toast('Answer cleared'); load(); }).catch(fail);
   }
 
   var RESEND_ARMED = false;
