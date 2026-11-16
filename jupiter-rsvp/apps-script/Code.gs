@@ -902,6 +902,35 @@ function syncCalendarInvites_() {
   });
 }
 
+/**
+ * Runs every 5 minutes: picks up answers given in Google Calendar (Accept / Maybe / Decline on the invite)
+ * and writes them into the sheet, so the dashboard matches the "Accepted:" emails info@ receives.
+ * Only a change in the calendar is copied, so a later tap in the email is never overwritten.
+ */
+function syncCalendarResponses_() {
+  var data = readGuests_(), props = PropertiesService.getScriptProperties(), cal = CalendarApp.getDefaultCalendar();
+  var answers = { YES: 'Yes', NO: 'No', MAYBE: 'Maybe' };
+  data.guests.forEach(function (g) {
+    if (!g.eventId || !g.email) return;
+    var event = null;
+    try { event = cal.getEventById(g.eventId); } catch (err) { return; }
+    if (!event) return;
+    var guest = event.getGuestByEmail(g.email);
+    if (!guest) return;
+    var status = String(guest.getGuestStatus());
+    var key = 'CALSTAT_' + g.eventId;
+    if (status === (props.getProperty(key) || 'INVITED')) return;
+    props.setProperty(key, status);
+    var answer = answers[status];
+    if (!answer || g.rsvp === answer) return;
+    var now = new Date(), fields = { 'RSVP': answer, 'RSVP At': now, 'Last Activity': now };
+    if (answer === 'Yes' && !g.partySize) fields['Party Size'] = '1';
+    if (!g.opened) { fields['Opened'] = 'Yes'; fields['First Opened'] = now; }
+    setCells_(data.sheet, data.col, g.row, fields);
+    logActivity_(g, '(calendar) ' + answer, 'Google Calendar', 'Saved: answered on the calendar invite');
+  });
+}
+
 /** Dashboard: wipe an answer the team believes wasn't real. The calendar event (if any) is kept, so no cancellation email goes out. */
 function clearAnswer(email) {
   requireOwner_();
@@ -1139,6 +1168,7 @@ function processReplies() {
   var lock = LockService.getDocumentLock();
   if (!lock.tryLock(1000)) return;
   try { syncCalendarInvites_(); } catch (err) { console.error('Calendar sync failed: ' + err); }
+  try { syncCalendarResponses_(); } catch (err) { console.error('Calendar response sync failed: ' + err); }
   try {
     var owner = CONFIG.OWNER_EMAIL.toLowerCase();
     var log = replyLog_();
@@ -1160,8 +1190,9 @@ function processReplies() {
         if (from === owner && (!isTest || /^\s*re:/i.test(subject))) return;
         seen[id] = true;
 
-        var parsed = parseReply_(subject, msg.getPlainBody());
-        var outcome = 'Not an RSVP (left for you to read)', who = '';
+        var parsed = /^\s*(accepted|declined|tentatively accepted|updated invitation)/i.test(subject) ? null : parseReply_(subject, msg.getPlainBody());
+        var outcome = /^\s*(accepted|declined|tentatively accepted)/i.test(subject)
+          ? 'Calendar response (copied to the dashboard by the calendar check)' : 'Not an RSVP (left for you to read)', who = '';
         if (parsed) {
           if (isTest) {
             outcome = 'Test reply: ' + parsed.choice + (parsed.party ? ', party ' + parsed.party : '');
