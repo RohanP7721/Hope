@@ -851,7 +851,8 @@ function tapRsvp(token, action, size, info) {
     var answers = {};
     recent.forEach(function (r) { answers[r[3]] = true; });
     answers[label] = true;
-    if (recent.length + 1 >= 3 && Object.keys(answers).length >= 2) {
+    // Scanners open every button (up to 6 different answers). A person changing their mind picks 1 or 2.
+    if (Object.keys(answers).length >= 3) {
       var fields = {};
       if (g.rsvpAt && Date.now() - new Date(g.rsvpAt).getTime() < (BURST_SECONDS + 30) * 1000) {
         fields = { 'RSVP': '', 'RSVP At': '', 'Party Size': '', 'Maybe Reason': '' };
@@ -861,7 +862,7 @@ function tapRsvp(token, action, size, info) {
         }
         setCells_(found.sheet, found.col, g.row, fields);
       }
-      logActivity_(g, label, device, 'Ignored: ' + (recent.length + 1) + ' different buttons within ' + BURST_SECONDS +
+      logActivity_(g, label, device, 'Ignored: ' + Object.keys(answers).length + ' different buttons within ' + BURST_SECONDS +
         ' seconds (email security scanner). Answer cleared.');
       return publicGuest_(g, { calendar: 'none', ignored: true });
     }
