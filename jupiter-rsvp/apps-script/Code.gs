@@ -98,6 +98,10 @@ var TEXT_FIELDS = [
   ['Reminder: said Maybe', 'reminder_maybe_headline', 'Big heading', 'Still deciding?', ''],
   ['Reminder: said Maybe', 'reminder_maybe_body', 'Message', 'The Jupiter Texas Holiday Party is {when} and we would still love to have you there. Let us know when you can, it helps us plan seating and food.', ''],
 
+  ['Reminder: said Can\'t make it', 'reminder_no_subject', 'Subject line', 'Plans changed? The Jupiter Texas Holiday Party is {when}', 'Only sent when you choose to, from the dashboard. Never automatic.'],
+  ['Reminder: said Can\'t make it', 'reminder_no_headline', 'Big heading', 'Plans changed?', ''],
+  ['Reminder: said Can\'t make it', 'reminder_no_body', 'Message', 'We understand you might not be able to make it, but if your plans have changed, we would still love to have you and your family at the Holiday Party {when}. Just tap below to let us know.', ''],
+
   ['Page after tapping a button', 'page_yes_title', 'Yes: heading', "You're in, {first_name}.", 'Shown for a moment after an investor taps a button.'],
   ['Page after tapping a button', 'page_yes_body', 'Yes: message', "We're planning for {party}. A calendar invite is on its way to your email. You can close this page.", ''],
   ['Page after tapping a button', 'page_maybe_title', 'Maybe: heading', "We've pencilled you in, {first_name}.", ''],
@@ -388,7 +392,8 @@ function buildInviteEmail(guest) {
 /** Countdown reminder for people who said Yes or Maybe. */
 function buildReminderEmail(guest, daysLeft) {
   var c = EMAIL_COLORS, e = event_(), links = rsvpLinks_(guest);
-  var isMaybe = guest.rsvp === 'Maybe', kind = isMaybe ? 'reminder_maybe_' : 'reminder_yes_';
+  var isMaybe = guest.rsvp === 'Maybe', isNo = guest.rsvp === 'No';
+  var kind = isNo ? 'reminder_no_' : isMaybe ? 'reminder_maybe_' : 'reminder_yes_';
   var vars = {
     first_name: firstName_(guest.name),
     when: daysLeft === 1 ? 'tomorrow' : 'in ' + daysLeft + ' days',
@@ -404,7 +409,7 @@ function buildReminderEmail(guest, daysLeft) {
   paragraph_(TH_('invite_greeting', vars)) + paragraphs_(kind + 'body', vars) +
 '</td></tr>' +
 '<tr><td class="pad" style="padding:8px 48px 0;">' + detailsBlock_() + '</td></tr>' +
-'<tr><td class="pad" style="padding:32px 48px 8px;text-align:center;">' + rsvpButtons_(links, isMaybe ? 'maybe-reminder' : 'yes-reminder') + '</td></tr>' +
+'<tr><td class="pad" style="padding:32px 48px 8px;text-align:center;">' + rsvpButtons_(links, isNo ? 'all' : isMaybe ? 'maybe-reminder' : 'yes-reminder') + '</td></tr>' +
   signoffRow_();
 
   return {
@@ -412,7 +417,7 @@ function buildReminderEmail(guest, daysLeft) {
     html: emailShell_({ title: subject, preheader: e.DATE_LABEL + ', ' + e.TIME_LABEL + ', ' + e.VENUE_ADDRESS, body: body, pixel: null }),
     text: plain_('invite_greeting', vars) + '\n\n' + plain_(kind + 'body', vars) + '\n\nWhen: ' + e.DATE_LABEL + ', ' + e.TIME_LABEL +
       '\nWhere: ' + e.VENUE_NAME + ', ' + e.VENUE_ADDRESS + '\n\n' +
-      (isMaybe ? textButtons_() : 'Plans changed? Just reply to this email and let us know.') + '\n\n' + plain_('signoff')
+      (isMaybe || isNo ? textButtons_() : 'Plans changed? Just reply to this email and let us know.') + '\n\n' + plain_('signoff')
   };
 }
 
@@ -1330,9 +1335,9 @@ function getEmailPreview(kind, overrides) {
   loadSettings_();
   loadTexts_(overrides);
   CONFIG.POSTER_SRC = posterDataUrl_(); // previews can't show the embedded poster, so use a copy
-  var demo = { name: 'Raj Mehta', token: TEST_TOKEN, rsvp: kind === 'reminder-maybe' ? 'Maybe' : 'Yes', partySize: '3' };
+  var demo = { name: 'Raj Mehta', token: TEST_TOKEN, rsvp: kind === 'reminder-maybe' ? 'Maybe' : kind === 'reminder-no' ? 'No' : 'Yes', partySize: '3' };
   if (kind === 'nudge') return buildNudgeEmail(demo).html;
-  if (kind && kind.indexOf('reminder') === 0) return buildReminderEmail(demo, 3).html;
+  if (kind && kind.indexOf('reminder') === 0) return buildReminderEmail(demo, Math.max(1, daysUntilEvent_())).html;
   if (kind && kind.indexOf('page-') === 0) {
     var rsvp = { 'page-yes': 'Yes', 'page-maybe': 'Maybe', 'page-no': 'No' }[kind];
     return tapPage_('', '', '', { firstName: 'Raj', rsvp: rsvp, partySize: '3' }).getContent();
@@ -1399,7 +1404,13 @@ function emailCount_(emailsSent) {
   return String(emailsSent || '').split(',').filter(function (t) { return t; }).length;
 }
 
-function sendFollowUpBatch(emails) {
+/** Reminder matched to the person's answer; people who haven't answered get the original invitation. */
+function matchedEmail_(g) {
+  if (g.rsvp === 'Yes' || g.rsvp === 'Maybe' || g.rsvp === 'No') return buildReminderEmail(g, Math.max(1, daysUntilEvent_()));
+  return buildInviteEmail(g);
+}
+
+function sendFollowUpBatch(emails, mode) {
   requireOwner_();
   loadSettings_();
   requireTracking_();
@@ -1409,9 +1420,10 @@ function sendFollowUpBatch(emails) {
     var data = readGuests_(), list = followUpTargets_(data.guests, emails).slice(0, SEND_BATCH), sent = 0;
     list.forEach(function (g) {
       try {
-        sendEmail_(g.email, buildInviteEmail(g)); // same email and subject as the original invitation
-        setCells_(data.sheet, data.col, g.row, { 'Emails Sent': (g.emailsSent ? g.emailsSent + ',' : '') + 'followup' });
-        logActivity_(g, '(email sent)', '', 'Follow-up sent');
+        var reminder = mode !== 'invite';
+        sendEmail_(g.email, reminder ? matchedEmail_(g) : buildInviteEmail(g));
+        setCells_(data.sheet, data.col, g.row, { 'Emails Sent': (g.emailsSent ? g.emailsSent + ',' : '') + (reminder ? 'reminder' : 'followup') });
+        logActivity_(g, '(email sent)', '', reminder ? 'Reminder sent (' + (g.rsvp || 'no answer yet') + ')' : 'Invitation sent again');
         sent++;
       } catch (err) { console.error('Follow-up failed for ' + g.email + ': ' + err); }
       SpreadsheetApp.flush();

@@ -119,7 +119,7 @@
       <p>Click <span class="ui">Code.gs</span> on the left. Click inside the code, press <span class="ui">Cmd + A</span> (Windows: <span class="ui">Ctrl + A</span>), then <span class="ui">Delete</span>, so it's completely empty.</p>
       <p>Press the button below, click in the empty editor, and paste (<span class="ui">Cmd + V</span> / <span class="ui">Ctrl + V</span>).</p>
       <div class="bigcopy">
-        <div class="head"><span><span class="name">Code.gs</span> <span class="meta">· 1577 lines</span></span><button class="copy" data-src="code-gs">Copy all of Code.gs</button></div>
+        <div class="head"><span><span class="name">Code.gs</span> <span class="meta">· 1589 lines</span></span><button class="copy" data-src="code-gs">Copy all of Code.gs</button></div>
         <pre aria-hidden="true">/**
  * Jupiter Texas Holiday Party: invitations, RSVP tracking and reminders.
  * Investors answer from inside their email: each button opens a ready-made reply to info@.
@@ -227,6 +227,10 @@ var TEXT_FIELDS = [
   ['Reminder: said Maybe', 'reminder_maybe_subject', 'Subject line', 'Still deciding? The Jupiter Texas Holiday Party is {when}', ''],
   ['Reminder: said Maybe', 'reminder_maybe_headline', 'Big heading', 'Still deciding?', ''],
   ['Reminder: said Maybe', 'reminder_maybe_body', 'Message', 'The Jupiter Texas Holiday Party is {when} and we would still love to have you there. Let us know when you can, it helps us plan seating and food.', ''],
+
+  ['Reminder: said Can\'t make it', 'reminder_no_subject', 'Subject line', 'Plans changed? The Jupiter Texas Holiday Party is {when}', 'Only sent when you choose to, from the dashboard. Never automatic.'],
+  ['Reminder: said Can\'t make it', 'reminder_no_headline', 'Big heading', 'Plans changed?', ''],
+  ['Reminder: said Can\'t make it', 'reminder_no_body', 'Message', 'We understand you might not be able to make it, but if your plans have changed, we would still love to have you and your family at the Holiday Party {when}. Just tap below to let us know.', ''],
 
   ['Page after tapping a button', 'page_yes_title', 'Yes: heading', "You're in, {first_name}.", 'Shown for a moment after an investor taps a button.'],
   ['Page after tapping a button', 'page_yes_body', 'Yes: message', "We're planning for {party}. A calendar invite is on its way to your email. You can close this page.", ''],
@@ -518,7 +522,8 @@ function buildInviteEmail(guest) {
 /** Countdown reminder for people who said Yes or Maybe. */
 function buildReminderEmail(guest, daysLeft) {
   var c = EMAIL_COLORS, e = event_(), links = rsvpLinks_(guest);
-  var isMaybe = guest.rsvp === 'Maybe', kind = isMaybe ? 'reminder_maybe_' : 'reminder_yes_';
+  var isMaybe = guest.rsvp === 'Maybe', isNo = guest.rsvp === 'No';
+  var kind = isNo ? 'reminder_no_' : isMaybe ? 'reminder_maybe_' : 'reminder_yes_';
   var vars = {
     first_name: firstName_(guest.name),
     when: daysLeft === 1 ? 'tomorrow' : 'in ' + daysLeft + ' days',
@@ -534,7 +539,7 @@ function buildReminderEmail(guest, daysLeft) {
   paragraph_(TH_('invite_greeting', vars)) + paragraphs_(kind + 'body', vars) +
 '&lt;/td&gt;&lt;/tr&gt;' +
 '&lt;tr&gt;&lt;td class="pad" style="padding:8px 48px 0;"&gt;' + detailsBlock_() + '&lt;/td&gt;&lt;/tr&gt;' +
-'&lt;tr&gt;&lt;td class="pad" style="padding:32px 48px 8px;text-align:center;"&gt;' + rsvpButtons_(links, isMaybe ? 'maybe-reminder' : 'yes-reminder') + '&lt;/td&gt;&lt;/tr&gt;' +
+'&lt;tr&gt;&lt;td class="pad" style="padding:32px 48px 8px;text-align:center;"&gt;' + rsvpButtons_(links, isNo ? 'all' : isMaybe ? 'maybe-reminder' : 'yes-reminder') + '&lt;/td&gt;&lt;/tr&gt;' +
   signoffRow_();
 
   return {
@@ -542,7 +547,7 @@ function buildReminderEmail(guest, daysLeft) {
     html: emailShell_({ title: subject, preheader: e.DATE_LABEL + ', ' + e.TIME_LABEL + ', ' + e.VENUE_ADDRESS, body: body, pixel: null }),
     text: plain_('invite_greeting', vars) + '\n\n' + plain_(kind + 'body', vars) + '\n\nWhen: ' + e.DATE_LABEL + ', ' + e.TIME_LABEL +
       '\nWhere: ' + e.VENUE_NAME + ', ' + e.VENUE_ADDRESS + '\n\n' +
-      (isMaybe ? textButtons_() : 'Plans changed? Just reply to this email and let us know.') + '\n\n' + plain_('signoff')
+      (isMaybe || isNo ? textButtons_() : 'Plans changed? Just reply to this email and let us know.') + '\n\n' + plain_('signoff')
   };
 }
 
@@ -1460,9 +1465,9 @@ function getEmailPreview(kind, overrides) {
   loadSettings_();
   loadTexts_(overrides);
   CONFIG.POSTER_SRC = posterDataUrl_(); // previews can't show the embedded poster, so use a copy
-  var demo = { name: 'Raj Mehta', token: TEST_TOKEN, rsvp: kind === 'reminder-maybe' ? 'Maybe' : 'Yes', partySize: '3' };
+  var demo = { name: 'Raj Mehta', token: TEST_TOKEN, rsvp: kind === 'reminder-maybe' ? 'Maybe' : kind === 'reminder-no' ? 'No' : 'Yes', partySize: '3' };
   if (kind === 'nudge') return buildNudgeEmail(demo).html;
-  if (kind &amp;&amp; kind.indexOf('reminder') === 0) return buildReminderEmail(demo, 3).html;
+  if (kind &amp;&amp; kind.indexOf('reminder') === 0) return buildReminderEmail(demo, Math.max(1, daysUntilEvent_())).html;
   if (kind &amp;&amp; kind.indexOf('page-') === 0) {
     var rsvp = { 'page-yes': 'Yes', 'page-maybe': 'Maybe', 'page-no': 'No' }[kind];
     return tapPage_('', '', '', { firstName: 'Raj', rsvp: rsvp, partySize: '3' }).getContent();
@@ -1529,7 +1534,13 @@ function emailCount_(emailsSent) {
   return String(emailsSent || '').split(',').filter(function (t) { return t; }).length;
 }
 
-function sendFollowUpBatch(emails) {
+/** Reminder matched to the person's answer; people who haven't answered get the original invitation. */
+function matchedEmail_(g) {
+  if (g.rsvp === 'Yes' || g.rsvp === 'Maybe' || g.rsvp === 'No') return buildReminderEmail(g, Math.max(1, daysUntilEvent_()));
+  return buildInviteEmail(g);
+}
+
+function sendFollowUpBatch(emails, mode) {
   requireOwner_();
   loadSettings_();
   requireTracking_();
@@ -1539,9 +1550,10 @@ function sendFollowUpBatch(emails) {
     var data = readGuests_(), list = followUpTargets_(data.guests, emails).slice(0, SEND_BATCH), sent = 0;
     list.forEach(function (g) {
       try {
-        sendEmail_(g.email, buildInviteEmail(g)); // same email and subject as the original invitation
-        setCells_(data.sheet, data.col, g.row, { 'Emails Sent': (g.emailsSent ? g.emailsSent + ',' : '') + 'followup' });
-        logActivity_(g, '(email sent)', '', 'Follow-up sent');
+        var reminder = mode !== 'invite';
+        sendEmail_(g.email, reminder ? matchedEmail_(g) : buildInviteEmail(g));
+        setCells_(data.sheet, data.col, g.row, { 'Emails Sent': (g.emailsSent ? g.emailsSent + ',' : '') + (reminder ? 'reminder' : 'followup') });
+        logActivity_(g, '(email sent)', '', reminder ? 'Reminder sent (' + (g.rsvp || 'no answer yet') + ')' : 'Invitation sent again');
         sent++;
       } catch (err) { console.error('Follow-up failed for ' + g.email + ': ' + err); }
       SpreadsheetApp.flush();
@@ -1715,7 +1727,7 @@ function getDashboard() {
       <div class="copyrow"><code>Dashboard</code><button class="copy" data-text="Dashboard">Copy</button></div>
       <p>Delete the lines it starts with (<span class="ui">Cmd + A</span>, <span class="ui">Delete</span>), then paste this:</p>
       <div class="bigcopy">
-        <div class="head"><span><span class="name">Dashboard.html</span> <span class="meta">· 689 lines</span></span><button class="copy" data-src="dash-html">Copy all of Dashboard.html</button></div>
+        <div class="head"><span><span class="name">Dashboard.html</span> <span class="meta">· 708 lines</span></span><button class="copy" data-src="dash-html">Copy all of Dashboard.html</button></div>
         <pre aria-hidden="true">&lt;!DOCTYPE html&gt;
 &lt;html lang=&quot;en&quot;&gt;
 &lt;head&gt;
@@ -1880,8 +1892,8 @@ function getDashboard() {
     &lt;span style="display:block;margin-top:8px;font-size:13px"&gt;Where to find it: Apps Script → Deploy → Manage deployments → click &lt;b style="display:inline"&gt;Tracking&lt;/b&gt; → copy the Web app URL.&lt;/span&gt;
   &lt;/div&gt;&lt;/div&gt;
   &lt;div class="notice" id="selBar" hidden&gt;
-    &lt;div&gt;&lt;b id="selTitle"&gt;&lt;/b&gt;&lt;br&gt;&lt;span class="sub" style="margin:0"&gt;They get the original "You're invited" email again, with the same buttons. Anyone who hasn't received the first invitation is skipped.&lt;/span&gt;&lt;/div&gt;
-    &lt;span style="display:flex;gap:8px"&gt;&lt;button class="btn" onclick="clearSelection()"&gt;Clear selection&lt;/button&gt;&lt;button class="btn gold" onclick="openFollowUp()" id="selGo"&gt;Send follow-up&lt;/button&gt;&lt;/span&gt;
+    &lt;div&gt;&lt;b id="selTitle"&gt;&lt;/b&gt;&lt;br&gt;&lt;span class="sub" style="margin:0"&gt;Send them a reminder now. Each person gets the version that fits their answer. Anyone who hasn't received the first invitation is skipped.&lt;/span&gt;&lt;/div&gt;
+    &lt;span style="display:flex;gap:8px"&gt;&lt;button class="btn" onclick="clearSelection()"&gt;Clear selection&lt;/button&gt;&lt;button class="btn gold" onclick="openFollowUp()" id="selGo"&gt;Send reminder&lt;/button&gt;&lt;/span&gt;
   &lt;/div&gt;
 
   &lt;section class="stats" id="stats"&gt;&lt;/section&gt;
@@ -1931,12 +1943,18 @@ function getDashboard() {
 &lt;!-- Follow-up to selected people --&gt;
 &lt;div class="scrim" id="followModal"&gt;
   &lt;div class="modal"&gt;
-    &lt;h2&gt;Send follow-up&lt;/h2&gt;
-    &lt;p&gt;The original "You're invited" email goes again to the people you ticked.&lt;/p&gt;
+    &lt;h2&gt;Send reminder&lt;/h2&gt;
+    &lt;div class="field"&gt;
+      &lt;label for="followMode"&gt;Which email&lt;/label&gt;
+      &lt;select id="followMode" onchange="openFollowUp(true)"&gt;
+        &lt;option value="reminder"&gt;Reminder that fits each person's answer (recommended)&lt;/option&gt;
+        &lt;option value="invite"&gt;The original "You're invited" email again&lt;/option&gt;
+      &lt;/select&gt;
+    &lt;/div&gt;
     &lt;div class="summary" id="followSummary"&gt;&lt;/div&gt;
     &lt;div id="followProgress" style="display:none"&gt;&lt;div class="bar"&gt;&lt;i id="followBar"&gt;&lt;/i&gt;&lt;/div&gt;&lt;div class="time" id="followStatus"&gt;&lt;/div&gt;&lt;/div&gt;
     &lt;div class="row-end" style="margin-top:16px"&gt;
-      &lt;button class="btn" onclick="openPreview('invite')"&gt;Preview email&lt;/button&gt;
+      &lt;button class="btn" onclick="openPreview($('followMode').value === 'invite' ? 'invite' : 'reminder-yes')"&gt;Preview emails&lt;/button&gt;
       &lt;button class="btn" onclick="closeModal('followModal')" id="followCancel"&gt;Close&lt;/button&gt;
       &lt;button class="btn gold" id="followGo" onclick="startFollowUp()"&gt;Send&lt;/button&gt;
     &lt;/div&gt;
@@ -1966,6 +1984,7 @@ function getDashboard() {
         &lt;button class="chip" data-kind="nudge" onclick="openPreview('nudge')"&gt;Nudge&lt;/button&gt;
         &lt;button class="chip" data-kind="reminder-yes" onclick="openPreview('reminder-yes')"&gt;Reminder · Yes&lt;/button&gt;
         &lt;button class="chip" data-kind="reminder-maybe" onclick="openPreview('reminder-maybe')"&gt;Reminder · Maybe&lt;/button&gt;
+        &lt;button class="chip" data-kind="reminder-no" onclick="openPreview('reminder-no')"&gt;Reminder · Can't&lt;/button&gt;
       &lt;/div&gt;
       &lt;button class="btn" onclick="closeModal('previewModal')"&gt;Done&lt;/button&gt;
     &lt;/div&gt;
@@ -1988,6 +2007,7 @@ function getDashboard() {
           &lt;button class="chip" data-kind="nudge"&gt;Nudge&lt;/button&gt;
           &lt;button class="chip" data-kind="reminder-yes"&gt;Reminder · Yes&lt;/button&gt;
           &lt;button class="chip" data-kind="reminder-maybe"&gt;Reminder · Maybe&lt;/button&gt;
+          &lt;button class="chip" data-kind="reminder-no"&gt;Reminder · Can't&lt;/button&gt;
           &lt;button class="chip" data-kind="page-yes"&gt;Page · Yes&lt;/button&gt;
           &lt;button class="chip" data-kind="page-maybe"&gt;Page · Maybe&lt;/button&gt;
           &lt;button class="chip" data-kind="page-no"&gt;Page · Can't&lt;/button&gt;
@@ -2254,20 +2274,31 @@ function getDashboard() {
     var n = selectedRows().length;
     $('selBar').hidden = !n;
     $('selTitle').textContent = n + ' investor' + (n === 1 ? '' : 's') + ' selected';
-    $('selGo').textContent = 'Send follow-up to ' + n;
+    $('selGo').textContent = 'Send reminder to ' + n;
     var all = $('selAll'), tickable = VISIBLE.filter(function (r) { return r.status === 'Sent'; });
     if (all) all.checked = tickable.length &gt; 0 &amp;&amp; tickable.every(function (r) { return SELECTED[r.email]; });
   }
-  function openFollowUp() {
-    var rows = selectedRows();
-    var answered = rows.filter(function (r) { return r.rsvp; }).length;
+  function openFollowUp(keepMode) {
+    if (!keepMode) $('followMode').value = 'reminder';
+    var mode = $('followMode').value;
+    var rows = selectedRows().filter(function (r) { return r.status === 'Sent'; });
+    var count = function (fn) { return rows.filter(fn).length; };
+    var lines = [];
+    if (mode === 'reminder') {
+      var days = DATA.daysLeft === 1 ? 'tomorrow' : 'in ' + DATA.daysLeft + ' days';
+      [[count(function (r) { return r.rsvp === 'Yes'; }), 'attending get "See you ' + days + '!"'],
+       [count(function (r) { return r.rsvp === 'Maybe'; }), 'who said Maybe get "Still deciding?" with the RSVP buttons'],
+       [count(function (r) { return r.rsvp === 'No'; }), 'who can\'t make it get "Plans changed?" with the RSVP buttons'],
+       [count(function (r) { return !r.rsvp; }), 'who haven\'t answered get the original invitation']
+      ].forEach(function (l) { if (l[0]) lines.push('&lt;b&gt;' + l[0] + '&lt;/b&gt; ' + l[1]); });
+    } else {
+      lines.push('Everyone gets the original "You\'re invited" email, whatever they answered.');
+    }
     var many = rows.filter(function (r) { return r.emails &gt;= 3; });
-    var notes = [];
-    if (answered) notes.push(answered + ' of them already answered. Untick them if you don\'t want to email them again.');
-    if (many.length) notes.push(many.length + ' already received 3 or more emails: ' + esc(many.slice(0, 4).map(function (r) { return r.name; }).join(', ')) + (many.length &gt; 4 ? '…' : ''));
+    if (many.length) lines.push('&lt;span style="color:var(--amber)"&gt;' + many.length + ' already received 3 or more emails: ' + esc(many.slice(0, 4).map(function (r) { return r.name; }).join(', ')) + (many.length &gt; 4 ? '…' : '') + '&lt;/span&gt;');
     $('followSummary').innerHTML = '&lt;div class="big"&gt;Send to ' + rows.length + ' investor' + (rows.length === 1 ? '' : 's') + '&lt;/div&gt;' +
       '&lt;div class="time" style="margin-top:6px;white-space:normal"&gt;' + esc(rows.slice(0, 20).map(function (r) { return r.name || r.email; }).join(', ')) + (rows.length &gt; 20 ? ' and ' + (rows.length - 20) + ' more' : '') + '&lt;/div&gt;' +
-      (notes.length ? '&lt;ul&gt;&lt;li&gt;' + notes.join('&lt;/li&gt;&lt;li&gt;') + '&lt;/li&gt;&lt;/ul&gt;' : '');
+      '&lt;ul&gt;&lt;li&gt;' + lines.join('&lt;/li&gt;&lt;li&gt;') + '&lt;/li&gt;&lt;/ul&gt;';
     $('followProgress').style.display = 'none';
     $('followGo').disabled = !rows.length; $('followGo').textContent = 'Send ' + rows.length;
     openModal('followModal');
@@ -2280,14 +2311,14 @@ function getDashboard() {
       var batch = emails.splice(0, 25);
       if (!batch.length) return finish();
       $('followStatus').textContent = 'Sending… ' + done + ' of ' + total;
-      call('sendFollowUpBatch', batch).then(function (r) {
+      call('sendFollowUpBatch', batch, $('followMode').value).then(function (r) {
         done += r.sent; $('followBar').style.width = Math.round(done / total * 100) + '%'; next();
       }).catch(function (e) { fail(e); finish(); });
     })();
     function finish() {
       delete $('followModal').dataset.busy; $('followCancel').disabled = false;
-      $('followStatus').textContent = 'Done. ' + done + ' follow-up' + (done === 1 ? '' : 's') + ' sent.';
-      toast(done + ' follow-ups sent'); SELECTED = {}; load();
+      $('followStatus').textContent = 'Done. ' + done + ' email' + (done === 1 ? '' : 's') + ' sent.';
+      toast(done + ' reminders sent'); SELECTED = {}; load();
     }
   }
 
