@@ -119,7 +119,7 @@
       <p>Click <span class="ui">Code.gs</span> on the left. Click inside the code, press <span class="ui">Cmd + A</span> (Windows: <span class="ui">Ctrl + A</span>), then <span class="ui">Delete</span>, so it's completely empty.</p>
       <p>Press the button below, click in the empty editor, and paste (<span class="ui">Cmd + V</span> / <span class="ui">Ctrl + V</span>).</p>
       <div class="bigcopy">
-        <div class="head"><span><span class="name">Code.gs</span> <span class="meta">· 1562 lines</span></span><button class="copy" data-src="code-gs">Copy all of Code.gs</button></div>
+        <div class="head"><span><span class="name">Code.gs</span> <span class="meta">· 1576 lines</span></span><button class="copy" data-src="code-gs">Copy all of Code.gs</button></div>
         <pre aria-hidden="true">/**
  * Jupiter Texas Holiday Party: invitations, RSVP tracking and reminders.
  * Investors answer from inside their email: each button opens a ready-made reply to info@.
@@ -203,7 +203,6 @@ var TEXT_FIELDS = [
   ['Invitation email', 'invite_body', 'Message', 'As the year comes to a close, we would love to celebrate it with the people who made it possible: our investors. Please join us for an evening of food, music and festive cheer, and bring your family and friends along.', 'Leave an empty line between paragraphs. Put **two stars** around words to make them bold.'],
   ['Invitation email', 'invite_question', 'Big heading above the buttons', 'Will you join us?', ''],
   ['Invitation email', 'invite_rsvp_line', 'Line under the heading', 'Kindly RSVP by {rsvp_by}', ''],
-  ['Invitation email', 'resend_subject', 'Subject when resending', 'RSVP in one tap: The Jupiter Texas Holiday Party, Sat Dec 12', 'Used by the "Resend" button for people who got the older buttons.'],
 
   ['Buttons', 'buttons_heading', 'Label above the buttons', 'COMING? TAP HOW MANY OF YOU', ''],
   ['Buttons', 'button_1', 'Button: 1 person', 'Just me', ''],
@@ -947,7 +946,8 @@ function recentTaps_(email, seconds) {
   if (last &lt; 2) return [];
   var start = Math.max(2, last - 400), cutoff = Date.now() - seconds * 1000;
   return sheet.getRange(start, 1, last - start + 1, 4).getValues().filter(function (r) {
-    return String(r[2]).toLowerCase() === email &amp;&amp; r[0] instanceof Date &amp;&amp; r[0].getTime() &gt;= cutoff;
+    return String(r[2]).toLowerCase() === email &amp;&amp; r[0] instanceof Date &amp;&amp; r[0].getTime() &gt;= cutoff &amp;&amp;
+      String(r[3]).charAt(0) !== '(';
   });
 }
 
@@ -1136,6 +1136,7 @@ function trackOpen_(token) {
     var g = found.guest, now = new Date(), fields = { 'Open Count': g.openCount + 1, 'Last Activity': now };
     if (!g.opened) { fields['Opened'] = 'Yes'; fields['First Opened'] = now; }
     setCells_(found.sheet, found.col, g.row, fields);
+    logActivity_(g, '(email loaded)', '', 'Pictures in the email were loaded');
   } finally { lock.releaseLock(); }
 }
 
@@ -1398,6 +1399,7 @@ function previewPhase(phase) {
     invalid: report.invalid,
     duplicates: report.duplicates,
     toSend: report.toSend.length,
+    names: report.toSend.slice(0, 20).map(function (g) { return g.name || g.email; }),
     quota: MailApp.getRemainingDailyQuota(),
     tracking: trackingHealth_()
   };
@@ -1419,6 +1421,7 @@ function sendPhaseBatch(phase) {
       try {
         sendEmail_(g.email, buildInviteEmail(g));
         setCells_(data.sheet, data.col, g.row, { 'Invite Status': 'Sent', 'Sent At': new Date(), 'Emails Sent': addTag_(g.emailsSent, 'invite') });
+        logActivity_(g, '(email sent)', '', 'Invitation sent');
         sent++;
       } catch (err) {
         setCells_(data.sheet, data.col, g.row, { 'Invite Status': 'Failed: ' + String(err.message || err).slice(0, 80) });
@@ -1514,32 +1517,35 @@ function nudgeCandidates_(guests) {
   });
 }
 
-/* Resend: a fresh one-tap invite to people whose first invite had the old buttons and who haven't answered. */
-function resendCandidates_(guests) {
-  return guests.filter(function (g) {
-    return g.status === 'Sent' &amp;&amp; !g.rsvp &amp;&amp; g.emailsSent.split(',').indexOf('resend') === -1;
-  });
+/* Follow-up: the original invitation again, only to people the team ticks in the dashboard. */
+function followUpTargets_(guests, emails) {
+  var wanted = {};
+  (emails || []).forEach(function (e) { wanted[String(e).toLowerCase()] = true; });
+  return guests.filter(function (g) { return wanted[g.email] &amp;&amp; g.status === 'Sent'; });
 }
 
-function sendResendBatch() {
+function emailCount_(emailsSent) {
+  return String(emailsSent || '').split(',').filter(function (t) { return t; }).length;
+}
+
+function sendFollowUpBatch(emails) {
   requireOwner_();
   loadSettings_();
   requireTracking_();
   var lock = LockService.getDocumentLock();
   if (!lock.tryLock(5000)) throw new Error('Another send is already running.');
   try {
-    var data = readGuests_(), list = resendCandidates_(data.guests), batch = list.slice(0, SEND_BATCH), sent = 0;
-    batch.forEach(function (g) {
+    var data = readGuests_(), list = followUpTargets_(data.guests, emails).slice(0, SEND_BATCH), sent = 0;
+    list.forEach(function (g) {
       try {
-        var email = buildInviteEmail(g);
-        email.subject = plain_('resend_subject', { first_name: firstName_(g.name) });
-        sendEmail_(g.email, email);
-        setCells_(data.sheet, data.col, g.row, { 'Emails Sent': addTag_(g.emailsSent, 'resend') });
+        sendEmail_(g.email, buildInviteEmail(g)); // same email and subject as the original invitation
+        setCells_(data.sheet, data.col, g.row, { 'Emails Sent': (g.emailsSent ? g.emailsSent + ',' : '') + 'followup' });
+        logActivity_(g, '(email sent)', '', 'Follow-up sent');
         sent++;
-      } catch (err) { console.error('Resend failed for ' + g.email + ': ' + err); }
+      } catch (err) { console.error('Follow-up failed for ' + g.email + ': ' + err); }
       SpreadsheetApp.flush();
     });
-    return { sent: sent, remaining: list.length - batch.length };
+    return { sent: sent };
   } finally { lock.releaseLock(); }
 }
 
@@ -1642,12 +1648,17 @@ function getDashboard() {
   var phases = {};
   var stats = { total: 0, sent: 0, opened: 0, yes: 0, maybe: 0, no: 0, noResponse: 0, bounced: 0, headcount: 0, needsCheck: 0 };
 
-  // Scanner activity per investor, from the Activity log.
-  var ignored = {};
+  // From the Activity log: scanner taps, and when each email was sent and loaded.
+  var ignored = {}, sends = {}, realOpen = {};
   var act = SpreadsheetApp.getActive().getSheetByName(ACTIVITY_SHEET);
   if (act &amp;&amp; act.getLastRow() &gt; 1) {
-    act.getRange(2, 3, act.getLastRow() - 1, 4).getValues().forEach(function (r) {
-      if (String(r[3]).indexOf('Ignored') === 0) ignored[String(r[0]).toLowerCase()] = (ignored[String(r[0]).toLowerCase()] || 0) + 1;
+    act.getRange(2, 1, act.getLastRow() - 1, 6).getValues().forEach(function (r) {
+      var email = String(r[2]).toLowerCase(), t = r[0] instanceof Date ? r[0].getTime() : 0;
+      if (String(r[5]).indexOf('Ignored') === 0) ignored[email] = (ignored[email] || 0) + 1;
+      if (r[3] === '(email sent)') sends[email] = t;
+      // Gmail, Apple Mail and company scanners load pictures the moment an email arrives.
+      // Only a load more than a minute after our latest email counts as the person opening it.
+      if (r[3] === '(email loaded)' &amp;&amp; sends[email] &amp;&amp; t - sends[email] &gt;= 60000 &amp;&amp; !realOpen[email]) realOpen[email] = new Date(t).toISOString();
     });
   }
   function secondsBetween(a, b) { return a &amp;&amp; b ? (new Date(b).getTime() - new Date(a).getTime()) / 1000 : null; }
@@ -1668,8 +1679,12 @@ function getDashboard() {
     var check = !!g.rsvp &amp;&amp; answeredIn !== null &amp;&amp; answeredIn &lt; 120;
     if (check) stats.needsCheck++;
     var openedIn = secondsBetween(g.sentAt, g.firstOpened);
+    var opened = !!realOpen[g.email] || (g.opened &amp;&amp; openedIn !== null &amp;&amp; openedIn &gt;= 60) || !!g.rsvp;
+    var openedAt = realOpen[g.email] || (opened &amp;&amp; openedIn !== null &amp;&amp; openedIn &gt;= 60 ? g.firstOpened : '') || (g.rsvp ? g.rsvpAt : '');
+    if (opened) stats.realOpened = (stats.realOpened || 0) + 1;
     return {
       check: check, answeredIn: answeredIn, scannerHits: ignored[g.email] || 0,
+      delivered: g.opened, realOpened: opened, openedAt: openedAt, emails: emailCount_(g.emailsSent),
       autoOpen: g.opened &amp;&amp; openedIn !== null &amp;&amp; openedIn &lt; 60,
       name: g.name, email: g.email, phase: g.phase,
       status: g.status || 'Not sent', sentAt: g.sentAt,
@@ -1684,7 +1699,6 @@ function getDashboard() {
     phases: Object.keys(phases).sort(),
     quota: MailApp.getRemainingDailyQuota(),
     tracking: trackingHealth_(),
-    resendCount: resendCandidates_(guests).length,
     sheetUrl: SpreadsheetApp.getActive().getUrl(),
     daysLeft: daysUntilEvent_(),
     updatedAt: new Date().toISOString()
@@ -1700,7 +1714,7 @@ function getDashboard() {
       <div class="copyrow"><code>Dashboard</code><button class="copy" data-text="Dashboard">Copy</button></div>
       <p>Delete the lines it starts with (<span class="ui">Cmd + A</span>, <span class="ui">Delete</span>), then paste this:</p>
       <div class="bigcopy">
-        <div class="head"><span><span class="name">Dashboard.html</span> <span class="meta">· 637 lines</span></span><button class="copy" data-src="dash-html">Copy all of Dashboard.html</button></div>
+        <div class="head"><span><span class="name">Dashboard.html</span> <span class="meta">· 689 lines</span></span><button class="copy" data-src="dash-html">Copy all of Dashboard.html</button></div>
         <pre aria-hidden="true">&lt;!DOCTYPE html&gt;
 &lt;html lang=&quot;en&quot;&gt;
 &lt;head&gt;
@@ -1853,7 +1867,6 @@ function getDashboard() {
     &lt;div class="actions"&gt;
       &lt;button class="btn" onclick="openEditor()"&gt;Edit text &amp;amp; poster&lt;/button&gt;
       &lt;button class="btn" onclick="openPreview('invite')"&gt;Preview emails&lt;/button&gt;
-      &lt;button class="btn" onclick="openNudge()"&gt;Nudge non-responders&lt;/button&gt;
       &lt;button class="btn primary" onclick="openSend()"&gt;Send invitations&lt;/button&gt;
     &lt;/div&gt;
   &lt;/header&gt;
@@ -1865,9 +1878,9 @@ function getDashboard() {
     &lt;/div&gt;
     &lt;span style="display:block;margin-top:8px;font-size:13px"&gt;Where to find it: Apps Script → Deploy → Manage deployments → click &lt;b style="display:inline"&gt;Tracking&lt;/b&gt; → copy the Web app URL.&lt;/span&gt;
   &lt;/div&gt;&lt;/div&gt;
-  &lt;div class="notice" id="resendBox" hidden&gt;
-    &lt;div&gt;&lt;b id="resendTitle"&gt;&lt;/b&gt;&lt;br&gt;&lt;span class="sub" style="margin:0"&gt;Their first invitation had the older buttons. This sends a fresh one-tap invitation, once.&lt;/span&gt;&lt;/div&gt;
-    &lt;button class="btn gold" onclick="startResend()" id="resendGo"&gt;Resend&lt;/button&gt;
+  &lt;div class="notice" id="selBar" hidden&gt;
+    &lt;div&gt;&lt;b id="selTitle"&gt;&lt;/b&gt;&lt;br&gt;&lt;span class="sub" style="margin:0"&gt;They get the original "You're invited" email again, with the same buttons. Anyone who hasn't received the first invitation is skipped.&lt;/span&gt;&lt;/div&gt;
+    &lt;span style="display:flex;gap:8px"&gt;&lt;button class="btn" onclick="clearSelection()"&gt;Clear selection&lt;/button&gt;&lt;button class="btn gold" onclick="openFollowUp()" id="selGo"&gt;Send follow-up&lt;/button&gt;&lt;/span&gt;
   &lt;/div&gt;
 
   &lt;section class="stats" id="stats"&gt;&lt;/section&gt;
@@ -1896,9 +1909,9 @@ function getDashboard() {
 &lt;div class="scrim" id="sendModal"&gt;
   &lt;div class="modal"&gt;
     &lt;h2&gt;Send invitations&lt;/h2&gt;
-    &lt;p&gt;Pick a phase. Nobody is ever invited twice.&lt;/p&gt;
+    &lt;p&gt;Sends the invitation only to people who haven't received it yet. Nobody gets it twice.&lt;/p&gt;
     &lt;div class="field"&gt;
-      &lt;label for="sendPhase"&gt;Phase&lt;/label&gt;
+      &lt;label for="sendPhase"&gt;Who&lt;/label&gt;
       &lt;select id="sendPhase" onchange="loadSendPreview()"&gt;&lt;/select&gt;
     &lt;/div&gt;
     &lt;div class="summary" id="sendSummary"&gt;Pick a phase.&lt;/div&gt;
@@ -1910,6 +1923,21 @@ function getDashboard() {
       &lt;button class="btn" onclick="sendTest()"&gt;Send test to me&lt;/button&gt;
       &lt;button class="btn" onclick="closeModal('sendModal')" id="sendCancel"&gt;Close&lt;/button&gt;
       &lt;button class="btn gold" id="sendGo" disabled onclick="startSend()"&gt;Send&lt;/button&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;!-- Follow-up to selected people --&gt;
+&lt;div class="scrim" id="followModal"&gt;
+  &lt;div class="modal"&gt;
+    &lt;h2&gt;Send follow-up&lt;/h2&gt;
+    &lt;p&gt;The original "You're invited" email goes again to the people you ticked.&lt;/p&gt;
+    &lt;div class="summary" id="followSummary"&gt;&lt;/div&gt;
+    &lt;div id="followProgress" style="display:none"&gt;&lt;div class="bar"&gt;&lt;i id="followBar"&gt;&lt;/i&gt;&lt;/div&gt;&lt;div class="time" id="followStatus"&gt;&lt;/div&gt;&lt;/div&gt;
+    &lt;div class="row-end" style="margin-top:16px"&gt;
+      &lt;button class="btn" onclick="openPreview('invite')"&gt;Preview email&lt;/button&gt;
+      &lt;button class="btn" onclick="closeModal('followModal')" id="followCancel"&gt;Close&lt;/button&gt;
+      &lt;button class="btn gold" id="followGo" onclick="startFollowUp()"&gt;Send&lt;/button&gt;
     &lt;/div&gt;
   &lt;/div&gt;
 &lt;/div&gt;
@@ -1983,8 +2011,9 @@ function getDashboard() {
   var FILTERS = [
     ['all', 'All', function () { return true; }],
     ['notsent', 'Not sent', function (r) { return r.status === 'Not sent' || r.status.indexOf('Failed') === 0; }],
-    ['unopened', 'Sent, not opened', function (r) { return r.status === 'Sent' &amp;&amp; !r.opened; }],
-    ['opened', 'Opened, no RSVP', function (r) { return r.opened &amp;&amp; !r.rsvp; }],
+    ['noanswer', 'No answer yet', function (r) { return r.status === 'Sent' &amp;&amp; !r.rsvp; }],
+    ['unopened', 'Sent, not opened', function (r) { return r.status === 'Sent' &amp;&amp; !r.realOpened; }],
+    ['opened', 'Opened, no RSVP', function (r) { return r.realOpened &amp;&amp; !r.rsvp; }],
     ['yes', 'Attending', function (r) { return r.rsvp === 'Yes'; }],
     ['maybe', 'Maybe', function (r) { return r.rsvp === 'Maybe'; }],
     ['no', "Can't make it", function (r) { return r.rsvp === 'No'; }],
@@ -1993,7 +2022,7 @@ function getDashboard() {
   ];
 
   var COLUMNS = [
-    ['name', 'Investor'], ['phase', 'Phase'], ['status', 'Invite'], ['opened', 'Opened'],
+    ['name', 'Investor'], ['phase', 'Phase'], ['status', 'Invite'], ['emails', 'Emails'], ['realOpened', 'Opened'],
     ['rsvp', 'RSVP'], ['partySize', 'Party'], ['reason', 'Maybe reason'], ['lastActivity', 'Last activity']
   ];
 
@@ -2028,10 +2057,10 @@ function getDashboard() {
     $('stats').innerHTML = [
       ['hero', 'yes', 'Attending', s.yes, 'Expected headcount ' + s.headcount],
       ['', 'all', 'Invited', s.sent, 'of ' + s.total + ' on the list'],
-      ['', 'opened', 'Opened', s.opened, pct(s.opened, s.sent) + ' of invited'],
+      ['', 'opened', 'Opened', s.realOpened || 0, s.opened + ' delivered · see note in table'],
       ['', 'maybe', 'Maybe', s.maybe, ''],
       ['', 'no', "Can't make it", s.no, ''],
-      ['', 'unopened', 'No response yet', s.noResponse, pct(s.yes + s.maybe + s.no, s.sent) + ' have replied'],
+      ['', 'noanswer', 'No answer yet', s.noResponse, pct(s.yes + s.maybe + s.no, s.sent) + ' have replied'],
       ['', 'bounced', 'Bounced', s.bounced, s.bounced ? 'Check these emails' : 'All delivered'],
       ['', 'check', 'Needs checking', s.needsCheck || 0, s.needsCheck ? 'Answered seconds after sending' : 'Nothing suspicious']
     ].map(function (c) {
@@ -2045,9 +2074,6 @@ function getDashboard() {
     var t = DATA.tracking || { ok: true };
     $('alert').hidden = t.ok;
     $('alertText').textContent = t.message || '';
-    $('resendBox').hidden = !(t.ok &amp;&amp; DATA.resendCount &gt; 0);
-    $('resendTitle').textContent = DATA.resendCount + ' invited investor' + (DATA.resendCount === 1 ? ' hasn\'t' : 's haven\'t') + ' answered yet';
-    $('resendGo').textContent = 'Resend to ' + DATA.resendCount;
     $('updated').textContent = 'Updated ' + new Date(DATA.updatedAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
     render();
   }
@@ -2074,7 +2100,7 @@ function getDashboard() {
       return '&lt;button class="chip ' + (FILTER === f[0] ? 'on' : '') + '" onclick="setFilter(\'' + f[0] + '\')"&gt;' + f[1] + '&lt;span class="n"&gt;' + n + '&lt;/span&gt;&lt;/button&gt;';
     }).join('');
 
-    $('thead').innerHTML = COLUMNS.map(function (c) {
+    $('thead').innerHTML = '&lt;th style="width:36px"&gt;&lt;input type="checkbox" id="selAll" title="Tick everyone shown who has received the invitation" onclick="toggleAll(this.checked)"&gt;&lt;/th&gt;' + COLUMNS.map(function (c) {
       var arrow = SORT.key === c[0] ? (SORT.dir &gt; 0 ? ' ↑' : ' ↓') : '';
       return '&lt;th onclick="setSort(\'' + c[0] + '\')"&gt;' + c[1] + '&lt;span class="arrow"&gt;' + arrow + '&lt;/span&gt;&lt;/th&gt;';
     }).join('');
@@ -2086,9 +2112,11 @@ function getDashboard() {
       return (x &gt; y ? 1 : x &lt; y ? -1 : 0) * SORT.dir;
     });
 
+    VISIBLE = rows;
     $('tbody').innerHTML = rows.length ? rows.map(rowHtml).join('') :
-      '&lt;tr&gt;&lt;td colspan="8" class="empty"&gt;' + (DATA.rows.length ? 'Nobody matches this view.' : 'No investors yet. Paste Name, Email and Phase into the Google Sheet.') + '&lt;/td&gt;&lt;/tr&gt;';
+      '&lt;tr&gt;&lt;td colspan="10" class="empty"&gt;' + (DATA.rows.length ? 'Nobody matches this view.' : 'No investors yet. Paste Name, Email and Phase into the Google Sheet.') + '&lt;/td&gt;&lt;/tr&gt;';
     $('count').textContent = 'Showing ' + rows.length + ' of ' + DATA.rows.length + ' investors';
+    updateSelection();
   }
 
   function rowHtml(r) {
@@ -2096,8 +2124,8 @@ function getDashboard() {
       : r.status === 'Bounced' ? '&lt;span class="pill p-no"&gt;Bounced&lt;/span&gt;'
       : r.status.indexOf('Failed') === 0 ? '&lt;span class="pill p-no" title="' + esc(r.status) + '"&gt;Failed&lt;/span&gt;'
       : '&lt;span class="pill p-none"&gt;Not sent&lt;/span&gt;';
-    var opened = r.opened ? '&lt;span class="pill p-open"&gt;Opened&lt;/span&gt;&lt;div class="time"&gt;' + when(r.firstOpened) + (r.openCount &gt; 1 ? ' · ' + r.openCount + '×' : '') +
-        (r.autoOpen ? '&lt;br&gt;&lt;span title="Opened within a minute of sending. Apple Mail and some company email systems load emails automatically, so this may not be a person."&gt;may be automatic&lt;/span&gt;' : '') + '&lt;/div&gt;'
+    var opened = r.realOpened ? '&lt;span class="pill p-open"&gt;Opened&lt;/span&gt;&lt;div class="time"&gt;' + when(r.openedAt) + '&lt;/div&gt;'
+      : r.delivered ? '&lt;span class="pill p-none" title="Their email app loaded the pictures the moment it arrived (Gmail and Apple Mail do this automatically). It reached the inbox; we can\'t tell yet whether they read it."&gt;Delivered&lt;/span&gt;'
       : (r.status === 'Sent' ? '&lt;span class="pill p-none"&gt;Not yet&lt;/span&gt;' : '');
     var rsvpClass = { Yes: 'p-yes', Maybe: 'p-maybe', No: 'p-no' }[r.rsvp];
     var rsvpLabel = { Yes: 'Attending', Maybe: 'Maybe', No: "Can't make it" }[r.rsvp];
@@ -2105,20 +2133,22 @@ function getDashboard() {
         (r.check ? ' &lt;span class="pill p-maybe" title="Answered ' + Math.round(r.answeredIn) + ' seconds after the email was sent. Usually an email security scanner, not a person."&gt;Check&lt;/span&gt;' : '') +
         '&lt;div class="time"&gt;' + when(r.rsvpAt) + (r.calendar ? ' · 📅' : '') +
         ' · &lt;a href="#" onclick="clearRow(\'' + esc(r.email) + '\');return false;" style="color:var(--muted)"&gt;Clear answer&lt;/a&gt;&lt;/div&gt;'
-      : (r.opened ? '&lt;span class="pill p-none"&gt;No RSVP&lt;/span&gt;' : '');
+      : (r.realOpened ? '&lt;span class="pill p-none"&gt;No RSVP&lt;/span&gt;' : '');
     if (r.scannerHits) rsvp += '&lt;div class="time" title="See the Activity log tab in the sheet"&gt;' + r.scannerHits + ' scanner tap' + (r.scannerHits === 1 ? '' : 's') + ' ignored&lt;/div&gt;';
     var party = r.rsvp === 'Yes' ? (r.partySize === '1' ? 'Just them' : r.partySize === '4+' ? '4 or more' : r.partySize ? r.partySize + ' people' : '') : '';
+    var canTick = r.status === 'Sent';
     return '&lt;tr&gt;' +
+      '&lt;td&gt;' + (canTick ? '&lt;input type="checkbox" class="sel" data-email="' + esc(r.email) + '"' + (SELECTED[r.email] ? ' checked' : '') + ' onclick="toggleOne(this)"&gt;' : '') + '&lt;/td&gt;' +
       '&lt;td&gt;&lt;div class="name"&gt;' + esc(r.name || '—') + '&lt;/div&gt;&lt;div class="email"&gt;' + esc(r.email) + '&lt;/div&gt;&lt;/td&gt;' +
-      '&lt;td&gt;' + esc(r.phase) + '&lt;/td&gt;&lt;td&gt;' + status + '&lt;/td&gt;&lt;td&gt;' + opened + '&lt;/td&gt;&lt;td&gt;' + rsvp + '&lt;/td&gt;' +
+      '&lt;td&gt;' + esc(r.phase) + '&lt;/td&gt;&lt;td&gt;' + status + '&lt;/td&gt;&lt;td style="font-variant-numeric:tabular-nums"&gt;' + (r.emails || '') + '&lt;/td&gt;&lt;td&gt;' + opened + '&lt;/td&gt;&lt;td&gt;' + rsvp + '&lt;/td&gt;' +
       '&lt;td&gt;' + party + '&lt;/td&gt;&lt;td&gt;' + esc(r.rsvp === 'Maybe' ? r.reason : '') + '&lt;/td&gt;' +
       '&lt;td class="time"&gt;' + when(r.lastActivity) + '&lt;/td&gt;&lt;/tr&gt;';
   }
 
   function exportCsv() {
-    var head = ['Name', 'Email', 'Phase', 'Invite', 'Sent at', 'Opened', 'First opened', 'RSVP', 'Party size', 'Maybe reason', 'RSVP at', 'Needs checking', 'Scanner taps ignored'];
+    var head = ['Name', 'Email', 'Phase', 'Invite', 'Sent at', 'Emails received', 'Opened', 'Opened at', 'RSVP', 'Party size', 'Maybe reason', 'RSVP at', 'Needs checking', 'Scanner taps ignored'];
     var lines = [head].concat(visibleRows().map(function (r) {
-      return [r.name, r.email, r.phase, r.status, r.sentAt, r.opened ? (r.autoOpen ? 'Yes (may be automatic)' : 'Yes') : 'No', r.firstOpened, r.rsvp, r.partySize, r.reason, r.rsvpAt,
+      return [r.name, r.email, r.phase, r.status, r.sentAt, r.emails || 0, r.realOpened ? 'Opened' : r.delivered ? 'Delivered (not confirmed opened)' : 'No', r.openedAt, r.rsvp, r.partySize, r.reason, r.rsvpAt,
         r.check ? 'Yes, answered ' + Math.round(r.answeredIn) + ' seconds after sending' : '', r.scannerHits || ''];
     })).map(function (cols) { return cols.map(function (c) { return '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"'; }).join(','); });
     var blob = new Blob([lines.join('\n')], { type: 'text/csv' });
@@ -2137,8 +2167,8 @@ function getDashboard() {
 
   function openSend() {
     var phases = DATA ? DATA.phases : [];
-    $('sendPhase').innerHTML = phases.map(function (p) { return '&lt;option value="' + esc(p) + '"&gt;Phase ' + esc(p) + '&lt;/option&gt;'; }).join('') +
-      '&lt;option value="ALL"&gt;Everyone on the list&lt;/option&gt;';
+    $('sendPhase').innerHTML = '&lt;option value="ALL"&gt;Everyone who hasn\'t received it yet&lt;/option&gt;' +
+      phases.map(function (p) { return '&lt;option value="' + esc(p) + '"&gt;Only Phase ' + esc(p) + ' (not yet received)&lt;/option&gt;'; }).join('');
     $('sendProgress').style.display = 'none';
     openModal('sendModal');
     loadSendPreview();
@@ -2149,14 +2179,15 @@ function getDashboard() {
     $('sendGo').disabled = true;
     $('sendSummary').innerHTML = 'Checking the list…';
     call('previewPhase', phase).then(function (p) {
-      var label = phase === 'ALL' ? 'the whole list' : 'Phase ' + esc(phase);
+      var label = phase === 'ALL' ? 'Your list' : 'Phase ' + esc(phase);
       var notes = [];
       if (p.alreadySent) notes.push(p.alreadySent + ' already invited, will be skipped');
       if (p.invalid.length) notes.push(p.invalid.length + ' invalid email' + (p.invalid.length &gt; 1 ? 's' : '') + ': ' + esc(p.invalid.slice(0, 3).join(', ')) + (p.invalid.length &gt; 3 ? '…' : ''));
       if (p.duplicates.length) notes.push(p.duplicates.length + ' duplicate' + (p.duplicates.length &gt; 1 ? 's' : '') + ' removed');
       if (p.toSend &gt; p.quota) notes.push('Gmail allows ' + p.quota + ' more today. The rest go tomorrow.');
       $('sendSummary').innerHTML = '&lt;div&gt;' + label + ' has &lt;strong&gt;' + p.inPhase + '&lt;/strong&gt; investor' + (p.inPhase === 1 ? '' : 's') + '.&lt;/div&gt;' +
-        '&lt;div class="big"&gt;' + (p.toSend ? 'Ready to send ' + p.toSend : 'Nothing new to send') + '&lt;/div&gt;' +
+        '&lt;div class="big"&gt;' + (p.toSend ? 'Ready to send ' + p.toSend : 'Everyone has already received it') + '&lt;/div&gt;' +
+        (p.toSend ? '&lt;div class="time" style="margin-top:6px;white-space:normal"&gt;' + esc(p.names.join(', ')) + (p.toSend &gt; p.names.length ? ' and ' + (p.toSend - p.names.length) + ' more' : '') + '&lt;/div&gt;' : '') +
         (notes.length ? '&lt;ul&gt;&lt;li&gt;' + notes.join('&lt;/li&gt;&lt;li&gt;') + '&lt;/li&gt;&lt;/ul&gt;' : '');
       $('sendGo').textContent = p.toSend ? 'Send ' + p.toSend + ' invitation' + (p.toSend === 1 ? '' : 's') : 'Send';
       if (p.tracking &amp;&amp; !p.tracking.ok) {
@@ -2209,19 +2240,54 @@ function getDashboard() {
     call('clearAnswer', email).then(function () { toast('Answer cleared'); load(); }).catch(fail);
   }
 
-  var RESEND_ARMED = false;
-  function startResend() {
-    var btn = $('resendGo'), total = DATA.resendCount, done = 0;
-    if (!RESEND_ARMED) { RESEND_ARMED = true; btn.textContent = 'Tap again to send ' + total; setTimeout(function () { RESEND_ARMED = false; renderAll(); }, 4000); return; }
-    RESEND_ARMED = false; btn.disabled = true;
+  /* ---- Selection + follow-up ---- */
+  var SELECTED = {}, VISIBLE = [];
+  function toggleOne(box) { if (box.checked) SELECTED[box.dataset.email] = true; else delete SELECTED[box.dataset.email]; updateSelection(); }
+  function toggleAll(on) {
+    VISIBLE.forEach(function (r) { if (r.status === 'Sent') { if (on) SELECTED[r.email] = true; else delete SELECTED[r.email]; } });
+    render();
+  }
+  function clearSelection() { SELECTED = {}; render(); }
+  function selectedRows() { return DATA ? DATA.rows.filter(function (r) { return SELECTED[r.email]; }) : []; }
+  function updateSelection() {
+    var n = selectedRows().length;
+    $('selBar').hidden = !n;
+    $('selTitle').textContent = n + ' investor' + (n === 1 ? '' : 's') + ' selected';
+    $('selGo').textContent = 'Send follow-up to ' + n;
+    var all = $('selAll'), tickable = VISIBLE.filter(function (r) { return r.status === 'Sent'; });
+    if (all) all.checked = tickable.length &gt; 0 &amp;&amp; tickable.every(function (r) { return SELECTED[r.email]; });
+  }
+  function openFollowUp() {
+    var rows = selectedRows();
+    var answered = rows.filter(function (r) { return r.rsvp; }).length;
+    var many = rows.filter(function (r) { return r.emails &gt;= 3; });
+    var notes = [];
+    if (answered) notes.push(answered + ' of them already answered. Untick them if you don\'t want to email them again.');
+    if (many.length) notes.push(many.length + ' already received 3 or more emails: ' + esc(many.slice(0, 4).map(function (r) { return r.name; }).join(', ')) + (many.length &gt; 4 ? '…' : ''));
+    $('followSummary').innerHTML = '&lt;div class="big"&gt;Send to ' + rows.length + ' investor' + (rows.length === 1 ? '' : 's') + '&lt;/div&gt;' +
+      '&lt;div class="time" style="margin-top:6px;white-space:normal"&gt;' + esc(rows.slice(0, 20).map(function (r) { return r.name || r.email; }).join(', ')) + (rows.length &gt; 20 ? ' and ' + (rows.length - 20) + ' more' : '') + '&lt;/div&gt;' +
+      (notes.length ? '&lt;ul&gt;&lt;li&gt;' + notes.join('&lt;/li&gt;&lt;li&gt;') + '&lt;/li&gt;&lt;/ul&gt;' : '');
+    $('followProgress').style.display = 'none';
+    $('followGo').disabled = !rows.length; $('followGo').textContent = 'Send ' + rows.length;
+    openModal('followModal');
+  }
+  function startFollowUp() {
+    var emails = selectedRows().map(function (r) { return r.email; }), total = emails.length, done = 0;
+    $('followModal').dataset.busy = '1'; $('followGo').disabled = true; $('followCancel').disabled = true;
+    $('followProgress').style.display = 'block';
     (function next() {
-      btn.textContent = 'Sending… ' + done + ' of ' + total;
-      call('sendResendBatch').then(function (r) {
-        done += r.sent;
-        if (r.remaining &gt; 0 &amp;&amp; r.sent &gt; 0) return next();
-        btn.disabled = false; toast(done + ' fresh invitations sent'); load();
-      }).catch(function (e) { btn.disabled = false; fail(e); load(); });
+      var batch = emails.splice(0, 25);
+      if (!batch.length) return finish();
+      $('followStatus').textContent = 'Sending… ' + done + ' of ' + total;
+      call('sendFollowUpBatch', batch).then(function (r) {
+        done += r.sent; $('followBar').style.width = Math.round(done / total * 100) + '%'; next();
+      }).catch(function (e) { fail(e); finish(); });
     })();
+    function finish() {
+      delete $('followModal').dataset.busy; $('followCancel').disabled = false;
+      $('followStatus').textContent = 'Done. ' + done + ' follow-up' + (done === 1 ? '' : 's') + ' sent.';
+      toast(done + ' follow-ups sent'); SELECTED = {}; load();
+    }
   }
 
   function sendTest() {

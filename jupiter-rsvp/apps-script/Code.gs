@@ -73,7 +73,6 @@ var TEXT_FIELDS = [
   ['Invitation email', 'invite_body', 'Message', 'As the year comes to a close, we would love to celebrate it with the people who made it possible: our investors. Please join us for an evening of food, music and festive cheer, and bring your family and friends along.', 'Leave an empty line between paragraphs. Put **two stars** around words to make them bold.'],
   ['Invitation email', 'invite_question', 'Big heading above the buttons', 'Will you join us?', ''],
   ['Invitation email', 'invite_rsvp_line', 'Line under the heading', 'Kindly RSVP by {rsvp_by}', ''],
-  ['Invitation email', 'resend_subject', 'Subject when resending', 'RSVP in one tap: The Jupiter Texas Holiday Party, Sat Dec 12', 'Used by the "Resend" button for people who got the older buttons.'],
 
   ['Buttons', 'buttons_heading', 'Label above the buttons', 'COMING? TAP HOW MANY OF YOU', ''],
   ['Buttons', 'button_1', 'Button: 1 person', 'Just me', ''],
@@ -817,7 +816,8 @@ function recentTaps_(email, seconds) {
   if (last < 2) return [];
   var start = Math.max(2, last - 400), cutoff = Date.now() - seconds * 1000;
   return sheet.getRange(start, 1, last - start + 1, 4).getValues().filter(function (r) {
-    return String(r[2]).toLowerCase() === email && r[0] instanceof Date && r[0].getTime() >= cutoff;
+    return String(r[2]).toLowerCase() === email && r[0] instanceof Date && r[0].getTime() >= cutoff &&
+      String(r[3]).charAt(0) !== '(';
   });
 }
 
@@ -1006,6 +1006,7 @@ function trackOpen_(token) {
     var g = found.guest, now = new Date(), fields = { 'Open Count': g.openCount + 1, 'Last Activity': now };
     if (!g.opened) { fields['Opened'] = 'Yes'; fields['First Opened'] = now; }
     setCells_(found.sheet, found.col, g.row, fields);
+    logActivity_(g, '(email loaded)', '', 'Pictures in the email were loaded');
   } finally { lock.releaseLock(); }
 }
 
@@ -1268,6 +1269,7 @@ function previewPhase(phase) {
     invalid: report.invalid,
     duplicates: report.duplicates,
     toSend: report.toSend.length,
+    names: report.toSend.slice(0, 20).map(function (g) { return g.name || g.email; }),
     quota: MailApp.getRemainingDailyQuota(),
     tracking: trackingHealth_()
   };
@@ -1289,6 +1291,7 @@ function sendPhaseBatch(phase) {
       try {
         sendEmail_(g.email, buildInviteEmail(g));
         setCells_(data.sheet, data.col, g.row, { 'Invite Status': 'Sent', 'Sent At': new Date(), 'Emails Sent': addTag_(g.emailsSent, 'invite') });
+        logActivity_(g, '(email sent)', '', 'Invitation sent');
         sent++;
       } catch (err) {
         setCells_(data.sheet, data.col, g.row, { 'Invite Status': 'Failed: ' + String(err.message || err).slice(0, 80) });
@@ -1384,32 +1387,35 @@ function nudgeCandidates_(guests) {
   });
 }
 
-/* Resend: a fresh one-tap invite to people whose first invite had the old buttons and who haven't answered. */
-function resendCandidates_(guests) {
-  return guests.filter(function (g) {
-    return g.status === 'Sent' && !g.rsvp && g.emailsSent.split(',').indexOf('resend') === -1;
-  });
+/* Follow-up: the original invitation again, only to people the team ticks in the dashboard. */
+function followUpTargets_(guests, emails) {
+  var wanted = {};
+  (emails || []).forEach(function (e) { wanted[String(e).toLowerCase()] = true; });
+  return guests.filter(function (g) { return wanted[g.email] && g.status === 'Sent'; });
 }
 
-function sendResendBatch() {
+function emailCount_(emailsSent) {
+  return String(emailsSent || '').split(',').filter(function (t) { return t; }).length;
+}
+
+function sendFollowUpBatch(emails) {
   requireOwner_();
   loadSettings_();
   requireTracking_();
   var lock = LockService.getDocumentLock();
   if (!lock.tryLock(5000)) throw new Error('Another send is already running.');
   try {
-    var data = readGuests_(), list = resendCandidates_(data.guests), batch = list.slice(0, SEND_BATCH), sent = 0;
-    batch.forEach(function (g) {
+    var data = readGuests_(), list = followUpTargets_(data.guests, emails).slice(0, SEND_BATCH), sent = 0;
+    list.forEach(function (g) {
       try {
-        var email = buildInviteEmail(g);
-        email.subject = plain_('resend_subject', { first_name: firstName_(g.name) });
-        sendEmail_(g.email, email);
-        setCells_(data.sheet, data.col, g.row, { 'Emails Sent': addTag_(g.emailsSent, 'resend') });
+        sendEmail_(g.email, buildInviteEmail(g)); // same email and subject as the original invitation
+        setCells_(data.sheet, data.col, g.row, { 'Emails Sent': (g.emailsSent ? g.emailsSent + ',' : '') + 'followup' });
+        logActivity_(g, '(email sent)', '', 'Follow-up sent');
         sent++;
-      } catch (err) { console.error('Resend failed for ' + g.email + ': ' + err); }
+      } catch (err) { console.error('Follow-up failed for ' + g.email + ': ' + err); }
       SpreadsheetApp.flush();
     });
-    return { sent: sent, remaining: list.length - batch.length };
+    return { sent: sent };
   } finally { lock.releaseLock(); }
 }
 
@@ -1512,12 +1518,17 @@ function getDashboard() {
   var phases = {};
   var stats = { total: 0, sent: 0, opened: 0, yes: 0, maybe: 0, no: 0, noResponse: 0, bounced: 0, headcount: 0, needsCheck: 0 };
 
-  // Scanner activity per investor, from the Activity log.
-  var ignored = {};
+  // From the Activity log: scanner taps, and when each email was sent and loaded.
+  var ignored = {}, sends = {}, realOpen = {};
   var act = SpreadsheetApp.getActive().getSheetByName(ACTIVITY_SHEET);
   if (act && act.getLastRow() > 1) {
-    act.getRange(2, 3, act.getLastRow() - 1, 4).getValues().forEach(function (r) {
-      if (String(r[3]).indexOf('Ignored') === 0) ignored[String(r[0]).toLowerCase()] = (ignored[String(r[0]).toLowerCase()] || 0) + 1;
+    act.getRange(2, 1, act.getLastRow() - 1, 6).getValues().forEach(function (r) {
+      var email = String(r[2]).toLowerCase(), t = r[0] instanceof Date ? r[0].getTime() : 0;
+      if (String(r[5]).indexOf('Ignored') === 0) ignored[email] = (ignored[email] || 0) + 1;
+      if (r[3] === '(email sent)') sends[email] = t;
+      // Gmail, Apple Mail and company scanners load pictures the moment an email arrives.
+      // Only a load more than a minute after our latest email counts as the person opening it.
+      if (r[3] === '(email loaded)' && sends[email] && t - sends[email] >= 60000 && !realOpen[email]) realOpen[email] = new Date(t).toISOString();
     });
   }
   function secondsBetween(a, b) { return a && b ? (new Date(b).getTime() - new Date(a).getTime()) / 1000 : null; }
@@ -1538,8 +1549,12 @@ function getDashboard() {
     var check = !!g.rsvp && answeredIn !== null && answeredIn < 120;
     if (check) stats.needsCheck++;
     var openedIn = secondsBetween(g.sentAt, g.firstOpened);
+    var opened = !!realOpen[g.email] || (g.opened && openedIn !== null && openedIn >= 60) || !!g.rsvp;
+    var openedAt = realOpen[g.email] || (opened && openedIn !== null && openedIn >= 60 ? g.firstOpened : '') || (g.rsvp ? g.rsvpAt : '');
+    if (opened) stats.realOpened = (stats.realOpened || 0) + 1;
     return {
       check: check, answeredIn: answeredIn, scannerHits: ignored[g.email] || 0,
+      delivered: g.opened, realOpened: opened, openedAt: openedAt, emails: emailCount_(g.emailsSent),
       autoOpen: g.opened && openedIn !== null && openedIn < 60,
       name: g.name, email: g.email, phase: g.phase,
       status: g.status || 'Not sent', sentAt: g.sentAt,
@@ -1554,7 +1569,6 @@ function getDashboard() {
     phases: Object.keys(phases).sort(),
     quota: MailApp.getRemainingDailyQuota(),
     tracking: trackingHealth_(),
-    resendCount: resendCandidates_(guests).length,
     sheetUrl: SpreadsheetApp.getActive().getUrl(),
     daysLeft: daysUntilEvent_(),
     updatedAt: new Date().toISOString()
