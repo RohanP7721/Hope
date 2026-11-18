@@ -120,6 +120,8 @@
   .ed-vars { font-size: 12px; color: var(--muted); }
   .ed-vars code { background: var(--bg); padding: 1px 5px; border-radius: 5px; }
   @media (max-width: 860px) { .ed-body { grid-template-columns: 1fr; grid-template-rows: 1fr 45vh; } .ed-form { border-right: 0; border-bottom: 1px solid var(--line); } }
+  .inp { width: 100%; border: 1px solid var(--line); background: var(--card); border-radius: 10px; padding: 9px 12px; font: inherit; color: var(--ink); }
+  .sms-sample { white-space: pre-wrap; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-top: 10px; font-size: 13px; color: var(--ink); overflow-wrap: anywhere; }
   .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 12px; opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; z-index: 20; max-width: 90vw; }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   .loading { opacity: .5; pointer-events: none; }
@@ -142,6 +144,7 @@
     <div class="actions">
       <button class="btn" onclick="openEditor()">Edit text &amp; poster</button>
       <button class="btn" onclick="openPreview('invite')">Preview emails</button>
+      <button class="btn" onclick="openSms()">Send SMS</button>
       <button class="btn primary" onclick="openSend()">Send invitations</button>
     </div>
   </header>
@@ -198,6 +201,39 @@
       <button class="btn" onclick="sendTest()">Send test to me</button>
       <button class="btn" onclick="closeModal('sendModal')" id="sendCancel">Close</button>
       <button class="btn gold" id="sendGo" disabled onclick="startSend()">Send</button>
+    </div>
+  </div>
+</div>
+
+<!-- SMS -->
+<div class="scrim" id="smsModal">
+  <div class="modal" style="max-width:560px">
+    <h2>Send SMS invitations</h2>
+    <div id="smsSetup" hidden>
+      <p>Connect Jupiter's Twilio account once. You'll find these on the Twilio Console home page. The Auth Token is stored privately inside the script, never in the sheet.</p>
+      <div class="field"><label for="smsSid">Account SID</label><input id="smsSid" class="inp" placeholder="AC…" autocomplete="off"></div>
+      <div class="field"><label for="smsToken">Auth Token</label><input id="smsToken" class="inp" type="password" placeholder="32 characters" autocomplete="off"></div>
+      <div class="field"><label for="smsFrom">Twilio toll-free number</label><input id="smsFrom" class="inp" placeholder="+1 833 555 0134" autocomplete="off"></div>
+      <div class="row-end"><button class="btn" onclick="closeModal('smsModal')">Close</button><button class="btn gold" onclick="saveSms()" id="smsSaveBtn">Save &amp; check</button></div>
+    </div>
+    <div id="smsMain" hidden>
+      <p>Each investor with a number in the sheet's <b>Phone</b> column gets one text with their own RSVP link. Nobody is texted twice; anyone who replied STOP is skipped.</p>
+      <div class="field">
+        <label for="smsWho">Who</label>
+        <select id="smsWho" onchange="loadSmsPreview()"></select>
+      </div>
+      <label style="display:flex;gap:8px;align-items:center;margin:-4px 0 14px;font-size:14px"><input type="checkbox" id="smsPoster" onchange="togglePoster(this.checked)"> Attach the poster (picture message; about twice the cost)</label>
+      <div class="summary" id="smsSummary">Checking…</div>
+      <div id="smsProgress" style="display:none"><div class="bar"><i id="smsBar"></i></div><div class="time" id="smsStatus"></div></div>
+      <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+        <input id="smsTestTo" class="inp" style="flex:1;min-width:180px" placeholder="Your mobile, e.g. 469 555 0134">
+        <button class="btn" onclick="smsTest()">Send test to me</button>
+      </div>
+      <div class="row-end" style="margin-top:16px">
+        <a href="#" onclick="showSmsSetup();return false;" style="margin-right:auto;align-self:center;color:var(--muted);font-size:13px">SMS settings</a>
+        <button class="btn" onclick="closeModal('smsModal')" id="smsClose">Close</button>
+        <button class="btn gold" id="smsGo" disabled onclick="startSms()">Send</button>
+      </div>
     </div>
   </div>
 </div>
@@ -305,7 +341,7 @@
   ];
 
   var COLUMNS = [
-    ['name', 'Investor'], ['phase', 'Phase'], ['status', 'Invite'], ['emails', 'Emails'], ['realOpened', 'Opened'],
+    ['name', 'Investor'], ['phase', 'Phase'], ['status', 'Invite'], ['emails', 'Emails'], ['smsStatus', 'SMS'], ['realOpened', 'Opened'],
     ['rsvp', 'RSVP'], ['partySize', 'Party'], ['reason', 'Maybe reason'], ['lastActivity', 'Last activity']
   ];
 
@@ -397,9 +433,17 @@
 
     VISIBLE = rows;
     $('tbody').innerHTML = rows.length ? rows.map(rowHtml).join('') :
-      '<tr><td colspan="10" class="empty">' + (DATA.rows.length ? 'Nobody matches this view.' : 'No investors yet. Paste Name, Email and Phase into the Google Sheet.') + '</td></tr>';
+      '<tr><td colspan="11" class="empty">' + (DATA.rows.length ? 'Nobody matches this view.' : 'No investors yet. Paste Name, Email and Phase into the Google Sheet.') + '</td></tr>';
     $('count').textContent = 'Showing ' + rows.length + ' of ' + DATA.rows.length + ' investors';
     updateSelection();
+  }
+
+  function smsCell(r) {
+    if (!r.phone) return '<span class="time" title="No number in the Phone column">—</span>';
+    if (r.smsStatus === 'Sent') return '<span class="pill p-sent">Texted</span><div class="time">' + when(r.smsSentAt) + '</div>';
+    if (r.smsStatus === 'Opted out') return '<span class="pill p-none">Opted out</span>';
+    if (r.smsStatus) return '<span class="pill p-no" title="' + esc(r.smsStatus) + '">Failed</span>';
+    return '<span class="pill p-none" title="' + esc(r.phone) + '">Not texted</span>';
   }
 
   function rowHtml(r) {
@@ -423,15 +467,15 @@
     return '<tr>' +
       '<td>' + (canTick ? '<input type="checkbox" class="sel" data-email="' + esc(r.email) + '"' + (SELECTED[r.email] ? ' checked' : '') + ' onclick="toggleOne(this)">' : '') + '</td>' +
       '<td><div class="name">' + esc(r.name || '—') + '</div><div class="email">' + esc(r.email) + '</div></td>' +
-      '<td>' + esc(r.phase) + '</td><td>' + status + '</td><td style="font-variant-numeric:tabular-nums">' + (r.emails || '') + '</td><td>' + opened + '</td><td>' + rsvp + '</td>' +
+      '<td>' + esc(r.phase) + '</td><td>' + status + '</td><td style="font-variant-numeric:tabular-nums">' + (r.emails || '') + '</td><td>' + smsCell(r) + '</td><td>' + opened + '</td><td>' + rsvp + '</td>' +
       '<td>' + party + '</td><td>' + esc(r.rsvp === 'Maybe' ? r.reason : '') + '</td>' +
       '<td class="time">' + when(r.lastActivity) + '</td></tr>';
   }
 
   function exportCsv() {
-    var head = ['Name', 'Email', 'Phase', 'Invite', 'Sent at', 'Emails received', 'Opened', 'Opened at', 'RSVP', 'Party size', 'Maybe reason', 'RSVP at', 'Needs checking', 'Scanner taps ignored'];
+    var head = ['Name', 'Email', 'Phone', 'SMS', 'Phase', 'Invite', 'Sent at', 'Emails received', 'Opened', 'Opened at', 'RSVP', 'Party size', 'Maybe reason', 'RSVP at', 'Needs checking', 'Scanner taps ignored'];
     var lines = [head].concat(visibleRows().map(function (r) {
-      return [r.name, r.email, r.phase, r.status, r.sentAt, r.emails || 0, r.realOpened ? 'Opened' : r.delivered ? 'Delivered (not confirmed opened)' : 'No', r.openedAt, r.rsvp, r.partySize, r.reason, r.rsvpAt,
+      return [r.name, r.email, r.phone, r.smsStatus || (r.phone ? 'Not texted' : ''), r.phase, r.status, r.sentAt, r.emails || 0, r.realOpened ? 'Opened' : r.delivered ? 'Delivered (not confirmed opened)' : 'No', r.openedAt, r.rsvp, r.partySize, r.reason, r.rsvpAt,
         r.check ? 'Yes, answered ' + Math.round(r.answeredIn) + ' seconds after sending' : '', r.scannerHits || ''];
     })).map(function (cols) { return cols.map(function (c) { return '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"'; }).join(','); });
     var blob = new Blob([lines.join('\n')], { type: 'text/csv' });
@@ -521,6 +565,71 @@
   function clearRow(email) {
     if (!confirm('Clear the answer for ' + email + '? They will show as "no response" again. No email is sent to them.')) return;
     call('clearAnswer', email).then(function () { toast('Answer cleared'); load(); }).catch(fail);
+  }
+
+  /* ---- SMS ---- */
+  function openSms() {
+    openModal('smsModal');
+    $('smsProgress').style.display = 'none';
+    $('smsWho').innerHTML = '<option value="all">Everyone with a phone number (not yet texted)</option>' +
+      '<option value="noanswer">Only people who haven\'t answered yet</option>' +
+      (DATA ? DATA.phases : []).map(function (p) { return '<option value="P:' + esc(p) + '">Only Phase ' + esc(p) + '</option>'; }).join('');
+    call('getSmsSetup').then(function (s) { if (s.configured) { showSmsMain(s); } else { showSmsSetup(); } }).catch(fail);
+  }
+  function showSmsSetup() { $('smsSetup').hidden = false; $('smsMain').hidden = true; }
+  function showSmsMain(s) { $('smsSetup').hidden = true; $('smsMain').hidden = false; $('smsPoster').checked = s.poster; loadSmsPreview(); }
+  function saveSms() {
+    $('smsSaveBtn').disabled = true; $('smsSaveBtn').textContent = 'Checking…';
+    call('saveSmsSetup', $('smsSid').value, $('smsToken').value, $('smsFrom').value).then(function (s) {
+      toast('Twilio connected. Sending from ' + s.from); $('smsToken').value = ''; showSmsMain(s);
+    }).catch(fail).then(function () { $('smsSaveBtn').disabled = false; $('smsSaveBtn').textContent = 'Save & check'; });
+  }
+  function togglePoster(on) { call('setSmsPoster', on).then(loadSmsPreview).catch(fail); }
+  function loadSmsPreview() {
+    $('smsGo').disabled = true; $('smsSummary').textContent = 'Checking the list…';
+    call('previewSms', $('smsWho').value).then(function (p) {
+      var notes = [];
+      if (p.alreadySent) notes.push(p.alreadySent + ' already texted, will be skipped');
+      if (p.answered) notes.push(p.answered + ' already answered, will be skipped');
+      if (p.optedOut) notes.push(p.optedOut + ' replied STOP or aren\'t mobile numbers, will be skipped');
+      if (p.noPhone) notes.push(p.noPhone + ' have no phone number in the sheet');
+      if (p.invalidCount) notes.push(p.invalidCount + ' numbers don\'t look like US mobiles: ' + esc(p.invalid.slice(0, 3).join(', ')) + (p.invalidCount > 3 ? '…' : ''));
+      var per = p.setup.poster ? 0.025 : 0.0125 * p.size.segments;
+      var cost = '$' + Math.ceil(p.toSend * per) + ' to $' + Math.ceil(p.toSend * per * 1.5);
+      $('smsSummary').innerHTML = '<div class="big">' + (p.toSend ? 'Ready to text ' + p.toSend : 'Nobody new to text') + '</div>' +
+        (p.toSend ? '<div class="time" style="margin-top:6px;white-space:normal">' + esc(p.names.join(', ')) + (p.toSend > p.names.length ? ' and ' + (p.toSend - p.names.length) + ' more' : '') + '</div>' : '') +
+        (notes.length ? '<ul><li>' + notes.join('</li><li>') + '</li></ul>' : '') +
+        '<div class="sms-sample">' + esc(p.sample) + '</div>' +
+        '<div class="time" style="margin-top:6px;white-space:normal">' + p.size.length + ' characters · ' +
+          (p.setup.poster ? 'picture message' : p.size.segments + ' SMS segment' + (p.size.segments === 1 ? '' : 's')) +
+          (p.size.plain ? '' : ' · contains emoji or special quotes (costs more)') + (p.toSend ? ' · estimated cost ' + cost : '') + '</div>';
+      if (p.tracking && !p.tracking.ok) { $('smsSummary').innerHTML += '<ul><li style="color:var(--red)">' + esc(p.tracking.message) + '</li></ul>'; return; }
+      $('smsGo').disabled = !p.toSend; $('smsGo').dataset.total = p.toSend;
+      $('smsGo').textContent = p.toSend ? 'Send ' + p.toSend + ' texts' : 'Send';
+    }).catch(function (e) { $('smsSummary').textContent = e.message; });
+  }
+  function smsTest() {
+    call('sendTestSms', $('smsTestTo').value).then(function (r) { toast('Test text sent to ' + r.to); }).catch(fail);
+  }
+  function startSms() {
+    var who = $('smsWho').value, total = Number($('smsGo').dataset.total), done = 0, failed = 0;
+    if (!confirm('Send ' + total + ' text messages now? This uses Jupiter\'s Twilio credit.')) return;
+    $('smsModal').dataset.busy = '1'; $('smsGo').disabled = true; $('smsClose').disabled = true; $('smsWho').disabled = true;
+    $('smsProgress').style.display = 'block';
+    (function next() {
+      $('smsStatus').textContent = 'Sending… ' + (done + failed) + ' of ' + total;
+      call('sendSmsBatch', who).then(function (r) {
+        done += r.sent; failed += r.failed;
+        $('smsBar').style.width = Math.min(100, Math.round((done + failed) / total * 100)) + '%';
+        if (r.remaining > 0 && (r.sent + r.failed) > 0) return next();
+        finish();
+      }).catch(function (e) { fail(e); finish(); });
+    })();
+    function finish() {
+      delete $('smsModal').dataset.busy; $('smsClose').disabled = false; $('smsWho').disabled = false;
+      $('smsStatus').textContent = 'Done. ' + done + ' texted' + (failed ? ', ' + failed + ' failed (see the SMS column)' : '') + '.';
+      toast(done + ' texts sent'); load(); loadSmsPreview();
+    }
   }
 
   /* ---- Selection + follow-up ---- */

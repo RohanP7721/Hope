@@ -114,6 +114,10 @@ var TEXT_FIELDS = [
   ['Reply to email RSVPs', 'thanks_no', "Can't make it", "Thank you for letting us know, {first_name}. We'll miss you! If your plans change, just reply \"Yes\" here.", ''],
 
   ['Calendar invite', 'calendar_title', 'Event name', 'The Jupiter Texas Holiday Party', ''],
+  ['Text message (SMS)', 'sms_text', 'Text message', 'Jupiter Texas: Hi {first_name}, you & your family are invited to our Holiday Party, Sat Dec 12, 6PM, Plano TX. RSVP: {link} Reply STOP to opt out.', 'Keep "Jupiter Texas:" at the start and "Reply STOP to opt out" at the end; US carriers require both. Avoid emojis and curly quotes: they make the text cost 2 to 3 times more.'],
+  ['Text message (SMS)', 'sms_page_title', 'Page the link opens: heading', 'Will you join us, {first_name}?', ''],
+  ['Text message (SMS)', 'sms_page_body', 'Page the link opens: message', 'Jupiter Texas invites you and your family to the Holiday Party. Bring your friends along. Tap your answer below.', ''],
+
   ['Calendar invite', 'calendar_description', 'Description', 'Jupiter Texas Real Estate Group invites you and your family. Friends are welcome too.\n\n{date}, {time}\n{venue}\n{address}\n\nQuestions? Write to info@jupitertexas.com', '']
 ];
 
@@ -600,10 +604,19 @@ function guestSheet_() {
   return sheet;
 }
 
+var SMS_HEADERS = ['Phone', 'SMS Status', 'SMS Sent At'];
+
 function columnMap_(sheet) {
   var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   var map = {};
   headers.forEach(function (h, i) { map[String(h).trim()] = i + 1; });
+  // SMS columns are added at the end the first time they're needed; nothing else moves.
+  SMS_HEADERS.forEach(function (h) {
+    if (map[h]) return;
+    var c = sheet.getLastColumn() + 1;
+    sheet.getRange(1, c).setValue(h).setFontWeight('bold').setBackground('#0B1330').setFontColor('#F2B01E');
+    map[h] = c;
+  });
   HEADERS.forEach(function (h) { if (!map[h]) throw new Error('Missing column "' + h + '". Run setup again.'); });
   return map;
 }
@@ -646,7 +659,10 @@ function rowToGuest_(values, col, rowNumber) {
     rsvpAt: iso(v('RSVP At')),
     eventId: String(v('Calendar Event ID') || ''),
     emailsSent: String(v('Emails Sent') || ''),
-    lastActivity: iso(v('Last Activity'))
+    lastActivity: iso(v('Last Activity')),
+    phone: String(v('Phone') || '').trim(),
+    smsStatus: String(v('SMS Status') || ''),
+    smsSentAt: iso(v('SMS Sent At'))
   };
 }
 
@@ -697,6 +713,7 @@ function doGet(e) {
       case 'ping': return ContentService.createTextOutput(PING_REPLY);
     }
     if (p.r) return tapPage_(p.t, p.r, p.n);
+    if (p.t) return choosePage_(p.t);
   } catch (err) {
     console.error(err);
     return ContentService.createTextOutput('');
@@ -715,6 +732,200 @@ function doGet(e) {
   return HtmlService.createTemplateFromFile('Dashboard').evaluate()
     .setTitle('Jupiter Holiday Party · RSVPs')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
+/* ------------------------------------------------------------------ */
+/* SMS invitations (Twilio, verified toll-free number)                 */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The page an SMS link opens: the RSVP buttons, nothing saved yet.
+ * Phones and carriers preview links automatically, so opening this page records nothing;
+ * only tapping a button does (through the normal, scanner-protected tap page).
+ */
+function choosePage_(token) {
+  loadSettings_();
+  var found = token === TEST_TOKEN ? { guest: { name: 'Test Investor', token: TEST_TOKEN, rsvp: '' } }
+    : findGuestByToken_(String(token || '').replace(/[^A-Za-z0-9]/g, ''));
+  if (!found) return HtmlService.createHtmlOutput('<p style="font-family:sans-serif;padding:40px">We could not find your invitation. Please reply to the invitation email.</p>');
+  var g = found.guest, e = event_(), who = { first_name: firstName_(g.name) };
+  var base = CONFIG.API_URL + '?t=' + encodeURIComponent(g.token) + '&r=';
+  function btn(href, label, primary) {
+    return '<a target="_top" href="' + escapeHtml_(href) + '" style="display:block;text-align:center;text-decoration:none;padding:15px;border-radius:999px;font-weight:600;font-size:16px;' +
+      (primary ? 'background:#F2B01E;color:#0B1330;' : 'border:1.5px solid #46507A;color:#fff;') + '">' + label + '</a>';
+  }
+  var current = g.rsvp ? '<p style="color:#F2B01E;margin:16px 0 0">Your current answer: ' +
+    escapeHtml_({ Yes: 'Attending, ' + partyWords_(g.partySize || '1'), Maybe: 'Maybe', No: "Can't make it" }[g.rsvp]) + '. Tap below to change it.</p>' : '';
+  var html = '<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">' +
+    '<div style="background:#0B1330;min-height:100vh;color:#fff;font:16px/1.55 Inter,-apple-system,Segoe UI,Roboto,sans-serif">' +
+    '<div style="max-width:460px;margin:0 auto;padding:32px 20px 48px">' +
+    '<div style="font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:#B7BED6"><b style="color:#fff">Jupiter Texas</b> · <span style="color:#F2B01E">Holiday Party</span></div>' +
+    '<h1 style="font-family:Playfair Display,Georgia,serif;font-weight:500;font-size:34px;line-height:1.15;margin:28px 0 0">' + TH_('sms_page_title', who) + '</h1>' +
+    '<p style="color:#B7BED6;font-size:17px;margin:12px 0 0">' + TH_('sms_page_body', who) + '</p>' + current +
+    '<div style="margin-top:22px;background:#121C40;border:1px solid #26305A;border-radius:16px;padding:18px">' +
+      '<div style="font-weight:500">' + escapeHtml_(e.DATE_LABEL) + '</div><div style="color:#B7BED6;font-size:14px">' + escapeHtml_(e.TIME_LABEL) + '</div>' +
+      '<div style="font-weight:500;margin-top:12px">' + escapeHtml_(e.VENUE_NAME) + '</div><div style="font-size:14px"><a target="_blank" style="color:#B7BED6" href="' + e.MAP_URL + '">' + escapeHtml_(e.VENUE_ADDRESS) + '</a></div></div>' +
+    '<div style="margin-top:24px;font-size:12px;letter-spacing:.14em;color:#F2B01E;font-weight:600">' + TH_('buttons_heading') + '</div>' +
+    '<div style="display:grid;gap:10px;margin-top:12px">' +
+      btn(base + 'yes&n=1', TH_('button_1'), true) + btn(base + 'yes&n=2', TH_('button_2'), true) +
+      btn(base + 'yes&n=3', TH_('button_3'), true) + btn(base + 'yes&n=4p', TH_('button_4'), true) +
+      '<div style="height:6px"></div>' + btn(base + 'maybe', TH_('button_maybe'), false) + btn(base + 'no', TH_('button_no'), false) +
+    '</div></div></div>';
+  return HtmlService.createHtmlOutput(html).setTitle('RSVP · The Jupiter Texas Holiday Party')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
+/** US numbers only: (469) 555-0134, 469-555-0134, 14695550134 and +1 469 555 0134 all become +14695550134. */
+function normalizePhone_(raw) {
+  var digits = String(raw || '').replace(/[^\d]/g, '');
+  if (digits.length === 10) return '+1' + digits;
+  if (digits.length === 11 && digits.charAt(0) === '1') return '+' + digits;
+  return '';
+}
+
+function smsSettings_() {
+  var p = PropertiesService.getScriptProperties();
+  return { sid: p.getProperty('TWILIO_SID') || '', token: p.getProperty('TWILIO_TOKEN') || '',
+           from: p.getProperty('TWILIO_FROM') || '', poster: p.getProperty('SMS_POSTER') !== 'off' };
+}
+
+function getSmsSetup() {
+  requireOwner_();
+  var s = smsSettings_();
+  return { configured: !!(s.sid && s.token && s.from), from: s.from, sid: s.sid ? s.sid.slice(0, 6) + '…' + s.sid.slice(-4) : '', poster: s.poster };
+}
+
+/** Saves the Twilio details from the dashboard and checks they work. The secret token stays inside the script. */
+function saveSmsSetup(sid, token, from) {
+  requireOwner_();
+  sid = String(sid || '').trim(); token = String(token || '').trim();
+  var fromNorm = normalizePhone_(from);
+  if (!/^AC[0-9a-f]{32}$/i.test(sid)) throw new Error('The Account SID starts with "AC" and is 34 characters long. Copy it from the Twilio Console home page.');
+  if (!/^[0-9a-f]{32}$/i.test(token)) throw new Error('The Auth Token is 32 characters. Click "Show" next to it in the Twilio Console and copy it.');
+  if (!fromNorm) throw new Error('The Twilio number should look like +1 833 555 0134.');
+  var res = UrlFetchApp.fetch('https://api.twilio.com/2010-04-01/Accounts/' + sid + '.json', {
+    headers: { Authorization: 'Basic ' + Utilities.base64Encode(sid + ':' + token) }, muteHttpExceptions: true });
+  if (res.getResponseCode() !== 200) throw new Error('Twilio didn\'t accept those details. Check the Account SID and Auth Token.');
+  var props = PropertiesService.getScriptProperties();
+  props.setProperty('TWILIO_SID', sid); props.setProperty('TWILIO_TOKEN', token); props.setProperty('TWILIO_FROM', fromNorm);
+  return getSmsSetup();
+}
+
+function setSmsPoster(on) {
+  requireOwner_();
+  PropertiesService.getScriptProperties().setProperty('SMS_POSTER', on ? 'on' : 'off');
+  return getSmsSetup();
+}
+
+/** A public link to the current poster for picture messages. Falls back to the copy in the project. */
+function posterPublicUrl_() {
+  var cached = PropertiesService.getScriptProperties().getProperty('POSTER_PUBLIC_URL');
+  var id = PropertiesService.getScriptProperties().getProperty('POSTER_FILE_ID');
+  if (cached && cached.indexOf(id) !== -1) return cached;
+  try {
+    DriveApp.getFileById(id).setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    var url = 'https://drive.google.com/uc?export=download&id=' + id;
+    PropertiesService.getScriptProperties().setProperty('POSTER_PUBLIC_URL', url);
+    return url;
+  } catch (err) {
+    return CONFIG.POSTER_SOURCE_URL; // the organisation may block public Drive links
+  }
+}
+
+function smsBody_(g) {
+  var link = CONFIG.API_URL + '?t=' + encodeURIComponent(g.token);
+  return plain_('sms_text', { first_name: firstName_(g.name), link: link });
+}
+
+/** How many SMS segments a text costs (plain characters: 160, then 153 each; emojis/curly quotes: 70, then 67). */
+function smsSegments_(text) {
+  var gsm = /^[A-Za-z0-9 \r\n@£$¥èéùìòÇØøÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ!"#¤%&'()*+,\-.\/:;<=>?¡ÄÖÑÜ§¿äöñüà^{}\\\[~\]|€]*$/.test(text);
+  var single = gsm ? 160 : 70, multi = gsm ? 153 : 67;
+  return { segments: text.length <= single ? 1 : Math.ceil(text.length / multi), plain: gsm, length: text.length };
+}
+
+function sendSms_(to, body, withPoster) {
+  var s = smsSettings_();
+  if (!(s.sid && s.token && s.from)) throw new Error('Add your Twilio details first (Send SMS > SMS settings).');
+  var payload = { To: to, From: s.from, Body: body };
+  if (withPoster) payload.MediaUrl = posterPublicUrl_();
+  var res = UrlFetchApp.fetch('https://api.twilio.com/2010-04-01/Accounts/' + s.sid + '/Messages.json', {
+    method: 'post', payload: payload, muteHttpExceptions: true,
+    headers: { Authorization: 'Basic ' + Utilities.base64Encode(s.sid + ':' + s.token) } });
+  var data = {};
+  try { data = JSON.parse(res.getContentText()); } catch (e) { /* not JSON */ }
+  if (res.getResponseCode() < 300) return { ok: true };
+  var code = data.code;
+  if (code === 21610) return { ok: false, status: 'Opted out', error: 'They replied STOP earlier' };
+  if (code === 21211 || code === 21614) return { ok: false, status: 'Failed: not a mobile number', error: data.message };
+  return { ok: false, status: 'Failed: ' + String(data.message || res.getResponseCode()).slice(0, 80), error: data.message };
+}
+
+/** who: 'all' = everyone with a phone not yet texted; 'noanswer' = same, but only people who haven't answered; 'P:<phase>'. */
+function smsTargets_(guests, who) {
+  var seen = {}, report = { withPhone: 0, noPhone: 0, invalid: [], alreadySent: 0, optedOut: 0, answered: 0, toSend: [] };
+  guests.forEach(function (g) {
+    if (who.indexOf('P:') === 0 && g.phase !== who.slice(2)) return;
+    if (!g.phone) { report.noPhone++; return; }
+    report.withPhone++;
+    var phone = normalizePhone_(g.phone);
+    if (!phone) { report.invalid.push(g.name + ' (' + g.phone + ')'); return; }
+    if (seen[phone]) return; // same number twice: text once
+    seen[phone] = true;
+    if (g.smsStatus === 'Opted out' || g.smsStatus === 'Failed: not a mobile number') { report.optedOut++; return; }
+    if (g.smsStatus === 'Sent') { report.alreadySent++; return; }
+    if (who === 'noanswer' && g.rsvp) { report.answered++; return; }
+    g.phoneNorm = phone;
+    report.toSend.push(g);
+  });
+  return report;
+}
+
+function previewSms(who) {
+  requireOwner_();
+  loadSettings_();
+  var r = smsTargets_(readGuests_().guests, who || 'all');
+  var sample = smsBody_({ name: 'Raj Mehta', token: 'a1b2c3d4e5f6a1b2c3d4e5' });
+  return {
+    toSend: r.toSend.length, names: r.toSend.slice(0, 20).map(function (g) { return g.name || g.phone; }),
+    withPhone: r.withPhone, noPhone: r.noPhone, invalid: r.invalid.slice(0, 10), invalidCount: r.invalid.length,
+    alreadySent: r.alreadySent, optedOut: r.optedOut, answered: r.answered,
+    sample: sample, size: smsSegments_(sample), setup: getSmsSetup(), tracking: trackingHealth_()
+  };
+}
+
+function sendSmsBatch(who) {
+  requireOwner_();
+  loadSettings_();
+  requireTracking_();
+  var settings = smsSettings_();
+  var lock = LockService.getDocumentLock();
+  if (!lock.tryLock(5000)) throw new Error('Another send is already running.');
+  try {
+    var data = readGuests_(), list = smsTargets_(data.guests, who || 'all').toSend, batch = list.slice(0, SEND_BATCH), sent = 0, failed = 0;
+    batch.forEach(function (g) {
+      var result;
+      try { result = sendSms_(g.phoneNorm, smsBody_(g), settings.poster); }
+      catch (err) { result = { ok: false, status: 'Failed: ' + String(err.message || err).slice(0, 80) }; }
+      setCells_(data.sheet, data.col, g.row, result.ok
+        ? { 'SMS Status': 'Sent', 'SMS Sent At': new Date() }
+        : { 'SMS Status': result.status });
+      logActivity_(g, '(sms sent)', g.phoneNorm, result.ok ? 'Text message sent' : result.status);
+      if (result.ok) sent++; else failed++;
+      SpreadsheetApp.flush();
+    });
+    return { sent: sent, failed: failed, remaining: list.length - batch.length };
+  } finally { lock.releaseLock(); }
+}
+
+function sendTestSms(phone) {
+  requireOwner_();
+  loadSettings_();
+  var to = normalizePhone_(phone);
+  if (!to) throw new Error('Enter a US mobile number, e.g. 469 555 0134.');
+  var r = sendSms_(to, smsBody_({ name: 'Test Investor', token: TEST_TOKEN }), smsSettings_().poster);
+  if (!r.ok) throw new Error(r.status + (r.error ? ' (' + r.error + ')' : ''));
+  return { to: to };
 }
 
 /* ------------------------------------------------------------------ */
@@ -1599,6 +1810,7 @@ function getDashboard() {
     return {
       check: check, answeredIn: answeredIn, scannerHits: ignored[g.email] || 0,
       delivered: g.opened, realOpened: opened, openedAt: openedAt, emails: emailCount_(g.emailsSent),
+      phone: g.phone, smsStatus: g.smsStatus, smsSentAt: g.smsSentAt,
       autoOpen: g.opened && openedIn !== null && openedIn < 60,
       name: g.name, email: g.email, phase: g.phase,
       status: g.status || 'Not sent', sentAt: g.sentAt,

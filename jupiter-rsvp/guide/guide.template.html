@@ -260,6 +260,67 @@ Thanks!</div>
     </li>
   </ol>
 
+  <!-- SMS -->
+  <h2><b>Part S</b> Text messages (SMS) <span class="who">start today: approval takes days</span></h2>
+  <ol class="steps" style="--start:16">
+    <li class="step" data-id="s1"><button class="tick">Mark done</button>
+      <p><strong>Have these two things ready first.</strong> Carriers reject the application without them:</p>
+      <ul>
+        <li>A <strong>screenshot of the investor portal sign-up form</strong> showing investors agree to receive communications (ideally mentioning text messages). Upload it to Google Drive and set sharing to "Anyone with the link".</li>
+        <li>A <strong>privacy policy page</strong> on jupitertexas.com that says phone numbers are not sold or shared. If there isn't one, ask your web person to add this sentence:</li>
+      </ul>
+      <div class="msg" id="privacy-line">Mobile information will not be shared with third parties or affiliates for marketing or promotional purposes. Text messaging opt-in data and consent will not be shared with any third parties.</div>
+      <button class="copy" data-src-text="privacy-line">Copy sentence</button>
+    </li>
+    <li class="step" data-id="s2"><button class="tick">Mark done</button>
+      <p><strong>Create Jupiter's Twilio account</strong> (use info@jupitertexas.com and a company card):</p>
+      <div class="copyrow"><code>https://www.twilio.com/try-twilio</code><button class="copy" data-text="https://www.twilio.com/try-twilio">Copy</button></div>
+      <p>After signing up: <span class="ui">Admin</span> <span class="arrow">→</span> <span class="ui">Account billing</span> <span class="arrow">→</span> <strong>upgrade the account</strong> and add <strong>$150</strong> of credit. Trial accounts can only text verified numbers.</p>
+    </li>
+    <li class="step" data-id="s3"><button class="tick">Mark done</button>
+      <p><strong>Buy a toll-free number:</strong> <span class="ui">Phone Numbers</span> <span class="arrow">→</span> <span class="ui">Manage</span> <span class="arrow">→</span> <span class="ui">Buy a number</span> <span class="arrow">→</span> Country <strong>United States</strong>, Type <strong>Toll-free</strong>, tick <strong>SMS</strong> and <strong>MMS</strong> <span class="arrow">→</span> <span class="ui">Buy</span>. (About $2 a month.)</p>
+    </li>
+    <li class="step" data-id="s4"><button class="tick">Mark done</button>
+      <p><strong>Apply for toll-free verification.</strong> In Twilio: <span class="ui">Messaging</span> <span class="arrow">→</span> <span class="ui">Regulatory Compliance</span> <span class="arrow">→</span> <span class="ui">Toll-Free Verifications</span> <span class="arrow">→</span> <span class="ui">Create</span>. Fill in Jupiter's legal business details, then use these answers:</p>
+      <ul>
+        <li><strong>Estimated monthly volume:</strong> <span class="ui">10,000</span></li>
+        <li><strong>Use case category:</strong> <span class="ui">Events</span> (or "Marketing" if Events isn't listed)</li>
+        <li><strong>Opt-in type:</strong> <span class="ui">Web Form</span></li>
+        <li><strong>Opt-in image URL:</strong> the Drive link to the portal sign-up screenshot from step 1</li>
+        <li><strong>Privacy policy URL:</strong> the jupitertexas.com privacy page</li>
+      </ul>
+      <p><strong>Use case description</strong></p>
+      <div class="msg" id="tfv-usecase">Jupiter Texas Real Estate Group sends event invitations and event reminders to its registered investors. Messages invite investors to company events (such as our annual holiday party), link to a personal RSVP page, and remind confirmed guests before the event. We expect about 3,000 recipients per event and no more than a few messages per recipient per event.</div>
+      <button class="copy" data-src-text="tfv-usecase">Copy</button>
+      <p style="margin-top:12px"><strong>How investors opt in</strong></p>
+      <div class="msg" id="tfv-optin">Investors register on the Jupiter Texas investor portal and provide their mobile number in the sign-up form, where they agree to receive communications from Jupiter Texas, including text messages about investments and company events. Every message identifies Jupiter Texas and includes "Reply STOP to opt out"; replying STOP unsubscribes the number immediately.</div>
+      <button class="copy" data-src-text="tfv-optin">Copy</button>
+      <p style="margin-top:12px"><strong>Sample message</strong></p>
+      <div class="msg" id="tfv-sample">Jupiter Texas: Hi Raj, you & your family are invited to our Holiday Party, Sat Dec 12, 6PM, Plano TX. RSVP: https://script.google.com/macros/s/.../exec?t=abc123 Reply STOP to opt out.</div>
+      <button class="copy" data-src-text="tfv-sample">Copy</button>
+      <p class="tip"><b>Then wait.</b> Twilio says about 3 business days; it can take up to 2 weeks. You can do the next steps while you wait. Texts sent before approval are blocked.</p>
+    </li>
+    <li class="step" data-id="s5"><button class="tick">Mark done</button>
+      <p><strong>Update the code</strong> (same as always): copy <strong>Code.gs</strong> and <strong>Dashboard.html</strong> from Part B, save, then <span class="ui">Deploy</span> <span class="arrow">→</span> <span class="ui">Manage deployments</span> <span class="arrow">→</span> <strong>Tracking</strong> and <strong>Dashboard</strong> <span class="arrow">→</span> ✏️ <span class="arrow">→</span> <span class="ui">New version</span> <span class="arrow">→</span> <span class="ui">Deploy</span>.</p>
+      <p>Open the dashboard once. Three new columns appear at the far right of the <strong>Guests</strong> tab: <strong>Phone</strong>, <strong>SMS Status</strong>, <strong>SMS Sent At</strong>.</p>
+    </li>
+    <li class="step" data-id="s6"><button class="tick">Mark done</button>
+      <p><strong>Add the phone numbers.</strong> Any US format works: (469) 555-0134, 469-555-0134, +1 469 555 0134.</p>
+      <p>If your phone list is separate (email + phone), make a new tab called <strong>Phones</strong> with <strong>Email in column A</strong> and <strong>Phone in column B</strong>. Then in the Guests tab, click the first empty cell under <strong>Phone</strong> (row 2) and paste:</p>
+      <div class="copyrow"><code>=IFERROR(VLOOKUP(B2, Phones!A:B, 2, FALSE), "")</code><button class="copy" data-text='=IFERROR(VLOOKUP(B2, Phones!A:B, 2, FALSE), "")'>Copy</button></div>
+      <p>Then double-click the small blue square at the bottom-right of that cell to fill it down for everyone. Each investor's number is matched by email.</p>
+    </li>
+    <li class="step" data-id="s7"><button class="tick">Mark done</button>
+      <p><strong>Connect Twilio to the dashboard:</strong> dashboard <span class="arrow">→</span> <span class="ui">Send SMS</span>. Copy these three from the Twilio Console home page and paste them in, then <span class="ui">Save &amp; check</span>:</p>
+      <ul><li><strong>Account SID</strong> (starts with AC)</li><li><strong>Auth Token</strong> (click Show, then copy)</li><li>Your <strong>toll-free number</strong></li></ul>
+      <p>The Auth Token is stored privately inside the script, never in the sheet.</p>
+    </li>
+    <li class="step" data-id="s8"><button class="tick">Mark done</button>
+      <p><strong>Once Twilio says "Verified":</strong> in <span class="ui">Send SMS</span>, type your own mobile and press <span class="ui">Send test to me</span>. Tap the link and check the buttons work.</p>
+      <p>Then choose who (everyone, or only people who haven't answered yet) and press <span class="ui">Send</span>. Keep the window open until it says Done. Nobody is texted twice, and anyone who replies STOP is never texted again.</p>
+    </li>
+  </ol>
+
   <!-- Troubleshooting -->
   <h2>If something goes wrong</h2>
   <div class="fix">
@@ -279,6 +340,9 @@ Thanks!</div>
     </details>
     <details><summary>I changed the code and nothing changed</summary>
       <p>Do Part C, step 9 (update both deployments to a New version).</p>
+    </details>
+    <details><summary>Texts say "Failed"</summary>
+      <p>Hover over "Failed" in the dashboard's SMS column for the reason. "Not a mobile number" means it's a landline; it's skipped from then on. If every text fails, the toll-free verification probably isn't approved yet: check Twilio → Messaging → Regulatory Compliance → Toll-Free Verifications.</p>
     </details>
     <details><summary>The emails land in Spam</summary>
       <p>Do Part F (DMARC). Also ask your test recipients to move the email to the inbox and mark it "Not spam"; it helps the next ones.</p>
