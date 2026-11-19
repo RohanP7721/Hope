@@ -144,6 +144,7 @@
     <div class="actions">
       <button class="btn" onclick="openEditor()">Edit text &amp; poster</button>
       <button class="btn" onclick="openPreview('invite')">Preview emails</button>
+      <button class="btn" onclick="copyFriendsLink()">Copy friends link</button>
       <button class="btn" onclick="openSms()">Send SMS</button>
       <button class="btn primary" onclick="openSend()">Send invitations</button>
     </div>
@@ -566,6 +567,15 @@
   function clearRow(email) {
     if (!confirm('Clear the answer for ' + email + '? They will show as "no response" again. No email is sent to them.')) return;
     call('clearAnswer', email).then(function () { toast('Answer cleared'); load(); }).catch(fail);
+  }
+
+  /* ---- One shareable link for friends (they type their name) ---- */
+  function copyFriendsLink() {
+    if (!DATA || !DATA.linkBase) { toast('Add the Tracking link first (red box at the top).'); return; }
+    var url = DATA.linkBase + '?invite=friends';
+    var ok = function () { toast('Friends link copied. Paste it into a text or chat.'); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(ok, function () { prompt('Copy this link:', url); });
+    else prompt('Copy this link:', url);
   }
 
   /* ---- Personal RSVP link ---- */

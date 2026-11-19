@@ -2171,7 +2171,7 @@ function getDashboard() {
       <div class="copyrow"><code>Dashboard</code><button class="copy" data-text="Dashboard">Copy</button></div>
       <p>Delete the lines it starts with (<span class="ui">Cmd + A</span>, <span class="ui">Delete</span>), then paste this:</p>
       <div class="bigcopy">
-        <div class="head"><span><span class="name">Dashboard.html</span> <span class="meta">· 828 lines</span></span><button class="copy" data-src="dash-html">Copy all of Dashboard.html</button></div>
+        <div class="head"><span><span class="name">Dashboard.html</span> <span class="meta">· 838 lines</span></span><button class="copy" data-src="dash-html">Copy all of Dashboard.html</button></div>
         <pre aria-hidden="true">&lt;!DOCTYPE html&gt;
 &lt;html lang=&quot;en&quot;&gt;
 &lt;head&gt;
@@ -2326,6 +2326,7 @@ function getDashboard() {
     &lt;div class="actions"&gt;
       &lt;button class="btn" onclick="openEditor()"&gt;Edit text &amp;amp; poster&lt;/button&gt;
       &lt;button class="btn" onclick="openPreview('invite')"&gt;Preview emails&lt;/button&gt;
+      &lt;button class="btn" onclick="copyFriendsLink()"&gt;Copy friends link&lt;/button&gt;
       &lt;button class="btn" onclick="openSms()"&gt;Send SMS&lt;/button&gt;
       &lt;button class="btn primary" onclick="openSend()"&gt;Send invitations&lt;/button&gt;
     &lt;/div&gt;
@@ -2748,6 +2749,15 @@ function getDashboard() {
   function clearRow(email) {
     if (!confirm('Clear the answer for ' + email + '? They will show as "no response" again. No email is sent to them.')) return;
     call('clearAnswer', email).then(function () { toast('Answer cleared'); load(); }).catch(fail);
+  }
+
+  /* ---- One shareable link for friends (they type their name) ---- */
+  function copyFriendsLink() {
+    if (!DATA || !DATA.linkBase) { toast('Add the Tracking link first (red box at the top).'); return; }
+    var url = DATA.linkBase + '?invite=friends';
+    var ok = function () { toast('Friends link copied. Paste it into a text or chat.'); };
+    if (navigator.clipboard &amp;&amp; navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(ok, function () { prompt('Copy this link:', url); });
+    else prompt('Copy this link:', url);
   }
 
   /* ---- Personal RSVP link ---- */
