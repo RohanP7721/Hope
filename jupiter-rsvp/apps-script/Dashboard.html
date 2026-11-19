@@ -572,7 +572,9 @@
   /* ---- One shareable link for friends (they type their name) ---- */
   function copyFriendsLink() {
     if (!DATA || !DATA.linkBase) { toast('Add the Tracking link first (red box at the top).'); return; }
-    var url = DATA.linkBase + '?invite=friends';
+    var who = prompt('Friend\'s name (optional). Their invitation will greet them by name:', '');
+    if (who === null) return;
+    var url = DATA.linkBase + '?invite=friends' + (who.trim() ? '&name=' + encodeURIComponent(who.trim()).replace(/%20/g, '+') : '');
     var ok = function () { toast('Friends link copied. Paste it into a text or chat.'); };
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(ok, function () { prompt('Copy this link:', url); });
     else prompt('Copy this link:', url);

@@ -119,7 +119,7 @@
       <p>Click <span class="ui">Code.gs</span> on the left. Click inside the code, press <span class="ui">Cmd + A</span> (Windows: <span class="ui">Ctrl + A</span>), then <span class="ui">Delete</span>, so it's completely empty.</p>
       <p>Press the button below, click in the empty editor, and paste (<span class="ui">Cmd + V</span> / <span class="ui">Ctrl + V</span>).</p>
       <div class="bigcopy">
-        <div class="head"><span><span class="name">Code.gs</span> <span class="meta">· 2033 lines</span></span><button class="copy" data-src="code-gs">Copy all of Code.gs</button></div>
+        <div class="head"><span><span class="name">Code.gs</span> <span class="meta">· 2057 lines</span></span><button class="copy" data-src="code-gs">Copy all of Code.gs</button></div>
         <pre aria-hidden="true">/**
  * Jupiter Texas Holiday Party: invitations, RSVP tracking and reminders.
  * Investors answer from inside their email: each button opens a ready-made reply to info@.
@@ -848,7 +848,7 @@ function doGet(e) {
       case 'ics': return ContentService.createTextOutput(icsText_()).setMimeType(ContentService.MimeType.ICAL)
         .downloadAsFile('jupiter-holiday-party.ics');
     }
-    if (p.invite) return openInvitePage_();
+    if (p.invite) return openInvitePage_(p.name);
     if (p.r) return tapPage_(p.t, p.r, p.n);
     if (p.t) return choosePage_(p.t);
   } catch (err) {
@@ -963,14 +963,17 @@ function googleCalendarLink_() {
 }
 
 /** The page behind the one shareable link: full invitation, name box, RSVP buttons, add-to-calendar. */
-function openInvitePage_() {
+function openInvitePage_(presetName) {
   loadSettings_();
   var e = event_(), poster = '';
-  try { poster = posterDataUrl_(); } catch (err) { poster = CONFIG.POSTER_SOURCE_URL; }
+  try { poster = posterWebUrl_(); } catch (err) { poster = CONFIG.POSTER_SOURCE_URL; }
+  // Name added to the link (…&amp;name=Neha or Neha+Sharma or Neha_Sharma): greet them and fill it in.
+  var name = String(presetName || '').replace(/[_+]/g, ' ').replace(/[^\p{L}\p{M} .'\-]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 60);
   var data = {
     gcal: googleCalendarLink_(), ics: CONFIG.API_URL + '?api=ics',
     buttons: [['1', plain_('button_1')], ['2', plain_('button_2')], ['3', plain_('button_3')], ['4p', plain_('button_4')]],
-    maybe: plain_('button_maybe'), no: plain_('button_no')
+    maybe: plain_('button_maybe'), no: plain_('button_no'),
+    name: name
   };
   var html = OPEN_PAGE_HTML
     .replace('__DATA__', JSON.stringify(data).replace(/&lt;/g, '\\u003c'))
@@ -1077,6 +1080,26 @@ function setSmsPoster(on) {
 }
 
 /** A public link to the current poster for picture messages. Falls back to the copy in the project. */
+/**
+ * A small, fast copy of the poster for web pages: Google Drive's resized thumbnail (about 1080px wide),
+ * instead of embedding the full image in the page.
+ */
+function posterWebUrl_() {
+  var props = PropertiesService.getScriptProperties();
+  var id = props.getProperty('POSTER_FILE_ID');
+  if (!id) return CONFIG.POSTER_SOURCE_URL;
+  var key = 'POSTER_WEB_' + id, cached = props.getProperty(key);
+  if (cached) return cached;
+  try {
+    DriveApp.getFileById(id).setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    var url = 'https://drive.google.com/thumbnail?id=' + id + '&amp;sz=w1080';
+    props.setProperty(key, url);
+    return url;
+  } catch (err) {
+    return CONFIG.POSTER_SOURCE_URL; // the organisation may block public Drive links
+  }
+}
+
 function posterPublicUrl_() {
   var cached = PropertiesService.getScriptProperties().getProperty('POSTER_PUBLIC_URL');
   var id = PropertiesService.getScriptProperties().getProperty('POSTER_FILE_ID');
@@ -1191,7 +1214,7 @@ function sendTestSms(phone) {
 /* Tracking link health check                                          */
 /* ------------------------------------------------------------------ */
 
-var PING_REPLY = 'jupiter-rsvp-ok-v5';
+var PING_REPLY = 'jupiter-rsvp-ok-v6';
 
 /**
  * Opens the Tracking link the way an investor's phone would, and reports in plain English what's wrong.
@@ -1498,7 +1521,7 @@ var OPEN_PAGE_HTML = [
 '&lt;/style&gt;',
 '&lt;main class="page" id="page"&gt;',
 '  &lt;img class="poster" src="__POSTER__" alt="The Jupiter Texas Holiday Party, __DATE__, __TIME__"&gt;',
-'  &lt;h1&gt;You\'re invited&lt;/h1&gt;',
+'  &lt;h1 id="hello"&gt;You\'re invited&lt;/h1&gt;',
 '  &lt;div class="body"&gt;__BODY__&lt;/div&gt;',
 '  &lt;div class="card"&gt;&lt;div class="lbl"&gt;When&lt;/div&gt;&lt;div class="k"&gt;__DATE__&lt;/div&gt;&lt;div class="v"&gt;__TIME__&lt;/div&gt;',
 '    &lt;div class="lbl" style="margin-top:14px"&gt;Where&lt;/div&gt;&lt;div class="k"&gt;__VENUE__&lt;/div&gt;&lt;div class="v"&gt;&lt;a target="_blank" href="__MAP__"&gt;__ADDRESS__&lt;/a&gt;&lt;/div&gt;&lt;/div&gt;',
@@ -1518,6 +1541,7 @@ var OPEN_PAGE_HTML = [
 '  function esc(s){ return String(s).replace(/[&amp;&lt;&gt;"]/g, function(c){ return {"&amp;":"&amp;amp;","&lt;":"&amp;lt;","&gt;":"&amp;gt;","\\"":"&amp;quot;"}[c]; }); }',
 '  $("yes").innerHTML = D.buttons.map(function(b){ return \'&lt;button class="gold" data-a="yes" data-n="\' + b[0] + \'"&gt;\' + esc(b[1]) + "&lt;/button&gt;"; }).join("");',
 '  $("mb").textContent = D.maybe; $("nb").textContent = D.no;',
+'  if (D.name) { $("hello").textContent = D.name.split(" ")[0] + ", you\'re invited"; $("name").value = D.name; }',
 '  var party = {"1":"just you","2":"2 people","3":"3 people","4+":"4 or more people"};',
 '  function cal(){ return \'&lt;div class="grid" style="margin-top:18px"&gt;&lt;a class="btn gold" target="_blank" href="\' + D.gcal + \'"&gt;Add to Google Calendar&lt;/a&gt;\' +',
 '    \'&lt;a class="btn ghost" target="_top" href="\' + D.ics + \'"&gt;Add to Apple / Outlook Calendar&lt;/a&gt;&lt;/div&gt;\'; }',
@@ -2171,7 +2195,7 @@ function getDashboard() {
       <div class="copyrow"><code>Dashboard</code><button class="copy" data-text="Dashboard">Copy</button></div>
       <p>Delete the lines it starts with (<span class="ui">Cmd + A</span>, <span class="ui">Delete</span>), then paste this:</p>
       <div class="bigcopy">
-        <div class="head"><span><span class="name">Dashboard.html</span> <span class="meta">· 838 lines</span></span><button class="copy" data-src="dash-html">Copy all of Dashboard.html</button></div>
+        <div class="head"><span><span class="name">Dashboard.html</span> <span class="meta">· 840 lines</span></span><button class="copy" data-src="dash-html">Copy all of Dashboard.html</button></div>
         <pre aria-hidden="true">&lt;!DOCTYPE html&gt;
 &lt;html lang=&quot;en&quot;&gt;
 &lt;head&gt;
@@ -2754,7 +2778,9 @@ function getDashboard() {
   /* ---- One shareable link for friends (they type their name) ---- */
   function copyFriendsLink() {
     if (!DATA || !DATA.linkBase) { toast('Add the Tracking link first (red box at the top).'); return; }
-    var url = DATA.linkBase + '?invite=friends';
+    var who = prompt('Friend\'s name (optional). Their invitation will greet them by name:', '');
+    if (who === null) return;
+    var url = DATA.linkBase + '?invite=friends' + (who.trim() ? '&amp;name=' + encodeURIComponent(who.trim()).replace(/%20/g, '+') : '');
     var ok = function () { toast('Friends link copied. Paste it into a text or chat.'); };
     if (navigator.clipboard &amp;&amp; navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(ok, function () { prompt('Copy this link:', url); });
     else prompt('Copy this link:', url);

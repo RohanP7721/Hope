@@ -718,7 +718,7 @@ function doGet(e) {
       case 'ics': return ContentService.createTextOutput(icsText_()).setMimeType(ContentService.MimeType.ICAL)
         .downloadAsFile('jupiter-holiday-party.ics');
     }
-    if (p.invite) return openInvitePage_();
+    if (p.invite) return openInvitePage_(p.name);
     if (p.r) return tapPage_(p.t, p.r, p.n);
     if (p.t) return choosePage_(p.t);
   } catch (err) {
@@ -833,14 +833,17 @@ function googleCalendarLink_() {
 }
 
 /** The page behind the one shareable link: full invitation, name box, RSVP buttons, add-to-calendar. */
-function openInvitePage_() {
+function openInvitePage_(presetName) {
   loadSettings_();
   var e = event_(), poster = '';
-  try { poster = posterDataUrl_(); } catch (err) { poster = CONFIG.POSTER_SOURCE_URL; }
+  try { poster = posterWebUrl_(); } catch (err) { poster = CONFIG.POSTER_SOURCE_URL; }
+  // Name added to the link (…&name=Neha or Neha+Sharma or Neha_Sharma): greet them and fill it in.
+  var name = String(presetName || '').replace(/[_+]/g, ' ').replace(/[^\p{L}\p{M} .'\-]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 60);
   var data = {
     gcal: googleCalendarLink_(), ics: CONFIG.API_URL + '?api=ics',
     buttons: [['1', plain_('button_1')], ['2', plain_('button_2')], ['3', plain_('button_3')], ['4p', plain_('button_4')]],
-    maybe: plain_('button_maybe'), no: plain_('button_no')
+    maybe: plain_('button_maybe'), no: plain_('button_no'),
+    name: name
   };
   var html = OPEN_PAGE_HTML
     .replace('__DATA__', JSON.stringify(data).replace(/</g, '\\u003c'))
@@ -947,6 +950,26 @@ function setSmsPoster(on) {
 }
 
 /** A public link to the current poster for picture messages. Falls back to the copy in the project. */
+/**
+ * A small, fast copy of the poster for web pages: Google Drive's resized thumbnail (about 1080px wide),
+ * instead of embedding the full image in the page.
+ */
+function posterWebUrl_() {
+  var props = PropertiesService.getScriptProperties();
+  var id = props.getProperty('POSTER_FILE_ID');
+  if (!id) return CONFIG.POSTER_SOURCE_URL;
+  var key = 'POSTER_WEB_' + id, cached = props.getProperty(key);
+  if (cached) return cached;
+  try {
+    DriveApp.getFileById(id).setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    var url = 'https://drive.google.com/thumbnail?id=' + id + '&sz=w1080';
+    props.setProperty(key, url);
+    return url;
+  } catch (err) {
+    return CONFIG.POSTER_SOURCE_URL; // the organisation may block public Drive links
+  }
+}
+
 function posterPublicUrl_() {
   var cached = PropertiesService.getScriptProperties().getProperty('POSTER_PUBLIC_URL');
   var id = PropertiesService.getScriptProperties().getProperty('POSTER_FILE_ID');
@@ -1061,7 +1084,7 @@ function sendTestSms(phone) {
 /* Tracking link health check                                          */
 /* ------------------------------------------------------------------ */
 
-var PING_REPLY = 'jupiter-rsvp-ok-v5';
+var PING_REPLY = 'jupiter-rsvp-ok-v6';
 
 /**
  * Opens the Tracking link the way an investor's phone would, and reports in plain English what's wrong.
@@ -1368,7 +1391,7 @@ var OPEN_PAGE_HTML = [
 '</style>',
 '<main class="page" id="page">',
 '  <img class="poster" src="__POSTER__" alt="The Jupiter Texas Holiday Party, __DATE__, __TIME__">',
-'  <h1>You\'re invited</h1>',
+'  <h1 id="hello">You\'re invited</h1>',
 '  <div class="body">__BODY__</div>',
 '  <div class="card"><div class="lbl">When</div><div class="k">__DATE__</div><div class="v">__TIME__</div>',
 '    <div class="lbl" style="margin-top:14px">Where</div><div class="k">__VENUE__</div><div class="v"><a target="_blank" href="__MAP__">__ADDRESS__</a></div></div>',
@@ -1388,6 +1411,7 @@ var OPEN_PAGE_HTML = [
 '  function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;","\\"":"&quot;"}[c]; }); }',
 '  $("yes").innerHTML = D.buttons.map(function(b){ return \'<button class="gold" data-a="yes" data-n="\' + b[0] + \'">\' + esc(b[1]) + "</button>"; }).join("");',
 '  $("mb").textContent = D.maybe; $("nb").textContent = D.no;',
+'  if (D.name) { $("hello").textContent = D.name.split(" ")[0] + ", you\'re invited"; $("name").value = D.name; }',
 '  var party = {"1":"just you","2":"2 people","3":"3 people","4+":"4 or more people"};',
 '  function cal(){ return \'<div class="grid" style="margin-top:18px"><a class="btn gold" target="_blank" href="\' + D.gcal + \'">Add to Google Calendar</a>\' +',
 '    \'<a class="btn ghost" target="_top" href="\' + D.ics + \'">Add to Apple / Outlook Calendar</a></div>\'; }',
