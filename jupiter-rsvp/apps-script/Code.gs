@@ -630,11 +630,13 @@ function ensureTokens_() {
   var sheet = guestSheet_(), col = columnMap_(sheet), last = sheet.getLastRow();
   if (last < 2) return;
   var emails = sheet.getRange(2, col['Email'], last - 1, 1).getValues();
+  var names = sheet.getRange(2, col['Name'], last - 1, 1).getValues();
   var tokenRange = sheet.getRange(2, col['Token'], last - 1, 1);
   var tokens = tokenRange.getValues();
   var changed = false;
   for (var i = 0; i < tokens.length; i++) {
-    if (!tokens[i][0] && String(emails[i][0]).trim()) { tokens[i][0] = newToken_(); changed = true; }
+    // Anyone with an email or just a name gets a private RSVP link (friends can be invited by link only).
+    if (!tokens[i][0] && (String(emails[i][0]).trim() || String(names[i][0]).trim())) { tokens[i][0] = newToken_(); changed = true; }
   }
   if (changed) tokenRange.setValues(tokens);
 }
@@ -773,6 +775,24 @@ function choosePage_(token) {
     '</div></div></div>';
   return HtmlService.createHtmlOutput(html).setTitle('RSVP · The Jupiter Texas Holiday Party')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
+/**
+ * Dashboard "Copy RSVP link": returns the person's private link and, if they haven't been invited yet,
+ * marks them as invited so "Send invitations" won't email them as well.
+ */
+function shareLink(token) {
+  requireOwner_();
+  loadSettings_();
+  if (!CONFIG.API_URL) throw new Error('Add the Tracking link first (red box at the top of the dashboard).');
+  var found = findGuestByToken_(token);
+  if (!found) throw new Error('Investor not found. Refresh the dashboard.');
+  var g = found.guest;
+  if (!g.status || g.status.indexOf('Failed') === 0) {
+    setCells_(found.sheet, found.col, g.row, { 'Invite Status': 'Sent', 'Sent At': new Date(), 'Emails Sent': (g.emailsSent ? g.emailsSent + ',' : '') + 'link' });
+    logActivity_(g, '(link shared)', 'Dashboard: ' + Session.getActiveUser().getEmail(), 'RSVP link copied to share by text or chat');
+  }
+  return CONFIG.API_URL + '?t=' + encodeURIComponent(g.token);
 }
 
 /** US numbers only: (469) 555-0134, 469-555-0134, 14695550134 and +1 469 555 0134 all become +14695550134. */
@@ -1498,6 +1518,7 @@ function sendableGuests_(guests, phase) {
     if (g.email) seen[g.email] = true;
     if (!inPhase) return;
     report.inPhase++;
+    if (g.status && g.status.indexOf('Failed') !== 0) { report.alreadySent++; return; }
     if (!EMAIL_PATTERN.test(g.email)) { report.invalid.push(g.name || g.email || 'Row ' + g.row); return; }
     if (dupe) { report.duplicates.push(g.email); return; }
     if (g.status && g.status.indexOf('Failed') !== 0) { report.alreadySent++; return; }
@@ -1769,6 +1790,7 @@ function markBounces_() {
 
 function getDashboard() {
   requireOwner_();
+  loadSettings_();
   var guests = readGuests_().guests;
   var phases = {};
   var stats = { total: 0, sent: 0, opened: 0, yes: 0, maybe: 0, no: 0, noResponse: 0, bounced: 0, headcount: 0, needsCheck: 0 };
@@ -1812,7 +1834,7 @@ function getDashboard() {
       delivered: g.opened, realOpened: opened, openedAt: openedAt, emails: emailCount_(g.emailsSent),
       phone: g.phone, smsStatus: g.smsStatus, smsSentAt: g.smsSentAt,
       autoOpen: g.opened && openedIn !== null && openedIn < 60,
-      name: g.name, email: g.email, phase: g.phase,
+      name: g.name, email: g.email, phase: g.phase, token: g.token,
       status: g.status || 'Not sent', sentAt: g.sentAt,
       opened: g.opened, firstOpened: g.firstOpened, openCount: g.openCount,
       rsvp: g.rsvp, partySize: g.partySize, reason: g.reason, rsvpAt: g.rsvpAt,
@@ -1826,6 +1848,7 @@ function getDashboard() {
     quota: MailApp.getRemainingDailyQuota(),
     tracking: trackingHealth_(),
     sheetUrl: SpreadsheetApp.getActive().getUrl(),
+    linkBase: CONFIG.API_URL,
     daysLeft: daysUntilEvent_(),
     updatedAt: new Date().toISOString()
   };

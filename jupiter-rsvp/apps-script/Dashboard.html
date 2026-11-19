@@ -466,7 +466,8 @@
     var canTick = r.status === 'Sent';
     return '<tr>' +
       '<td>' + (canTick ? '<input type="checkbox" class="sel" data-email="' + esc(r.email) + '"' + (SELECTED[r.email] ? ' checked' : '') + ' onclick="toggleOne(this)">' : '') + '</td>' +
-      '<td><div class="name">' + esc(r.name || '—') + '</div><div class="email">' + esc(r.email) + '</div></td>' +
+      '<td><div class="name">' + esc(r.name || '—') + '</div><div class="email">' + esc(r.email || 'No email: link only') + '</div>' +
+        (r.token ? '<a href="#" class="time" style="color:var(--blue)" onclick="copyLink(\'' + esc(r.token) + '\', \'' + esc(r.name).replace(/'/g, '') + '\', ' + (r.status === 'Sent' ? 'true' : 'false') + ');return false;">Copy RSVP link</a>' : '') + '</td>' +
       '<td>' + esc(r.phase) + '</td><td>' + status + '</td><td style="font-variant-numeric:tabular-nums">' + (r.emails || '') + '</td><td>' + smsCell(r) + '</td><td>' + opened + '</td><td>' + rsvp + '</td>' +
       '<td>' + party + '</td><td>' + esc(r.rsvp === 'Maybe' ? r.reason : '') + '</td>' +
       '<td class="time">' + when(r.lastActivity) + '</td></tr>';
@@ -565,6 +566,16 @@
   function clearRow(email) {
     if (!confirm('Clear the answer for ' + email + '? They will show as "no response" again. No email is sent to them.')) return;
     call('clearAnswer', email).then(function () { toast('Answer cleared'); load(); }).catch(fail);
+  }
+
+  /* ---- Personal RSVP link ---- */
+  function copyLink(token, name, alreadyInvited) {
+    if (!alreadyInvited && !confirm('Copy ' + name + '\'s RSVP link? They\'ll be marked as invited, so "Send invitations" won\'t also email them.')) return;
+    call('shareLink', token).then(function (url) {
+      var done = function () { toast('Link for ' + name + ' copied. Paste it into your text or chat.'); load(); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, function () { prompt('Copy this link:', url); load(); });
+      else { prompt('Copy this link:', url); load(); }
+    }).catch(fail);
   }
 
   /* ---- SMS ---- */

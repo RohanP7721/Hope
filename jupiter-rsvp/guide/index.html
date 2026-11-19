@@ -119,7 +119,7 @@
       <p>Click <span class="ui">Code.gs</span> on the left. Click inside the code, press <span class="ui">Cmd + A</span> (Windows: <span class="ui">Ctrl + A</span>), then <span class="ui">Delete</span>, so it's completely empty.</p>
       <p>Press the button below, click in the empty editor, and paste (<span class="ui">Cmd + V</span> / <span class="ui">Ctrl + V</span>).</p>
       <div class="bigcopy">
-        <div class="head"><span><span class="name">Code.gs</span> <span class="meta">· 1832 lines</span></span><button class="copy" data-src="code-gs">Copy all of Code.gs</button></div>
+        <div class="head"><span><span class="name">Code.gs</span> <span class="meta">· 1855 lines</span></span><button class="copy" data-src="code-gs">Copy all of Code.gs</button></div>
         <pre aria-hidden="true">/**
  * Jupiter Texas Holiday Party: invitations, RSVP tracking and reminders.
  * Investors answer from inside their email: each button opens a ready-made reply to info@.
@@ -760,11 +760,13 @@ function ensureTokens_() {
   var sheet = guestSheet_(), col = columnMap_(sheet), last = sheet.getLastRow();
   if (last &lt; 2) return;
   var emails = sheet.getRange(2, col['Email'], last - 1, 1).getValues();
+  var names = sheet.getRange(2, col['Name'], last - 1, 1).getValues();
   var tokenRange = sheet.getRange(2, col['Token'], last - 1, 1);
   var tokens = tokenRange.getValues();
   var changed = false;
   for (var i = 0; i &lt; tokens.length; i++) {
-    if (!tokens[i][0] &amp;&amp; String(emails[i][0]).trim()) { tokens[i][0] = newToken_(); changed = true; }
+    // Anyone with an email or just a name gets a private RSVP link (friends can be invited by link only).
+    if (!tokens[i][0] &amp;&amp; (String(emails[i][0]).trim() || String(names[i][0]).trim())) { tokens[i][0] = newToken_(); changed = true; }
   }
   if (changed) tokenRange.setValues(tokens);
 }
@@ -903,6 +905,24 @@ function choosePage_(token) {
     '&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;';
   return HtmlService.createHtmlOutput(html).setTitle('RSVP · The Jupiter Texas Holiday Party')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
+/**
+ * Dashboard "Copy RSVP link": returns the person's private link and, if they haven't been invited yet,
+ * marks them as invited so "Send invitations" won't email them as well.
+ */
+function shareLink(token) {
+  requireOwner_();
+  loadSettings_();
+  if (!CONFIG.API_URL) throw new Error('Add the Tracking link first (red box at the top of the dashboard).');
+  var found = findGuestByToken_(token);
+  if (!found) throw new Error('Investor not found. Refresh the dashboard.');
+  var g = found.guest;
+  if (!g.status || g.status.indexOf('Failed') === 0) {
+    setCells_(found.sheet, found.col, g.row, { 'Invite Status': 'Sent', 'Sent At': new Date(), 'Emails Sent': (g.emailsSent ? g.emailsSent + ',' : '') + 'link' });
+    logActivity_(g, '(link shared)', 'Dashboard: ' + Session.getActiveUser().getEmail(), 'RSVP link copied to share by text or chat');
+  }
+  return CONFIG.API_URL + '?t=' + encodeURIComponent(g.token);
 }
 
 /** US numbers only: (469) 555-0134, 469-555-0134, 14695550134 and +1 469 555 0134 all become +14695550134. */
@@ -1628,6 +1648,7 @@ function sendableGuests_(guests, phase) {
     if (g.email) seen[g.email] = true;
     if (!inPhase) return;
     report.inPhase++;
+    if (g.status &amp;&amp; g.status.indexOf('Failed') !== 0) { report.alreadySent++; return; }
     if (!EMAIL_PATTERN.test(g.email)) { report.invalid.push(g.name || g.email || 'Row ' + g.row); return; }
     if (dupe) { report.duplicates.push(g.email); return; }
     if (g.status &amp;&amp; g.status.indexOf('Failed') !== 0) { report.alreadySent++; return; }
@@ -1899,6 +1920,7 @@ function markBounces_() {
 
 function getDashboard() {
   requireOwner_();
+  loadSettings_();
   var guests = readGuests_().guests;
   var phases = {};
   var stats = { total: 0, sent: 0, opened: 0, yes: 0, maybe: 0, no: 0, noResponse: 0, bounced: 0, headcount: 0, needsCheck: 0 };
@@ -1942,7 +1964,7 @@ function getDashboard() {
       delivered: g.opened, realOpened: opened, openedAt: openedAt, emails: emailCount_(g.emailsSent),
       phone: g.phone, smsStatus: g.smsStatus, smsSentAt: g.smsSentAt,
       autoOpen: g.opened &amp;&amp; openedIn !== null &amp;&amp; openedIn &lt; 60,
-      name: g.name, email: g.email, phase: g.phase,
+      name: g.name, email: g.email, phase: g.phase, token: g.token,
       status: g.status || 'Not sent', sentAt: g.sentAt,
       opened: g.opened, firstOpened: g.firstOpened, openCount: g.openCount,
       rsvp: g.rsvp, partySize: g.partySize, reason: g.reason, rsvpAt: g.rsvpAt,
@@ -1956,6 +1978,7 @@ function getDashboard() {
     quota: MailApp.getRemainingDailyQuota(),
     tracking: trackingHealth_(),
     sheetUrl: SpreadsheetApp.getActive().getUrl(),
+    linkBase: CONFIG.API_URL,
     daysLeft: daysUntilEvent_(),
     updatedAt: new Date().toISOString()
   };
@@ -1970,7 +1993,7 @@ function getDashboard() {
       <div class="copyrow"><code>Dashboard</code><button class="copy" data-text="Dashboard">Copy</button></div>
       <p>Delete the lines it starts with (<span class="ui">Cmd + A</span>, <span class="ui">Delete</span>), then paste this:</p>
       <div class="bigcopy">
-        <div class="head"><span><span class="name">Dashboard.html</span> <span class="meta">· 817 lines</span></span><button class="copy" data-src="dash-html">Copy all of Dashboard.html</button></div>
+        <div class="head"><span><span class="name">Dashboard.html</span> <span class="meta">· 828 lines</span></span><button class="copy" data-src="dash-html">Copy all of Dashboard.html</button></div>
         <pre aria-hidden="true">&lt;!DOCTYPE html&gt;
 &lt;html lang=&quot;en&quot;&gt;
 &lt;head&gt;
@@ -2447,7 +2470,8 @@ function getDashboard() {
     var canTick = r.status === 'Sent';
     return '&lt;tr&gt;' +
       '&lt;td&gt;' + (canTick ? '&lt;input type="checkbox" class="sel" data-email="' + esc(r.email) + '"' + (SELECTED[r.email] ? ' checked' : '') + ' onclick="toggleOne(this)"&gt;' : '') + '&lt;/td&gt;' +
-      '&lt;td&gt;&lt;div class="name"&gt;' + esc(r.name || '—') + '&lt;/div&gt;&lt;div class="email"&gt;' + esc(r.email) + '&lt;/div&gt;&lt;/td&gt;' +
+      '&lt;td&gt;&lt;div class="name"&gt;' + esc(r.name || '—') + '&lt;/div&gt;&lt;div class="email"&gt;' + esc(r.email || 'No email: link only') + '&lt;/div&gt;' +
+        (r.token ? '&lt;a href="#" class="time" style="color:var(--blue)" onclick="copyLink(\'' + esc(r.token) + '\', \'' + esc(r.name).replace(/'/g, '') + '\', ' + (r.status === 'Sent' ? 'true' : 'false') + ');return false;"&gt;Copy RSVP link&lt;/a&gt;' : '') + '&lt;/td&gt;' +
       '&lt;td&gt;' + esc(r.phase) + '&lt;/td&gt;&lt;td&gt;' + status + '&lt;/td&gt;&lt;td style="font-variant-numeric:tabular-nums"&gt;' + (r.emails || '') + '&lt;/td&gt;&lt;td&gt;' + smsCell(r) + '&lt;/td&gt;&lt;td&gt;' + opened + '&lt;/td&gt;&lt;td&gt;' + rsvp + '&lt;/td&gt;' +
       '&lt;td&gt;' + party + '&lt;/td&gt;&lt;td&gt;' + esc(r.rsvp === 'Maybe' ? r.reason : '') + '&lt;/td&gt;' +
       '&lt;td class="time"&gt;' + when(r.lastActivity) + '&lt;/td&gt;&lt;/tr&gt;';
@@ -2546,6 +2570,16 @@ function getDashboard() {
   function clearRow(email) {
     if (!confirm('Clear the answer for ' + email + '? They will show as "no response" again. No email is sent to them.')) return;
     call('clearAnswer', email).then(function () { toast('Answer cleared'); load(); }).catch(fail);
+  }
+
+  /* ---- Personal RSVP link ---- */
+  function copyLink(token, name, alreadyInvited) {
+    if (!alreadyInvited &amp;&amp; !confirm('Copy ' + name + '\'s RSVP link? They\'ll be marked as invited, so "Send invitations" won\'t also email them.')) return;
+    call('shareLink', token).then(function (url) {
+      var done = function () { toast('Link for ' + name + ' copied. Paste it into your text or chat.'); load(); };
+      if (navigator.clipboard &amp;&amp; navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, function () { prompt('Copy this link:', url); load(); });
+      else { prompt('Copy this link:', url); load(); }
+    }).catch(fail);
   }
 
   /* ---- SMS ---- */
