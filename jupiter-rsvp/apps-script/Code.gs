@@ -1061,7 +1061,7 @@ function sendTestSms(phone) {
 /* Tracking link health check                                          */
 /* ------------------------------------------------------------------ */
 
-var PING_REPLY = 'jupiter-rsvp-ok-v4';
+var PING_REPLY = 'jupiter-rsvp-ok-v5';
 
 /**
  * Opens the Tracking link the way an investor's phone would, and reports in plain English what's wrong.
