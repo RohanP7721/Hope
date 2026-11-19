@@ -50,6 +50,12 @@ User's answers (2026-11-18):
 
 Nothing about SMS has been tested against the real Twilio service yet; only simulated responses.
 
+## Shared invitation link for friends (built 2026-11-19)
+
+- One link for everyone: `<Tracking URL>?invite=friends`. It opens `openInvitePage_`: the poster, the `open_body` text (editable), event details, a name box and the RSVP buttons.
+- `openRsvp(name, …)` adds or updates a Guests row with Phase "Friends (link)" and Invite Status "Sent", so they're never emailed. The same name again updates that row. A name is required, so scanners can't answer.
+- After answering, the page offers Add to Google Calendar (template link) and Apple/Outlook (`?api=ics`, with 7/3/1-day alarms).
+
 ## On hold (user asked to finish email invitations first; do nothing until asked)
 
 1. **Confirmation email for every tap:** anyone who taps any option gets a short "we got your answer" email, sent a few minutes later with the calendar invite, once per answer change.

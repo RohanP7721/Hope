@@ -118,6 +118,8 @@ var TEXT_FIELDS = [
   ['Text message (SMS)', 'sms_page_title', 'Page the link opens: heading', 'Will you join us, {first_name}?', ''],
   ['Text message (SMS)', 'sms_page_body', 'Page the link opens: message', 'Jupiter Texas invites you and your family to the Holiday Party. Bring your friends along. Tap your answer below.', ''],
 
+  ['Shared invitation link', 'open_body', 'Message on the shared link page', 'As the year comes to a close, we would love to celebrate with the people closest to us. Please join us for an evening of food, music and festive cheer, and bring your family and friends along.', 'The one link you can send to friends. They type their name and tap an answer.'],
+
   ['Calendar invite', 'calendar_description', 'Description', 'Jupiter Texas Real Estate Group invites you and your family. Friends are welcome too.\n\n{date}, {time}\n{venue}\n{address}\n\nQuestions? Write to info@jupitertexas.com', '']
 ];
 
@@ -713,7 +715,10 @@ function doGet(e) {
     switch (p.api) {
       case 'o': trackOpen_(p.t); return ContentService.createTextOutput('');
       case 'ping': return ContentService.createTextOutput(PING_REPLY);
+      case 'ics': return ContentService.createTextOutput(icsText_()).setMimeType(ContentService.MimeType.ICAL)
+        .downloadAsFile('jupiter-holiday-party.ics');
     }
+    if (p.invite) return openInvitePage_();
     if (p.r) return tapPage_(p.t, p.r, p.n);
     if (p.t) return choosePage_(p.t);
   } catch (err) {
@@ -793,6 +798,110 @@ function shareLink(token) {
     logActivity_(g, '(link shared)', 'Dashboard: ' + Session.getActiveUser().getEmail(), 'RSVP link copied to share by text or chat');
   }
   return CONFIG.API_URL + '?t=' + encodeURIComponent(g.token);
+}
+
+/* ------------------------------------------------------------------ */
+/* Open invitation link: one link for friends, they type their name    */
+/* ------------------------------------------------------------------ */
+
+var OPEN_PHASE = 'Friends (link)';
+
+function utcStamp_(iso) {
+  return new Date(iso).toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
+}
+
+/** The calendar file friends can add to Apple Calendar / Outlook, with reminders 7, 3 and 1 day before. */
+function icsText_() {
+  var e = event_();
+  function esc(t) { return String(t).replace(/([,;\\])/g, '\\$1').replace(/\n/g, '\\n'); }
+  var alarms = CONFIG.REMINDER_DAYS.map(function (d) {
+    return ['BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:' + esc(e.TITLE), 'TRIGGER:-P' + d + 'D', 'END:VALARM'].join('\r\n');
+  }).join('\r\n');
+  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Jupiter Texas//Holiday Party//EN', 'METHOD:PUBLISH', 'BEGIN:VEVENT',
+    'UID:holiday-party-2026@jupitertexas.com', 'DTSTAMP:' + utcStamp_(new Date().toISOString()),
+    'DTSTART:' + utcStamp_(e.START_ISO), 'DTEND:' + utcStamp_(e.END_ISO), 'SUMMARY:' + esc(e.TITLE),
+    'LOCATION:' + esc(e.VENUE_NAME + ', ' + e.VENUE_ADDRESS),
+    'DESCRIPTION:' + esc(plain_('calendar_description', {})), alarms, 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+}
+
+function googleCalendarLink_() {
+  var e = event_();
+  return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent(e.TITLE) +
+    '&dates=' + utcStamp_(e.START_ISO) + '/' + utcStamp_(e.END_ISO) +
+    '&location=' + encodeURIComponent(e.VENUE_NAME + ', ' + e.VENUE_ADDRESS) +
+    '&details=' + encodeURIComponent(plain_('calendar_description', {}));
+}
+
+/** The page behind the one shareable link: full invitation, name box, RSVP buttons, add-to-calendar. */
+function openInvitePage_() {
+  loadSettings_();
+  var e = event_(), poster = '';
+  try { poster = posterDataUrl_(); } catch (err) { poster = CONFIG.POSTER_SOURCE_URL; }
+  var data = {
+    gcal: googleCalendarLink_(), ics: CONFIG.API_URL + '?api=ics',
+    buttons: [['1', plain_('button_1')], ['2', plain_('button_2')], ['3', plain_('button_3')], ['4p', plain_('button_4')]],
+    maybe: plain_('button_maybe'), no: plain_('button_no')
+  };
+  var html = OPEN_PAGE_HTML
+    .replace('__DATA__', JSON.stringify(data).replace(/</g, '\\u003c'))
+    .replace('__POSTER__', poster)
+    .split('__BODY__').join(paragraphsPlainHtml_('open_body'))
+    .split('__DATE__').join(escapeHtml_(e.DATE_LABEL)).split('__TIME__').join(escapeHtml_(e.TIME_LABEL))
+    .split('__VENUE__').join(escapeHtml_(e.VENUE_NAME)).split('__ADDRESS__').join(escapeHtml_(e.VENUE_ADDRESS))
+    .split('__MAP__').join(e.MAP_URL).split('__RSVPBY__').join(escapeHtml_(e.RSVP_BY_LABEL));
+  return HtmlService.createHtmlOutput(html).setTitle('You\'re invited · The Jupiter Texas Holiday Party')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
+function paragraphsPlainHtml_(key) {
+  return T_(key, { first_name: '' }).split(/\n\s*\n/).map(function (p) {
+    return '<p>' + escapeHtml_(p.trim()).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>') + '</p>';
+  }).join('');
+}
+
+/**
+ * Called by the open invitation page. Typing a name is required, so email scanners can't answer.
+ * The same name answering again updates their earlier answer instead of adding a new row.
+ */
+function openRsvp(name, action, size, info) {
+  name = String(name || '').replace(/\s+/g, ' ').trim();
+  if (name.length < 2 || name.length > 80) return { ok: false, error: 'Please type your name.' };
+  if (['yes', 'maybe', 'no'].indexOf(action) === -1) return { ok: false, error: 'Unknown answer.' };
+  var lock = LockService.getScriptLock();
+  lock.waitLock(25000);
+  var token;
+  try {
+    var data = readGuests_();
+    var existing = data.guests.filter(function (g) { return g.phase === OPEN_PHASE && g.name.toLowerCase() === name.toLowerCase(); })[0];
+    if (existing) {
+      token = existing.token;
+      name = existing.name;
+    } else {
+      token = newToken_();
+      var row = new Array(data.sheet.getLastColumn()).fill('');
+      row[data.col['Name'] - 1] = name;
+      row[data.col['Phase'] - 1] = OPEN_PHASE;
+      row[data.col['Token'] - 1] = token;
+      row[data.col['Invite Status'] - 1] = 'Sent';
+      row[data.col['Sent At'] - 1] = new Date();
+      row[data.col['Emails Sent'] - 1] = 'link';
+      data.sheet.appendRow(row);
+      SpreadsheetApp.flush();
+    }
+  } finally { lock.releaseLock(); }
+
+  var result = handleRsvp_(token, action);
+  if (!result.ok) return result;
+  var found = findGuestByToken_(token);
+  if (action === 'yes') {
+    var party = size === '4p' ? '4+' : size;
+    if (['1', '2', '3', '4+'].indexOf(party) === -1) party = '1';
+    setCells_(found.sheet, found.col, found.guest.row, { 'Party Size': party });
+    result.partySize = party;
+  }
+  logActivity_(found.guest, tapLabel_(action, size) + ' (shared link)', String((info && info.ua) || '').slice(0, 300), 'Saved');
+  result.firstName = firstName_(name);
+  return result;
 }
 
 /** US numbers only: (469) 555-0134, 469-555-0134, 14695550134 and +1 469 555 0134 all become +14695550134. */
@@ -1235,6 +1344,75 @@ function dashboardUsers_() {
   } catch (err) { /* sheet unavailable: info@ only */ }
   return users;
 }
+
+var OPEN_PAGE_HTML = [
+'<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">',
+'<style>',
+'  body{margin:0;background:#0B1330;color:#fff;font:16px/1.6 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}',
+'  .page{max-width:520px;margin:0 auto;padding:20px 18px 56px}',
+'  .poster{width:100%;display:block;border-radius:16px}',
+'  h1{font-family:"Playfair Display",Georgia,serif;font-weight:500;font-size:32px;line-height:1.15;margin:28px 0 8px;color:#F2B01E}',
+'  .body p{margin:0 0 12px;color:#E4E7F2}',
+'  .card{margin:18px 0;background:#121C40;border:1px solid #26305A;border-radius:16px;padding:18px}',
+'  .lbl{font-size:11px;letter-spacing:.16em;color:#F2B01E;font-weight:600;text-transform:uppercase}',
+'  .k{font-weight:500}.v{color:#B7BED6;font-size:14px}.v a{color:#B7BED6}',
+'  input{width:100%;box-sizing:border-box;margin-top:8px;padding:14px 16px;border-radius:12px;border:1.5px solid #46507A;background:#0B1330;color:#fff;font:inherit;font-size:17px}',
+'  input:focus{outline:none;border-color:#F2B01E}',
+'  .grid{display:grid;gap:10px;margin-top:12px}',
+'  button,.btn{display:block;width:100%;box-sizing:border-box;text-align:center;text-decoration:none;padding:15px;border-radius:999px;font:600 16px Inter,sans-serif;cursor:pointer}',
+'  .gold{background:#F2B01E;border:0;color:#0B1330}.ghost{background:transparent;border:1.5px solid #46507A;color:#fff}',
+'  button:disabled{opacity:.5}',
+'  .err{color:#FF9B8F;min-height:22px;margin-top:8px;font-size:14px}',
+'  .done h1{color:#fff}.done h1 em{font-style:normal;color:#F2B01E}',
+'  .note{color:#B7BED6;font-size:14px;text-align:center;margin-top:10px}',
+'</style>',
+'<main class="page" id="page">',
+'  <img class="poster" src="__POSTER__" alt="The Jupiter Texas Holiday Party, __DATE__, __TIME__">',
+'  <h1>You\'re invited</h1>',
+'  <div class="body">__BODY__</div>',
+'  <div class="card"><div class="lbl">When</div><div class="k">__DATE__</div><div class="v">__TIME__</div>',
+'    <div class="lbl" style="margin-top:14px">Where</div><div class="k">__VENUE__</div><div class="v"><a target="_blank" href="__MAP__">__ADDRESS__</a></div></div>',
+'  <div class="card" id="form">',
+'    <div class="lbl">Your name</div>',
+'    <input id="name" autocomplete="name" placeholder="Type your full name" maxlength="80">',
+'    <div class="lbl" style="margin-top:18px">Coming? Tap how many of you</div>',
+'    <div class="grid" id="yes"></div>',
+'    <div class="grid" style="margin-top:16px"><button class="ghost" data-a="maybe" id="mb"></button><button class="ghost" data-a="no" id="nb"></button></div>',
+'    <div class="err" id="err"></div>',
+'    <div class="note">Kindly RSVP by __RSVPBY__</div>',
+'  </div>',
+'</main>',
+'<script>',
+'(function(){',
+'  var D = __DATA__, $ = function(id){ return document.getElementById(id); };',
+'  function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;","\\"":"&quot;"}[c]; }); }',
+'  $("yes").innerHTML = D.buttons.map(function(b){ return \'<button class="gold" data-a="yes" data-n="\' + b[0] + \'">\' + esc(b[1]) + "</button>"; }).join("");',
+'  $("mb").textContent = D.maybe; $("nb").textContent = D.no;',
+'  var party = {"1":"just you","2":"2 people","3":"3 people","4+":"4 or more people"};',
+'  function cal(){ return \'<div class="grid" style="margin-top:18px"><a class="btn gold" target="_blank" href="\' + D.gcal + \'">Add to Google Calendar</a>\' +',
+'    \'<a class="btn ghost" target="_top" href="\' + D.ics + \'">Add to Apple / Outlook Calendar</a></div>\'; }',
+'  function done(d, a){',
+'    var n = "<em>" + esc(d.firstName) + "</em>", html;',
+'    if (a === "yes") html = "<h1>You\'re in, " + n + ".</h1><p class=\\"v\\" style=\\"font-size:16px\\">We\'re planning for " + (party[d.partySize] || "you") + ". Add it to your calendar so you don\'t miss it:</p>" + cal();',
+'    else if (a === "maybe") html = "<h1>We\'ve pencilled you in, " + n + ".</h1><p class=\\"v\\" style=\\"font-size:16px\\">Save the date, and open this link again whenever you know.</p>" + cal();',
+'    else html = "<h1>We\'ll miss you, " + n + ".</h1><p class=\\"v\\" style=\\"font-size:16px\\">Thank you for letting us know. If plans change, open this link again and tap a new answer.</p>";',
+'    $("form").className = "card done"; $("form").innerHTML = html; $("form").scrollIntoView({behavior:"smooth"});',
+'  }',
+'  $("form").addEventListener("click", function(e){',
+'    var b = e.target.closest("button"); if (!b || !b.dataset.a) return;',
+'    var name = $("name").value.trim();',
+'    if (name.length < 2) { $("err").textContent = "Please type your name first."; $("name").focus(); return; }',
+'    $("err").textContent = ""; var all = $("form").querySelectorAll("button"); all.forEach(function(x){ x.disabled = true; });',
+'    b.textContent = "Saving…";',
+'    google.script.run.withSuccessHandler(function(d){',
+'      if (d && d.ok) return done(d, b.dataset.a);',
+'      $("err").textContent = (d && d.error) || "Something went wrong. Please try again."; all.forEach(function(x){ x.disabled = false; });',
+'    }).withFailureHandler(function(){ $("err").textContent = "Couldn\'t save that. Please try again."; all.forEach(function(x){ x.disabled = false; }); })',
+'      .openRsvp(name, b.dataset.a, b.dataset.n || "", { ua: navigator.userAgent });',
+'  });',
+'})();',
+'</script>'
+].join('\n');
 
 function isOwner_() {
   var user = String(Session.getActiveUser().getEmail() || '').toLowerCase();
