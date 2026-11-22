@@ -1,0 +1,133 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Event Format Track</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800;1,900&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;padding:0;background:#F3F4F6}
+  svg{display:block}
+  text{font-family:'Barlow Condensed',Arial Narrow,sans-serif}
+</style>
+</head>
+<body>
+<svg id="art" width="1080" height="1350" viewBox="0 0 1080 1350" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#ECEEF2"/>
+    </linearGradient>
+    <linearGradient id="bar" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1A1A1D"/>
+      <stop offset="1" stop-color="#0B0B0C"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="6" stdDeviation="7" flood-color="#000" flood-opacity="0.18"/>
+    </filter>
+    <filter id="trackShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#B3150F" flood-opacity="0.25"/>
+    </filter>
+    <pattern id="checker" width="16" height="16" patternUnits="userSpaceOnUse">
+      <rect width="16" height="16" fill="#fff"/>
+      <rect width="8" height="8" fill="#111"/>
+      <rect x="8" y="8" width="8" height="8" fill="#111"/>
+    </pattern>
+    <!-- left-pointing arrow -->
+    <g id="arrowL">
+      <path d="M14 -9 L0 0 L14 9 M0 0 H26" fill="none" stroke="#0B0B0C" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <!-- chevron pointing right (rotate as needed) -->
+    <path id="chev" d="M-8 -12 L6 0 L-8 12" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  </defs>
+
+  <rect width="1080" height="1350" fill="url(#bg)"/>
+
+  <!-- TRACK -->
+  <g filter="url(#trackShadow)">
+    <path id="track" d="M190 450 A350 350 0 0 1 890 450 L890 900 A350 350 0 0 1 190 900 Z"
+          fill="#FFFFFF" stroke="#E3241B" stroke-width="64"/>
+  </g>
+  <!-- lane edges + centre dash -->
+  <path d="M220 450 A320 320 0 0 1 860 450 L860 900 A320 320 0 0 1 220 900 Z" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="2"/>
+  <path d="M160 450 A380 380 0 0 1 920 450 L920 900 A380 380 0 0 1 160 900 Z" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="2"/>
+
+  <!-- START line (left straight) -->
+  <rect x="158" y="520" width="64" height="10" fill="#fff"/>
+  <text x="138" y="478" text-anchor="end" font-size="40" font-weight="800" font-style="italic" fill="#E3241B" letter-spacing="3">START</text>
+  <path d="M60 492 C 110 492, 132 500, 140 540" fill="none" stroke="#0B0B0C" stroke-width="5" stroke-linecap="round"/>
+  <path d="M128 528 L141 545 L152 525" fill="none" stroke="#0B0B0C" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- direction chevrons: down left side, across bottom, up right side -->
+  <use href="#chev" transform="translate(190 600) rotate(90)"/>
+  <use href="#chev" transform="translate(190 690) rotate(90)"/>
+  <use href="#chev" transform="translate(190 780) rotate(90)"/>
+  <use href="#chev" transform="translate(190 870) rotate(90)"/>
+  <use href="#chev" transform="translate(237 1075) rotate(60)"/>
+  <use href="#chev" transform="translate(365 1203) rotate(30)"/>
+  <use href="#chev" transform="translate(540 1250) rotate(0)"/>
+  <use href="#chev" transform="translate(715 1203) rotate(-30)"/>
+  <use href="#chev" transform="translate(843 1075) rotate(-60)"/>
+  <use href="#chev" transform="translate(890 870) rotate(-90)"/>
+  <use href="#chev" transform="translate(890 780) rotate(-90)"/>
+
+  <!-- FINISH (right straight) -->
+  <rect x="858" y="686" width="64" height="16" fill="url(#checker)"/>
+  <text x="944" y="660" font-size="40" font-weight="800" font-style="italic" fill="#E3241B" letter-spacing="3">FINISH</text>
+  <path d="M942 760 C 942 720, 950 690, 990 676" fill="none" stroke="#0B0B0C" stroke-width="5" stroke-linecap="round"/>
+  <path d="M975 668 L993 675 L982 692" fill="none" stroke="#0B0B0C" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- TITLE in the top dome -->
+  <g>
+    <line x1="410" y1="186" x2="452" y2="186" stroke="#E3241B" stroke-width="4"/>
+    <line x1="628" y1="186" x2="670" y2="186" stroke="#E3241B" stroke-width="4"/>
+    <text x="540" y="198" text-anchor="middle" font-size="34" font-weight="700" fill="#0B0B0C" letter-spacing="8">EVENT</text>
+    <text x="540" y="262" text-anchor="middle" font-size="72" font-weight="900" font-style="italic" fill="#0D2A6B" letter-spacing="1">FORMAT</text>
+  </g>
+
+  <!-- STATIONS -->
+  <g id="stations" font-style="italic"></g>
+
+  <!-- bottom dome info -->
+  <text x="540" y="1128" text-anchor="middle" font-size="26" font-weight="700" fill="#0B0B0C" letter-spacing="4">6 STATIONS  ·  30M EACH</text>
+  <line x1="470" y1="1150" x2="610" y2="1150" stroke="#E3241B" stroke-width="4"/>
+</svg>
+
+<script>
+  const events = [
+    "BROAD JUMP BURPEES",
+    "WALKING LUNGES",
+    "GORILLA WALK",
+    "SPEED HURDLES",
+    "FROG JUMP",
+    "BROAD JUMP BURPEES"
+  ];
+  const NS = "http://www.w3.org/2000/svg";
+  const g = document.getElementById("stations");
+  const mk = (tag, attrs, text) => {
+    const el = document.createElementNS(NS, tag);
+    for (const k in attrs) el.setAttribute(k, attrs[k]);
+    if (text) el.textContent = text;
+    return el;
+  };
+  const X = 300, W = 480, H = 62, TOP = 298, STEP = 140;
+  events.forEach((name, i) => {
+    const y = TOP + i * STEP;
+    const row = mk("g", {});
+    row.appendChild(mk("rect", {x: X, y, width: W, height: H, rx: 6, fill: "url(#bar)", filter: "url(#shadow)"}));
+    // number badge
+    row.appendChild(mk("path", {d: `M${X} ${y+6} Q${X} ${y} ${X+6} ${y} H${X+64} L${X+52} ${y+H} H${X+6} Q${X} ${y+H} ${X} ${y+H-6} Z`, fill: "#E3241B"}));
+    row.appendChild(mk("text", {x: X+30, y: y+43, "text-anchor": "middle", "font-size": 32, "font-weight": 900, fill: "#fff"}, String(i+1).padStart(2,"0")));
+    // name
+    row.appendChild(mk("text", {x: X+72, y: y+43, "font-size": 33, "font-weight": 800, fill: "#fff", "letter-spacing": 0.5}, name));
+    // 30M tag
+    row.appendChild(mk("rect", {x: X+W-68, y: y+15, width: 56, height: 32, rx: 4, fill: "none", stroke: "#E3241B", "stroke-width": 2.5}));
+    row.appendChild(mk("text", {x: X+W-40, y: y+40, "text-anchor": "middle", "font-size": 25, "font-weight": 800, fill: "#fff"}, "30M"));
+    // arrows: in from the right, out to the left
+    row.appendChild(mk("use", {href: "#arrowL", transform: `translate(${X+W+10} ${y+H/2})`}));
+    row.appendChild(mk("use", {href: "#arrowL", transform: `translate(${X-40} ${y+H/2})`}));
+    g.appendChild(row);
+  });
+</script>
+</body>
+</html>
