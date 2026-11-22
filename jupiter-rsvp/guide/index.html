@@ -119,7 +119,7 @@
       <p>Click <span class="ui">Code.gs</span> on the left. Click inside the code, press <span class="ui">Cmd + A</span> (Windows: <span class="ui">Ctrl + A</span>), then <span class="ui">Delete</span>, so it's completely empty.</p>
       <p>Press the button below, click in the empty editor, and paste (<span class="ui">Cmd + V</span> / <span class="ui">Ctrl + V</span>).</p>
       <div class="bigcopy">
-        <div class="head"><span><span class="name">Code.gs</span> <span class="meta">· 2057 lines</span></span><button class="copy" data-src="code-gs">Copy all of Code.gs</button></div>
+        <div class="head"><span><span class="name">Code.gs</span> <span class="meta">· 2127 lines</span></span><button class="copy" data-src="code-gs">Copy all of Code.gs</button></div>
         <pre aria-hidden="true">/**
  * Jupiter Texas Holiday Party: invitations, RSVP tracking and reminders.
  * Investors answer from inside their email: each button opens a ready-made reply to info@.
@@ -856,7 +856,8 @@ function doGet(e) {
     return ContentService.createTextOutput('');
   }
 
-  if (!isOwner_()) {
+  var role = isOwner_() ? (p.view === 'boss' ? 'viewer' : 'owner') : isViewer_() ? 'viewer' : '';
+  if (!role) {
     var who = Session.getActiveUser().getEmail();
     var msg = who
       ? 'You are signed in as &lt;b&gt;' + escapeHtml_(who) + '&lt;/b&gt;, which isn\'t allowed to open this dashboard. ' +
@@ -866,7 +867,9 @@ function doGet(e) {
     return HtmlService.createHtmlOutput('&lt;div style="font:16px/1.6 -apple-system,Segoe UI,Roboto,sans-serif;max-width:560px;padding:48px 24px;color:#1D1D1F"&gt;' +
       '&lt;h2 style="margin:0 0 12px"&gt;Jupiter Holiday Party dashboard&lt;/h2&gt;&lt;p&gt;' + msg + '&lt;/p&gt;&lt;/div&gt;').setTitle('Jupiter RSVP');
   }
-  return HtmlService.createTemplateFromFile('Dashboard').evaluate()
+  var page = HtmlService.createTemplateFromFile('Dashboard');
+  page.role = role; // 'viewer' = read-only view with notes (e.g. for the boss)
+  return page.evaluate()
     .setTitle('Jupiter Holiday Party · RSVPs')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
@@ -1573,6 +1576,72 @@ function isOwner_() {
   return !!user &amp;&amp; dashboardUsers_().indexOf(user) !== -1;
 }
 
+/** View-only people (e.g. the boss): can see the dashboard and leave notes, nothing else. Managed from the dashboard. */
+function dashboardViewers_() {
+  return String(PropertiesService.getScriptProperties().getProperty('VIEWERS') || '')
+    .split(',').map(function (e) { return e.trim().toLowerCase(); }).filter(function (e) { return e; });
+}
+
+function isViewer_() {
+  var user = String(Session.getActiveUser().getEmail() || '').toLowerCase();
+  return !!user &amp;&amp; dashboardViewers_().indexOf(user) !== -1;
+}
+
+function requireViewer_() {
+  if (!isOwner_() &amp;&amp; !isViewer_()) throw new Error('This Google account can\'t open this dashboard.');
+}
+
+function getViewers() {
+  requireOwner_();
+  return dashboardViewers_();
+}
+
+function setViewers(list) {
+  requireOwner_();
+  var clean = String(list || '').split(/[\s,;]+/).map(function (e) { return e.trim().toLowerCase(); })
+    .filter(function (e) { return EMAIL_PATTERN.test(e); });
+  PropertiesService.getScriptProperties().setProperty('VIEWERS', clean.join(','));
+  return clean;
+}
+
+/* Notes on investors (boss and team), kept in a "Notes" tab. */
+var NOTES_SHEET = 'Notes';
+
+function notesSheet_() {
+  var ss = SpreadsheetApp.getActive();
+  var sheet = ss.getSheetByName(NOTES_SHEET);
+  if (!sheet) {
+    sheet = ss.insertSheet(NOTES_SHEET);
+    sheet.getRange(1, 1, 1, 6).setValues([['Time', 'Investor', 'Email', 'Token', 'Note', 'Written by']])
+      .setFontWeight('bold').setBackground('#0B1330').setFontColor('#F2B01E');
+    sheet.setFrozenRows(1);
+    sheet.setColumnWidth(5, 420);
+  }
+  return sheet;
+}
+
+function readNotes_() {
+  var sheet = SpreadsheetApp.getActive().getSheetByName(NOTES_SHEET), byToken = {};
+  if (!sheet || sheet.getLastRow() &lt; 2) return byToken;
+  sheet.getRange(2, 1, sheet.getLastRow() - 1, 6).getValues().forEach(function (r) {
+    var t = String(r[3]);
+    if (!t || !r[4]) return;
+    (byToken[t] = byToken[t] || []).push({ time: r[0] instanceof Date ? r[0].toISOString() : String(r[0]), text: String(r[4]), by: String(r[5]) });
+  });
+  return byToken;
+}
+
+function addNote(token, text) {
+  requireViewer_();
+  text = String(text || '').trim().slice(0, 1000);
+  if (!text) throw new Error('Write a note first.');
+  var found = findGuestByToken_(token);
+  if (!found) throw new Error('Investor not found. Refresh the page.');
+  var by = Session.getActiveUser().getEmail();
+  notesSheet_().appendRow([new Date(), found.guest.name, found.guest.email, token, text, by]);
+  return readNotes_()[token] || [];
+}
+
 function requireOwner_() {
   if (!isOwner_()) throw new Error('This Google account can\'t use the dashboard. Add it to the Settings tab, cell B3.');
 }
@@ -2121,7 +2190,7 @@ function markBounces_() {
 /* ------------------------------------------------------------------ */
 
 function getDashboard() {
-  requireOwner_();
+  requireViewer_();
   loadSettings_();
   var guests = readGuests_().guests;
   var phases = {};
@@ -2142,6 +2211,7 @@ function getDashboard() {
   }
   function secondsBetween(a, b) { return a &amp;&amp; b ? (new Date(b).getTime() - new Date(a).getTime()) / 1000 : null; }
 
+  var notes = readNotes_();
   var rows = guests.map(function (g) {
     stats.total++;
     if (g.phase) phases[g.phase] = true;
@@ -2166,7 +2236,7 @@ function getDashboard() {
       delivered: g.opened, realOpened: opened, openedAt: openedAt, emails: emailCount_(g.emailsSent),
       phone: g.phone, smsStatus: g.smsStatus, smsSentAt: g.smsSentAt,
       autoOpen: g.opened &amp;&amp; openedIn !== null &amp;&amp; openedIn &lt; 60,
-      name: g.name, email: g.email, phase: g.phase, token: g.token,
+      name: g.name, email: g.email, phase: g.phase, token: g.token, notes: notes[g.token] || [],
       status: g.status || 'Not sent', sentAt: g.sentAt,
       opened: g.opened, firstOpened: g.firstOpened, openCount: g.openCount,
       rsvp: g.rsvp, partySize: g.partySize, reason: g.reason, rsvpAt: g.rsvpAt,
@@ -2195,7 +2265,7 @@ function getDashboard() {
       <div class="copyrow"><code>Dashboard</code><button class="copy" data-text="Dashboard">Copy</button></div>
       <p>Delete the lines it starts with (<span class="ui">Cmd + A</span>, <span class="ui">Delete</span>), then paste this:</p>
       <div class="bigcopy">
-        <div class="head"><span><span class="name">Dashboard.html</span> <span class="meta">· 840 lines</span></span><button class="copy" data-src="dash-html">Copy all of Dashboard.html</button></div>
+        <div class="head"><span><span class="name">Dashboard.html</span> <span class="meta">· 943 lines</span></span><button class="copy" data-src="dash-html">Copy all of Dashboard.html</button></div>
         <pre aria-hidden="true">&lt;!DOCTYPE html&gt;
 &lt;html lang=&quot;en&quot;&gt;
 &lt;head&gt;
@@ -2347,7 +2417,8 @@ function getDashboard() {
       &lt;h1&gt;Invitations &amp; RSVPs&lt;/h1&gt;
       &lt;div class="sub" id="sub"&gt;Loading…&lt;/div&gt;
     &lt;/div&gt;
-    &lt;div class="actions"&gt;
+    &lt;div class="actions" id="actions"&gt;
+      &lt;button class="btn" onclick="openViewers()"&gt;Share view-only&lt;/button&gt;
       &lt;button class="btn" onclick="openEditor()"&gt;Edit text &amp;amp; poster&lt;/button&gt;
       &lt;button class="btn" onclick="openPreview('invite')"&gt;Preview emails&lt;/button&gt;
       &lt;button class="btn" onclick="copyFriendsLink()"&gt;Copy friends link&lt;/button&gt;
@@ -2409,6 +2480,29 @@ function getDashboard() {
       &lt;button class="btn" onclick="closeModal('sendModal')" id="sendCancel"&gt;Close&lt;/button&gt;
       &lt;button class="btn gold" id="sendGo" disabled onclick="startSend()"&gt;Send&lt;/button&gt;
     &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;!-- Notes on an investor --&gt;
+&lt;div class="scrim" id="notesModal"&gt;
+  &lt;div class="modal" style="max-width:520px"&gt;
+    &lt;h2 id="notesTitle"&gt;Notes&lt;/h2&gt;
+    &lt;p id="notesSub" style="margin-bottom:10px"&gt;&lt;/p&gt;
+    &lt;div id="notesList" style="max-height:40vh;overflow-y:auto"&gt;&lt;/div&gt;
+    &lt;div class="field" style="margin-top:12px"&gt;&lt;label for="noteText"&gt;Add a note&lt;/label&gt;
+      &lt;textarea id="noteText" class="inp" rows="3" placeholder="e.g. Please send him a reminder, or: I'll call him personally."&gt;&lt;/textarea&gt;&lt;/div&gt;
+    &lt;div class="row-end"&gt;&lt;button class="btn" onclick="closeModal('notesModal')"&gt;Close&lt;/button&gt;&lt;button class="btn gold" id="noteSave" onclick="saveNote()"&gt;Save note&lt;/button&gt;&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;!-- View-only access --&gt;
+&lt;div class="scrim" id="viewersModal"&gt;
+  &lt;div class="modal" style="max-width:520px"&gt;
+    &lt;h2&gt;Share view-only&lt;/h2&gt;
+    &lt;p&gt;These people can open this same dashboard link but only &lt;b&gt;see&lt;/b&gt; the list and &lt;b&gt;leave notes&lt;/b&gt;. They can't send, edit or change anything. They must use a jupitertexas.com Google account.&lt;/p&gt;
+    &lt;div class="field"&gt;&lt;label for="viewersText"&gt;Emails (one per line)&lt;/label&gt;&lt;textarea id="viewersText" class="inp" rows="4" placeholder="boss@jupitertexas.com"&gt;&lt;/textarea&gt;&lt;/div&gt;
+    &lt;p class="time" style="white-space:normal"&gt;Then send them your dashboard link (the one you bookmarked). To preview what they see, add &lt;b&gt;?view=boss&lt;/b&gt; to the end of your dashboard link.&lt;/p&gt;
+    &lt;div class="row-end"&gt;&lt;button class="btn" onclick="closeModal('viewersModal')"&gt;Close&lt;/button&gt;&lt;button class="btn gold" onclick="saveViewers()"&gt;Save&lt;/button&gt;&lt;/div&gt;
   &lt;/div&gt;
 &lt;/div&gt;
 
@@ -2544,12 +2638,17 @@ function getDashboard() {
     ['maybe', 'Maybe', function (r) { return r.rsvp === 'Maybe'; }],
     ['no', "Can't make it", function (r) { return r.rsvp === 'No'; }],
     ['bounced', 'Bounced', function (r) { return r.status === 'Bounced'; }],
-    ['check', 'Needs checking', function (r) { return r.check; }]
+    ['check', 'Needs checking', function (r) { return r.check; }],
+    ['notes', 'Has notes', function (r) { return r.noteCount &gt; 0; }]
   ];
 
+  var VIEWER_COLUMNS = [
+    ['name', 'Investor'], ['via', 'Via'], ['status', 'Invite'], ['realOpened', 'Opened'],
+    ['rsvp', 'RSVP'], ['partySize', 'Party'], ['noteCount', 'Notes']
+  ];
   var COLUMNS = [
     ['name', 'Investor'], ['phase', 'Phase'], ['status', 'Invite'], ['emails', 'Emails'], ['smsStatus', 'SMS'], ['realOpened', 'Opened'],
-    ['rsvp', 'RSVP'], ['partySize', 'Party'], ['reason', 'Maybe reason'], ['lastActivity', 'Last activity']
+    ['rsvp', 'RSVP'], ['partySize', 'Party'], ['reason', 'Maybe reason'], ['noteCount', 'Notes'], ['lastActivity', 'Last activity']
   ];
 
   function $(id) { return document.getElementById(id); }
@@ -2572,8 +2671,16 @@ function getDashboard() {
     });
   }
 
+  var VIEWER = '&lt;?= role ?&gt;' === 'viewer';
+
   function load() {
-    return call('getDashboard').then(function (data) { DATA = data; renderAll(); }).catch(fail);
+    return call('getDashboard').then(function (data) {
+      data.rows.forEach(function (r) {
+        r.via = r.phase === 'Friends (link)' ? 'WhatsApp' : 'Email';
+        r.notes = r.notes || []; r.noteCount = r.notes.length;
+      });
+      DATA = data; renderAll();
+    }).catch(fail);
   }
 
   function renderAll() {
@@ -2589,7 +2696,7 @@ function getDashboard() {
       ['', 'noanswer', 'No answer yet', s.noResponse, pct(s.yes + s.maybe + s.no, s.sent) + ' have replied'],
       ['', 'bounced', 'Bounced', s.bounced, s.bounced ? 'Check these emails' : 'All delivered'],
       ['', 'check', 'Needs checking', s.needsCheck || 0, s.needsCheck ? 'Answered seconds after sending' : 'Nothing suspicious']
-    ].map(function (c) {
+    ].filter(function (c) { return !(VIEWER &amp;&amp; c[1] === 'check'); }).map(function (c) {
       return '&lt;div class="stat ' + c[0] + '" onclick="setFilter(\'' + c[1] + '\')"&gt;&lt;div class="label"&gt;' + c[2] + '&lt;/div&gt;&lt;div class="value"&gt;' + c[3] + '&lt;/div&gt;&lt;div class="note"&gt;' + esc(c[4]) + '&lt;/div&gt;&lt;/div&gt;';
     }).join('');
 
@@ -2598,7 +2705,7 @@ function getDashboard() {
     $('phaseFilter').value = current;
     $('sheetLink').href = DATA.sheetUrl;
     var t = DATA.tracking || { ok: true };
-    $('alert').hidden = t.ok;
+    $('alert').hidden = t.ok || VIEWER;
     $('alertText').textContent = t.message || '';
     $('updated').textContent = 'Updated ' + new Date(DATA.updatedAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
     render();
@@ -2621,12 +2728,12 @@ function getDashboard() {
     if (!DATA) return;
     var phase = $('phaseFilter').value;
     var base = DATA.rows.filter(function (r) { return !phase || r.phase === phase; });
-    $('chips').innerHTML = FILTERS.map(function (f) {
+    $('chips').innerHTML = FILTERS.filter(function (f) { return !(VIEWER &amp;&amp; f[0] === 'check'); }).map(function (f) {
       var n = base.filter(f[2]).length;
       return '&lt;button class="chip ' + (FILTER === f[0] ? 'on' : '') + '" onclick="setFilter(\'' + f[0] + '\')"&gt;' + f[1] + '&lt;span class="n"&gt;' + n + '&lt;/span&gt;&lt;/button&gt;';
     }).join('');
 
-    $('thead').innerHTML = '&lt;th style="width:36px"&gt;&lt;input type="checkbox" id="selAll" title="Tick everyone shown who has received the invitation" onclick="toggleAll(this.checked)"&gt;&lt;/th&gt;' + COLUMNS.map(function (c) {
+    $('thead').innerHTML = (VIEWER ? '' : '&lt;th style="width:36px"&gt;&lt;input type="checkbox" id="selAll" title="Tick everyone shown who has received the invitation" onclick="toggleAll(this.checked)"&gt;&lt;/th&gt;') + (VIEWER ? VIEWER_COLUMNS : COLUMNS).map(function (c) {
       var arrow = SORT.key === c[0] ? (SORT.dir &gt; 0 ? ' ↑' : ' ↓') : '';
       return '&lt;th onclick="setSort(\'' + c[0] + '\')"&gt;' + c[1] + '&lt;span class="arrow"&gt;' + arrow + '&lt;/span&gt;&lt;/th&gt;';
     }).join('');
@@ -2639,10 +2746,10 @@ function getDashboard() {
     });
 
     VISIBLE = rows;
-    $('tbody').innerHTML = rows.length ? rows.map(rowHtml).join('') :
-      '&lt;tr&gt;&lt;td colspan="11" class="empty"&gt;' + (DATA.rows.length ? 'Nobody matches this view.' : 'No investors yet. Paste Name, Email and Phase into the Google Sheet.') + '&lt;/td&gt;&lt;/tr&gt;';
+    $('tbody').innerHTML = rows.length ? rows.map(VIEWER ? viewerRowHtml : rowHtml).join('') :
+      '&lt;tr&gt;&lt;td colspan="12" class="empty"&gt;' + (DATA.rows.length ? 'Nobody matches this view.' : 'No investors yet. Paste Name, Email and Phase into the Google Sheet.') + '&lt;/td&gt;&lt;/tr&gt;';
     $('count').textContent = 'Showing ' + rows.length + ' of ' + DATA.rows.length + ' investors';
-    updateSelection();
+    if (!VIEWER) updateSelection();
   }
 
   function smsCell(r) {
@@ -2676,15 +2783,81 @@ function getDashboard() {
       '&lt;td&gt;&lt;div class="name"&gt;' + esc(r.name || '—') + '&lt;/div&gt;&lt;div class="email"&gt;' + esc(r.email || 'No email: link only') + '&lt;/div&gt;' +
         (r.token ? '&lt;a href="#" class="time" style="color:var(--blue)" onclick="copyLink(\'' + esc(r.token) + '\', \'' + esc(r.name).replace(/'/g, '') + '\', ' + (r.status === 'Sent' ? 'true' : 'false') + ');return false;"&gt;Copy RSVP link&lt;/a&gt;' : '') + '&lt;/td&gt;' +
       '&lt;td&gt;' + esc(r.phase) + '&lt;/td&gt;&lt;td&gt;' + status + '&lt;/td&gt;&lt;td style="font-variant-numeric:tabular-nums"&gt;' + (r.emails || '') + '&lt;/td&gt;&lt;td&gt;' + smsCell(r) + '&lt;/td&gt;&lt;td&gt;' + opened + '&lt;/td&gt;&lt;td&gt;' + rsvp + '&lt;/td&gt;' +
-      '&lt;td&gt;' + party + '&lt;/td&gt;&lt;td&gt;' + esc(r.rsvp === 'Maybe' ? r.reason : '') + '&lt;/td&gt;' +
+      '&lt;td&gt;' + party + '&lt;/td&gt;&lt;td&gt;' + esc(r.rsvp === 'Maybe' ? r.reason : '') + '&lt;/td&gt;&lt;td&gt;' + notesCell(r) + '&lt;/td&gt;' +
       '&lt;td class="time"&gt;' + when(r.lastActivity) + '&lt;/td&gt;&lt;/tr&gt;';
   }
 
+  /* ---- Shared pieces for the view-only (boss) table ---- */
+  function partyText(r) { return r.rsvp === 'Yes' ? (r.partySize === '1' ? 'Just them' : r.partySize === '4+' ? '4 or more' : r.partySize ? r.partySize + ' people' : '') : ''; }
+
+  function notesCell(r) {
+    var last = r.notes[r.notes.length - 1];
+    return (last ? '&lt;div style="min-width:180px;max-width:240px;font-size:13px;white-space:normal"&gt;' + esc(last.text.length &gt; 80 ? last.text.slice(0, 80) + '…' : last.text) + '&lt;/div&gt;' +
+        '&lt;div class="time"&gt;' + esc((last.by || '').split('@')[0]) + ' · ' + when(last.time) + (r.notes.length &gt; 1 ? ' · ' + r.notes.length + ' notes' : '') + '&lt;/div&gt;' : '') +
+      '&lt;a href="#" class="time" style="color:var(--blue)" onclick="openNotes(\'' + esc(r.token) + '\');return false;"&gt;' + (last ? 'View / add note' : 'Add note') + '&lt;/a&gt;';
+  }
+
+  function viewerRowHtml(r) {
+    var status = r.status === 'Sent' ? '&lt;span class="pill p-sent"&gt;Sent&lt;/span&gt;&lt;div class="time"&gt;' + when(r.sentAt) + '&lt;/div&gt;'
+      : r.status === 'Bounced' ? '&lt;span class="pill p-no" title="The email address didn\'t accept the email"&gt;Didn\'t arrive&lt;/span&gt;'
+      : '&lt;span class="pill p-none"&gt;Not sent&lt;/span&gt;';
+    var opened = r.realOpened ? '&lt;span class="pill p-open"&gt;Opened&lt;/span&gt;&lt;div class="time"&gt;' + when(r.openedAt) + '&lt;/div&gt;'
+      : r.delivered ? '&lt;span class="pill p-none"&gt;Delivered&lt;/span&gt;' : (r.status === 'Sent' ? '&lt;span class="pill p-none"&gt;Not yet&lt;/span&gt;' : '');
+    var label = { Yes: ['p-yes', 'Attending'], Maybe: ['p-maybe', 'Maybe'], No: ['p-no', "Can't make it"] }[r.rsvp];
+    var rsvp = label ? '&lt;span class="pill ' + label[0] + '"&gt;' + label[1] + '&lt;/span&gt;&lt;div class="time"&gt;' + when(r.rsvpAt) + '&lt;/div&gt;' : '&lt;span class="time"&gt;No answer yet&lt;/span&gt;';
+    return '&lt;tr&gt;&lt;td&gt;&lt;div class="name"&gt;' + esc(r.name || '—') + '&lt;/div&gt;&lt;div class="email"&gt;' + esc(r.email || '') + '&lt;/div&gt;&lt;/td&gt;' +
+      '&lt;td&gt;' + esc(r.via) + '&lt;/td&gt;&lt;td&gt;' + status + '&lt;/td&gt;&lt;td&gt;' + opened + '&lt;/td&gt;&lt;td&gt;' + rsvp + '&lt;/td&gt;&lt;td&gt;' + partyText(r) + '&lt;/td&gt;&lt;td&gt;' + notesCell(r) + '&lt;/td&gt;&lt;/tr&gt;';
+  }
+
+  var NOTE_TOKEN = '';
+  function openNotes(token) {
+    var r = DATA.rows.filter(function (x) { return x.token === token; })[0];
+    if (!r) return;
+    NOTE_TOKEN = token;
+    $('notesTitle').textContent = 'Notes: ' + r.name;
+    $('notesSub').textContent = r.email ? r.email : '';
+    renderNotes(r.notes);
+    $('noteText').value = '';
+    openModal('notesModal');
+    setTimeout(function () { $('noteText').focus(); }, 50);
+  }
+  function renderNotes(list) {
+    $('notesList').innerHTML = list.length ? list.map(function (n) {
+      return '&lt;div class="summary" style="margin-bottom:8px"&gt;&lt;div style="white-space:pre-wrap"&gt;' + esc(n.text) + '&lt;/div&gt;&lt;div class="time" style="margin-top:4px"&gt;' + esc(n.by) + ' · ' + when(n.time) + '&lt;/div&gt;&lt;/div&gt;';
+    }).join('') : '&lt;p class="time"&gt;No notes yet.&lt;/p&gt;';
+  }
+  function saveNote() {
+    var text = $('noteText').value.trim();
+    if (!text) { toast('Write a note first.'); return; }
+    $('noteSave').disabled = true;
+    call('addNote', NOTE_TOKEN, text).then(function (list) {
+      renderNotes(list); $('noteText').value = ''; toast('Note saved'); load();
+    }).catch(fail).then(function () { $('noteSave').disabled = false; });
+  }
+
+  function openViewers() {
+    openModal('viewersModal');
+    call('getViewers').then(function (list) { $('viewersText').value = list.join('\n'); }).catch(fail);
+  }
+  function saveViewers() {
+    call('setViewers', $('viewersText').value).then(function (list) {
+      toast(list.length ? 'View-only access: ' + list.join(', ') : 'No view-only access'); closeModal('viewersModal');
+    }).catch(fail);
+  }
+
+  // View-only: hide every control that sends or changes something.
+  if (VIEWER) {
+    $('actions').innerHTML = '&lt;span class="pill p-none" style="padding:8px 14px"&gt;View only · you can leave notes&lt;/span&gt;';
+    $('phaseFilter').style.display = 'none';
+    var upd = $('updated'), holder = upd.parentNode; holder.innerHTML = ''; holder.appendChild(upd);
+  }
+
   function exportCsv() {
-    var head = ['Name', 'Email', 'Phone', 'SMS', 'Phase', 'Invite', 'Sent at', 'Emails received', 'Opened', 'Opened at', 'RSVP', 'Party size', 'Maybe reason', 'RSVP at', 'Needs checking', 'Scanner taps ignored'];
+    var head = ['Name', 'Email', 'Phone', 'SMS', 'Phase', 'Invite', 'Sent at', 'Emails received', 'Opened', 'Opened at', 'RSVP', 'Party size', 'Maybe reason', 'RSVP at', 'Needs checking', 'Scanner taps ignored', 'Notes'];
     var lines = [head].concat(visibleRows().map(function (r) {
       return [r.name, r.email, r.phone, r.smsStatus || (r.phone ? 'Not texted' : ''), r.phase, r.status, r.sentAt, r.emails || 0, r.realOpened ? 'Opened' : r.delivered ? 'Delivered (not confirmed opened)' : 'No', r.openedAt, r.rsvp, r.partySize, r.reason, r.rsvpAt,
-        r.check ? 'Yes, answered ' + Math.round(r.answeredIn) + ' seconds after sending' : '', r.scannerHits || ''];
+        r.check ? 'Yes, answered ' + Math.round(r.answeredIn) + ' seconds after sending' : '', r.scannerHits || '',
+        r.notes.map(function (n) { return n.by + ': ' + n.text; }).join(' | ')];
     })).map(function (cols) { return cols.map(function (c) { return '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"'; }).join(','); });
     var blob = new Blob([lines.join('\n')], { type: 'text/csv' });
     var a = document.createElement('a');

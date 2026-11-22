@@ -726,7 +726,8 @@ function doGet(e) {
     return ContentService.createTextOutput('');
   }
 
-  if (!isOwner_()) {
+  var role = isOwner_() ? (p.view === 'boss' ? 'viewer' : 'owner') : isViewer_() ? 'viewer' : '';
+  if (!role) {
     var who = Session.getActiveUser().getEmail();
     var msg = who
       ? 'You are signed in as <b>' + escapeHtml_(who) + '</b>, which isn\'t allowed to open this dashboard. ' +
@@ -736,7 +737,9 @@ function doGet(e) {
     return HtmlService.createHtmlOutput('<div style="font:16px/1.6 -apple-system,Segoe UI,Roboto,sans-serif;max-width:560px;padding:48px 24px;color:#1D1D1F">' +
       '<h2 style="margin:0 0 12px">Jupiter Holiday Party dashboard</h2><p>' + msg + '</p></div>').setTitle('Jupiter RSVP');
   }
-  return HtmlService.createTemplateFromFile('Dashboard').evaluate()
+  var page = HtmlService.createTemplateFromFile('Dashboard');
+  page.role = role; // 'viewer' = read-only view with notes (e.g. for the boss)
+  return page.evaluate()
     .setTitle('Jupiter Holiday Party · RSVPs')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
@@ -1443,6 +1446,72 @@ function isOwner_() {
   return !!user && dashboardUsers_().indexOf(user) !== -1;
 }
 
+/** View-only people (e.g. the boss): can see the dashboard and leave notes, nothing else. Managed from the dashboard. */
+function dashboardViewers_() {
+  return String(PropertiesService.getScriptProperties().getProperty('VIEWERS') || '')
+    .split(',').map(function (e) { return e.trim().toLowerCase(); }).filter(function (e) { return e; });
+}
+
+function isViewer_() {
+  var user = String(Session.getActiveUser().getEmail() || '').toLowerCase();
+  return !!user && dashboardViewers_().indexOf(user) !== -1;
+}
+
+function requireViewer_() {
+  if (!isOwner_() && !isViewer_()) throw new Error('This Google account can\'t open this dashboard.');
+}
+
+function getViewers() {
+  requireOwner_();
+  return dashboardViewers_();
+}
+
+function setViewers(list) {
+  requireOwner_();
+  var clean = String(list || '').split(/[\s,;]+/).map(function (e) { return e.trim().toLowerCase(); })
+    .filter(function (e) { return EMAIL_PATTERN.test(e); });
+  PropertiesService.getScriptProperties().setProperty('VIEWERS', clean.join(','));
+  return clean;
+}
+
+/* Notes on investors (boss and team), kept in a "Notes" tab. */
+var NOTES_SHEET = 'Notes';
+
+function notesSheet_() {
+  var ss = SpreadsheetApp.getActive();
+  var sheet = ss.getSheetByName(NOTES_SHEET);
+  if (!sheet) {
+    sheet = ss.insertSheet(NOTES_SHEET);
+    sheet.getRange(1, 1, 1, 6).setValues([['Time', 'Investor', 'Email', 'Token', 'Note', 'Written by']])
+      .setFontWeight('bold').setBackground('#0B1330').setFontColor('#F2B01E');
+    sheet.setFrozenRows(1);
+    sheet.setColumnWidth(5, 420);
+  }
+  return sheet;
+}
+
+function readNotes_() {
+  var sheet = SpreadsheetApp.getActive().getSheetByName(NOTES_SHEET), byToken = {};
+  if (!sheet || sheet.getLastRow() < 2) return byToken;
+  sheet.getRange(2, 1, sheet.getLastRow() - 1, 6).getValues().forEach(function (r) {
+    var t = String(r[3]);
+    if (!t || !r[4]) return;
+    (byToken[t] = byToken[t] || []).push({ time: r[0] instanceof Date ? r[0].toISOString() : String(r[0]), text: String(r[4]), by: String(r[5]) });
+  });
+  return byToken;
+}
+
+function addNote(token, text) {
+  requireViewer_();
+  text = String(text || '').trim().slice(0, 1000);
+  if (!text) throw new Error('Write a note first.');
+  var found = findGuestByToken_(token);
+  if (!found) throw new Error('Investor not found. Refresh the page.');
+  var by = Session.getActiveUser().getEmail();
+  notesSheet_().appendRow([new Date(), found.guest.name, found.guest.email, token, text, by]);
+  return readNotes_()[token] || [];
+}
+
 function requireOwner_() {
   if (!isOwner_()) throw new Error('This Google account can\'t use the dashboard. Add it to the Settings tab, cell B3.');
 }
@@ -1991,7 +2060,7 @@ function markBounces_() {
 /* ------------------------------------------------------------------ */
 
 function getDashboard() {
-  requireOwner_();
+  requireViewer_();
   loadSettings_();
   var guests = readGuests_().guests;
   var phases = {};
@@ -2012,6 +2081,7 @@ function getDashboard() {
   }
   function secondsBetween(a, b) { return a && b ? (new Date(b).getTime() - new Date(a).getTime()) / 1000 : null; }
 
+  var notes = readNotes_();
   var rows = guests.map(function (g) {
     stats.total++;
     if (g.phase) phases[g.phase] = true;
@@ -2036,7 +2106,7 @@ function getDashboard() {
       delivered: g.opened, realOpened: opened, openedAt: openedAt, emails: emailCount_(g.emailsSent),
       phone: g.phone, smsStatus: g.smsStatus, smsSentAt: g.smsSentAt,
       autoOpen: g.opened && openedIn !== null && openedIn < 60,
-      name: g.name, email: g.email, phase: g.phase, token: g.token,
+      name: g.name, email: g.email, phase: g.phase, token: g.token, notes: notes[g.token] || [],
       status: g.status || 'Not sent', sentAt: g.sentAt,
       opened: g.opened, firstOpened: g.firstOpened, openCount: g.openCount,
       rsvp: g.rsvp, partySize: g.partySize, reason: g.reason, rsvpAt: g.rsvpAt,

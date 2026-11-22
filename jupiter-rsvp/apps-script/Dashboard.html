@@ -141,7 +141,8 @@
       <h1>Invitations & RSVPs</h1>
       <div class="sub" id="sub">Loading…</div>
     </div>
-    <div class="actions">
+    <div class="actions" id="actions">
+      <button class="btn" onclick="openViewers()">Share view-only</button>
       <button class="btn" onclick="openEditor()">Edit text &amp; poster</button>
       <button class="btn" onclick="openPreview('invite')">Preview emails</button>
       <button class="btn" onclick="copyFriendsLink()">Copy friends link</button>
@@ -203,6 +204,29 @@
       <button class="btn" onclick="closeModal('sendModal')" id="sendCancel">Close</button>
       <button class="btn gold" id="sendGo" disabled onclick="startSend()">Send</button>
     </div>
+  </div>
+</div>
+
+<!-- Notes on an investor -->
+<div class="scrim" id="notesModal">
+  <div class="modal" style="max-width:520px">
+    <h2 id="notesTitle">Notes</h2>
+    <p id="notesSub" style="margin-bottom:10px"></p>
+    <div id="notesList" style="max-height:40vh;overflow-y:auto"></div>
+    <div class="field" style="margin-top:12px"><label for="noteText">Add a note</label>
+      <textarea id="noteText" class="inp" rows="3" placeholder="e.g. Please send him a reminder, or: I'll call him personally."></textarea></div>
+    <div class="row-end"><button class="btn" onclick="closeModal('notesModal')">Close</button><button class="btn gold" id="noteSave" onclick="saveNote()">Save note</button></div>
+  </div>
+</div>
+
+<!-- View-only access -->
+<div class="scrim" id="viewersModal">
+  <div class="modal" style="max-width:520px">
+    <h2>Share view-only</h2>
+    <p>These people can open this same dashboard link but only <b>see</b> the list and <b>leave notes</b>. They can't send, edit or change anything. They must use a jupitertexas.com Google account.</p>
+    <div class="field"><label for="viewersText">Emails (one per line)</label><textarea id="viewersText" class="inp" rows="4" placeholder="boss@jupitertexas.com"></textarea></div>
+    <p class="time" style="white-space:normal">Then send them your dashboard link (the one you bookmarked). To preview what they see, add <b>?view=boss</b> to the end of your dashboard link.</p>
+    <div class="row-end"><button class="btn" onclick="closeModal('viewersModal')">Close</button><button class="btn gold" onclick="saveViewers()">Save</button></div>
   </div>
 </div>
 
@@ -338,12 +362,17 @@
     ['maybe', 'Maybe', function (r) { return r.rsvp === 'Maybe'; }],
     ['no', "Can't make it", function (r) { return r.rsvp === 'No'; }],
     ['bounced', 'Bounced', function (r) { return r.status === 'Bounced'; }],
-    ['check', 'Needs checking', function (r) { return r.check; }]
+    ['check', 'Needs checking', function (r) { return r.check; }],
+    ['notes', 'Has notes', function (r) { return r.noteCount > 0; }]
   ];
 
+  var VIEWER_COLUMNS = [
+    ['name', 'Investor'], ['via', 'Via'], ['status', 'Invite'], ['realOpened', 'Opened'],
+    ['rsvp', 'RSVP'], ['partySize', 'Party'], ['noteCount', 'Notes']
+  ];
   var COLUMNS = [
     ['name', 'Investor'], ['phase', 'Phase'], ['status', 'Invite'], ['emails', 'Emails'], ['smsStatus', 'SMS'], ['realOpened', 'Opened'],
-    ['rsvp', 'RSVP'], ['partySize', 'Party'], ['reason', 'Maybe reason'], ['lastActivity', 'Last activity']
+    ['rsvp', 'RSVP'], ['partySize', 'Party'], ['reason', 'Maybe reason'], ['noteCount', 'Notes'], ['lastActivity', 'Last activity']
   ];
 
   function $(id) { return document.getElementById(id); }
@@ -366,8 +395,16 @@
     });
   }
 
+  var VIEWER = '<?= role ?>' === 'viewer';
+
   function load() {
-    return call('getDashboard').then(function (data) { DATA = data; renderAll(); }).catch(fail);
+    return call('getDashboard').then(function (data) {
+      data.rows.forEach(function (r) {
+        r.via = r.phase === 'Friends (link)' ? 'WhatsApp' : 'Email';
+        r.notes = r.notes || []; r.noteCount = r.notes.length;
+      });
+      DATA = data; renderAll();
+    }).catch(fail);
   }
 
   function renderAll() {
@@ -383,7 +420,7 @@
       ['', 'noanswer', 'No answer yet', s.noResponse, pct(s.yes + s.maybe + s.no, s.sent) + ' have replied'],
       ['', 'bounced', 'Bounced', s.bounced, s.bounced ? 'Check these emails' : 'All delivered'],
       ['', 'check', 'Needs checking', s.needsCheck || 0, s.needsCheck ? 'Answered seconds after sending' : 'Nothing suspicious']
-    ].map(function (c) {
+    ].filter(function (c) { return !(VIEWER && c[1] === 'check'); }).map(function (c) {
       return '<div class="stat ' + c[0] + '" onclick="setFilter(\'' + c[1] + '\')"><div class="label">' + c[2] + '</div><div class="value">' + c[3] + '</div><div class="note">' + esc(c[4]) + '</div></div>';
     }).join('');
 
@@ -392,7 +429,7 @@
     $('phaseFilter').value = current;
     $('sheetLink').href = DATA.sheetUrl;
     var t = DATA.tracking || { ok: true };
-    $('alert').hidden = t.ok;
+    $('alert').hidden = t.ok || VIEWER;
     $('alertText').textContent = t.message || '';
     $('updated').textContent = 'Updated ' + new Date(DATA.updatedAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
     render();
@@ -415,12 +452,12 @@
     if (!DATA) return;
     var phase = $('phaseFilter').value;
     var base = DATA.rows.filter(function (r) { return !phase || r.phase === phase; });
-    $('chips').innerHTML = FILTERS.map(function (f) {
+    $('chips').innerHTML = FILTERS.filter(function (f) { return !(VIEWER && f[0] === 'check'); }).map(function (f) {
       var n = base.filter(f[2]).length;
       return '<button class="chip ' + (FILTER === f[0] ? 'on' : '') + '" onclick="setFilter(\'' + f[0] + '\')">' + f[1] + '<span class="n">' + n + '</span></button>';
     }).join('');
 
-    $('thead').innerHTML = '<th style="width:36px"><input type="checkbox" id="selAll" title="Tick everyone shown who has received the invitation" onclick="toggleAll(this.checked)"></th>' + COLUMNS.map(function (c) {
+    $('thead').innerHTML = (VIEWER ? '' : '<th style="width:36px"><input type="checkbox" id="selAll" title="Tick everyone shown who has received the invitation" onclick="toggleAll(this.checked)"></th>') + (VIEWER ? VIEWER_COLUMNS : COLUMNS).map(function (c) {
       var arrow = SORT.key === c[0] ? (SORT.dir > 0 ? ' ↑' : ' ↓') : '';
       return '<th onclick="setSort(\'' + c[0] + '\')">' + c[1] + '<span class="arrow">' + arrow + '</span></th>';
     }).join('');
@@ -433,10 +470,10 @@
     });
 
     VISIBLE = rows;
-    $('tbody').innerHTML = rows.length ? rows.map(rowHtml).join('') :
-      '<tr><td colspan="11" class="empty">' + (DATA.rows.length ? 'Nobody matches this view.' : 'No investors yet. Paste Name, Email and Phase into the Google Sheet.') + '</td></tr>';
+    $('tbody').innerHTML = rows.length ? rows.map(VIEWER ? viewerRowHtml : rowHtml).join('') :
+      '<tr><td colspan="12" class="empty">' + (DATA.rows.length ? 'Nobody matches this view.' : 'No investors yet. Paste Name, Email and Phase into the Google Sheet.') + '</td></tr>';
     $('count').textContent = 'Showing ' + rows.length + ' of ' + DATA.rows.length + ' investors';
-    updateSelection();
+    if (!VIEWER) updateSelection();
   }
 
   function smsCell(r) {
@@ -470,15 +507,81 @@
       '<td><div class="name">' + esc(r.name || '—') + '</div><div class="email">' + esc(r.email || 'No email: link only') + '</div>' +
         (r.token ? '<a href="#" class="time" style="color:var(--blue)" onclick="copyLink(\'' + esc(r.token) + '\', \'' + esc(r.name).replace(/'/g, '') + '\', ' + (r.status === 'Sent' ? 'true' : 'false') + ');return false;">Copy RSVP link</a>' : '') + '</td>' +
       '<td>' + esc(r.phase) + '</td><td>' + status + '</td><td style="font-variant-numeric:tabular-nums">' + (r.emails || '') + '</td><td>' + smsCell(r) + '</td><td>' + opened + '</td><td>' + rsvp + '</td>' +
-      '<td>' + party + '</td><td>' + esc(r.rsvp === 'Maybe' ? r.reason : '') + '</td>' +
+      '<td>' + party + '</td><td>' + esc(r.rsvp === 'Maybe' ? r.reason : '') + '</td><td>' + notesCell(r) + '</td>' +
       '<td class="time">' + when(r.lastActivity) + '</td></tr>';
   }
 
+  /* ---- Shared pieces for the view-only (boss) table ---- */
+  function partyText(r) { return r.rsvp === 'Yes' ? (r.partySize === '1' ? 'Just them' : r.partySize === '4+' ? '4 or more' : r.partySize ? r.partySize + ' people' : '') : ''; }
+
+  function notesCell(r) {
+    var last = r.notes[r.notes.length - 1];
+    return (last ? '<div style="min-width:180px;max-width:240px;font-size:13px;white-space:normal">' + esc(last.text.length > 80 ? last.text.slice(0, 80) + '…' : last.text) + '</div>' +
+        '<div class="time">' + esc((last.by || '').split('@')[0]) + ' · ' + when(last.time) + (r.notes.length > 1 ? ' · ' + r.notes.length + ' notes' : '') + '</div>' : '') +
+      '<a href="#" class="time" style="color:var(--blue)" onclick="openNotes(\'' + esc(r.token) + '\');return false;">' + (last ? 'View / add note' : 'Add note') + '</a>';
+  }
+
+  function viewerRowHtml(r) {
+    var status = r.status === 'Sent' ? '<span class="pill p-sent">Sent</span><div class="time">' + when(r.sentAt) + '</div>'
+      : r.status === 'Bounced' ? '<span class="pill p-no" title="The email address didn\'t accept the email">Didn\'t arrive</span>'
+      : '<span class="pill p-none">Not sent</span>';
+    var opened = r.realOpened ? '<span class="pill p-open">Opened</span><div class="time">' + when(r.openedAt) + '</div>'
+      : r.delivered ? '<span class="pill p-none">Delivered</span>' : (r.status === 'Sent' ? '<span class="pill p-none">Not yet</span>' : '');
+    var label = { Yes: ['p-yes', 'Attending'], Maybe: ['p-maybe', 'Maybe'], No: ['p-no', "Can't make it"] }[r.rsvp];
+    var rsvp = label ? '<span class="pill ' + label[0] + '">' + label[1] + '</span><div class="time">' + when(r.rsvpAt) + '</div>' : '<span class="time">No answer yet</span>';
+    return '<tr><td><div class="name">' + esc(r.name || '—') + '</div><div class="email">' + esc(r.email || '') + '</div></td>' +
+      '<td>' + esc(r.via) + '</td><td>' + status + '</td><td>' + opened + '</td><td>' + rsvp + '</td><td>' + partyText(r) + '</td><td>' + notesCell(r) + '</td></tr>';
+  }
+
+  var NOTE_TOKEN = '';
+  function openNotes(token) {
+    var r = DATA.rows.filter(function (x) { return x.token === token; })[0];
+    if (!r) return;
+    NOTE_TOKEN = token;
+    $('notesTitle').textContent = 'Notes: ' + r.name;
+    $('notesSub').textContent = r.email ? r.email : '';
+    renderNotes(r.notes);
+    $('noteText').value = '';
+    openModal('notesModal');
+    setTimeout(function () { $('noteText').focus(); }, 50);
+  }
+  function renderNotes(list) {
+    $('notesList').innerHTML = list.length ? list.map(function (n) {
+      return '<div class="summary" style="margin-bottom:8px"><div style="white-space:pre-wrap">' + esc(n.text) + '</div><div class="time" style="margin-top:4px">' + esc(n.by) + ' · ' + when(n.time) + '</div></div>';
+    }).join('') : '<p class="time">No notes yet.</p>';
+  }
+  function saveNote() {
+    var text = $('noteText').value.trim();
+    if (!text) { toast('Write a note first.'); return; }
+    $('noteSave').disabled = true;
+    call('addNote', NOTE_TOKEN, text).then(function (list) {
+      renderNotes(list); $('noteText').value = ''; toast('Note saved'); load();
+    }).catch(fail).then(function () { $('noteSave').disabled = false; });
+  }
+
+  function openViewers() {
+    openModal('viewersModal');
+    call('getViewers').then(function (list) { $('viewersText').value = list.join('\n'); }).catch(fail);
+  }
+  function saveViewers() {
+    call('setViewers', $('viewersText').value).then(function (list) {
+      toast(list.length ? 'View-only access: ' + list.join(', ') : 'No view-only access'); closeModal('viewersModal');
+    }).catch(fail);
+  }
+
+  // View-only: hide every control that sends or changes something.
+  if (VIEWER) {
+    $('actions').innerHTML = '<span class="pill p-none" style="padding:8px 14px">View only · you can leave notes</span>';
+    $('phaseFilter').style.display = 'none';
+    var upd = $('updated'), holder = upd.parentNode; holder.innerHTML = ''; holder.appendChild(upd);
+  }
+
   function exportCsv() {
-    var head = ['Name', 'Email', 'Phone', 'SMS', 'Phase', 'Invite', 'Sent at', 'Emails received', 'Opened', 'Opened at', 'RSVP', 'Party size', 'Maybe reason', 'RSVP at', 'Needs checking', 'Scanner taps ignored'];
+    var head = ['Name', 'Email', 'Phone', 'SMS', 'Phase', 'Invite', 'Sent at', 'Emails received', 'Opened', 'Opened at', 'RSVP', 'Party size', 'Maybe reason', 'RSVP at', 'Needs checking', 'Scanner taps ignored', 'Notes'];
     var lines = [head].concat(visibleRows().map(function (r) {
       return [r.name, r.email, r.phone, r.smsStatus || (r.phone ? 'Not texted' : ''), r.phase, r.status, r.sentAt, r.emails || 0, r.realOpened ? 'Opened' : r.delivered ? 'Delivered (not confirmed opened)' : 'No', r.openedAt, r.rsvp, r.partySize, r.reason, r.rsvpAt,
-        r.check ? 'Yes, answered ' + Math.round(r.answeredIn) + ' seconds after sending' : '', r.scannerHits || ''];
+        r.check ? 'Yes, answered ' + Math.round(r.answeredIn) + ' seconds after sending' : '', r.scannerHits || '',
+        r.notes.map(function (n) { return n.by + ': ' + n.text; }).join(' | ')];
     })).map(function (cols) { return cols.map(function (c) { return '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"'; }).join(','); });
     var blob = new Blob([lines.join('\n')], { type: 'text/csv' });
     var a = document.createElement('a');

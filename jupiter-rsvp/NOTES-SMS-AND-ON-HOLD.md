@@ -56,6 +56,12 @@ Nothing about SMS has been tested against the real Twilio service yet; only simu
 - `openRsvp(name, …)` adds or updates a Guests row with Phase "Friends (link)" and Invite Status "Sent", so they're never emailed. The same name again updates that row. A name is required, so scanners can't answer.
 - After answering, the page offers Add to Google Calendar (template link) and Apple/Outlook (`?api=ics`, with 7/3/1-day alarms).
 
+## View-only dashboard for the boss (built 2026-11-22)
+
+- Owner clicks **Share view-only** and adds emails. They're stored in the Script Property `VIEWERS`. They must be jupitertexas.com accounts, because the Dashboard deployment is "Anyone within Jupiter Texas".
+- Viewers open the same dashboard link. `doGet` gives them role 'viewer': no send/edit controls, no Emails / SMS / Maybe reason / Last activity / Check columns, "Phase" shown as **Via** (Email, or WhatsApp for Friends (link)), and a Notes column.
+- Notes are stored in a **Notes** tab (Time, Investor, Email, Token, Note, Written by). The owner sees them in a Notes column, with a "Has notes" filter and in the CSV export. The owner can preview the viewer page with `?view=boss`.
+
 ## On hold (user asked to finish email invitations first; do nothing until asked)
 
 1. **Confirmation email for every tap:** anyone who taps any option gets a short "we got your answer" email, sent a few minutes later with the calendar invite, once per answer change.
