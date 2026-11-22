@@ -94,14 +94,15 @@
 </svg>
 
 <script>
-  // Race order: 600m run (1.5 laps of the 400m track), station, run ... run, finish
+  // Race order, step by step: run, station, run, station ... run, finish.
+  // Every run is 600m = 1.5 laps of the 400m track.
   const stations = [
-    "BROAD JUMP BURPEES",
-    "WALKING LUNGES",
-    "GORILLA WALK",
-    "SPEED HURDLES",
-    "FROG JUMP",
-    "BROAD JUMP BURPEES"
+    {name: "BROAD JUMP BURPEES", spec: "30M"},
+    {name: "WALKING LUNGES",     spec: "30M"},
+    {name: "GORILLA WALK",       spec: "30M"},
+    {name: "SPEED HURDLES",      spec: "18\u2033 · 30M"},
+    {name: "FROG JUMP",          spec: "30M"},
+    {name: "BROAD JUMP BURPEES", spec: "30M"}
   ];
   const NS = "http://www.w3.org/2000/svg";
   const g = document.getElementById("stations");
@@ -111,28 +112,36 @@
     if (text) el.textContent = text;
     return el;
   };
-  const CX = 540, BAR_W = 480, BAR_H = 60, RUN_H = 46, GAP = 10;
-  let y = 290;
+  const CX = 540, BAR_W = 480, BAR_H = 56, RUN_W = 300, RUN_H = 40, GAP = 15;
+  let y = 290, step = 1;
+  const num = () => String(step).padStart(2, "0");
+
+  // spine linking every step so the order reads top to bottom
+  g.appendChild(mk("line", {x1: CX, y1: 300, x2: CX, y2: 1080, stroke: "#C9CDD3", "stroke-width": 3, "stroke-dasharray": "2 8", "stroke-linecap": "round"}));
 
   const runRow = (label) => {
-    g.appendChild(mk("text", {x: CX, y: y + RUN_H/2 + 7, "text-anchor": "middle", "font-size": 21, "font-weight": 700, "font-style": "normal", fill: "#E3241B", "letter-spacing": 3}, label));
-    y += RUN_H + GAP;
+    const x = CX - RUN_W / 2;
+    g.appendChild(mk("rect", {x, y, width: RUN_W, height: RUN_H, rx: RUN_H/2, fill: "#E3241B"}));
+    g.appendChild(mk("circle", {cx: x + 21, cy: y + RUN_H/2, r: 15, fill: "#fff"}));
+    g.appendChild(mk("text", {x: x + 21, y: y + RUN_H/2 + 6, "text-anchor": "middle", "font-size": 17, "font-weight": 800, "font-style": "normal", fill: "#E3241B"}, num()));
+    g.appendChild(mk("text", {x: CX + 14, y: y + RUN_H/2 + 8, "text-anchor": "middle", "font-size": 24, "font-weight": 800, fill: "#fff", "letter-spacing": 2}, label));
+    y += RUN_H + GAP; step++;
   };
 
-  const stationRow = (name, i) => {
+  const stationRow = ({name, spec}) => {
     const x = CX - BAR_W / 2;
     g.appendChild(mk("rect", {x, y, width: BAR_W, height: BAR_H, rx: 6, fill: "#111113"}));
-    g.appendChild(mk("path", {d: `M${x} ${y+6} Q${x} ${y} ${x+6} ${y} H${x+56} L${x+44} ${y+BAR_H} H${x+6} Q${x} ${y+BAR_H} ${x} ${y+BAR_H-6} Z`, fill: "#E3241B"}));
-    g.appendChild(mk("text", {x: x + 26, y: y + 42, "text-anchor": "middle", "font-size": 32, "font-weight": 900, fill: "#fff"}, String(i + 1)));
-    g.appendChild(mk("text", {x: x + 66, y: y + 41, "font-size": 31, "font-weight": 800, fill: "#fff", "letter-spacing": 0.5}, name));
-    g.appendChild(mk("text", {x: x + BAR_W - 16, y: y + 40, "text-anchor": "end", "font-size": 22, "font-weight": 700, "font-style": "normal", fill: "#8A8F98", "letter-spacing": 1}, "30M"));
+    g.appendChild(mk("circle", {cx: x + 28, cy: y + BAR_H/2, r: 17, fill: "none", stroke: "#fff", "stroke-width": 2}));
+    g.appendChild(mk("text", {x: x + 28, y: y + BAR_H/2 + 7, "text-anchor": "middle", "font-size": 19, "font-weight": 800, "font-style": "normal", fill: "#fff"}, num()));
+    g.appendChild(mk("text", {x: x + 58, y: y + 39, "font-size": 30, "font-weight": 800, fill: "#fff", "letter-spacing": 0.5}, name));
+    g.appendChild(mk("text", {x: x + BAR_W - 16, y: y + 37, "text-anchor": "end", "font-size": 21, "font-weight": 700, "font-style": "normal", fill: "#9AA0A8", "letter-spacing": 1}, spec));
     // in from the track on the right, out to the track on the left
     g.appendChild(mk("use", {href: "#arrowL", transform: `translate(${x + BAR_W + 12} ${y + BAR_H/2}) scale(.8)`, opacity: .45}));
     g.appendChild(mk("use", {href: "#arrowL", transform: `translate(${x - 36} ${y + BAR_H/2}) scale(.8)`, opacity: .45}));
-    y += BAR_H + GAP;
+    y += BAR_H + GAP; step++;
   };
 
-  stations.forEach((name, i) => { runRow(i === 0 ? "START  ›  600M RUN" : "600M RUN"); stationRow(name, i); });
+  stations.forEach((st) => { runRow("600M RUN"); stationRow(st); });
   runRow("600M RUN  ›  FINISH");
 </script>
 </body>
