@@ -213,6 +213,7 @@
     <h2 id="notesTitle">Notes</h2>
     <p id="notesSub" style="margin-bottom:10px"></p>
     <div id="notesList" style="max-height:40vh;overflow-y:auto"></div>
+    <div class="field" id="noteByWrap" hidden style="margin-top:12px"><label for="noteBy">Your name</label><input id="noteBy" class="inp" placeholder="e.g. Bharath"></div>
     <div class="field" style="margin-top:12px"><label for="noteText">Add a note</label>
       <textarea id="noteText" class="inp" rows="3" placeholder="e.g. Please send him a reminder, or: I'll call him personally."></textarea></div>
     <div class="row-end"><button class="btn" onclick="closeModal('notesModal')">Close</button><button class="btn gold" id="noteSave" onclick="saveNote()">Save note</button></div>
@@ -223,7 +224,14 @@
 <div class="scrim" id="viewersModal">
   <div class="modal" style="max-width:520px">
     <h2>Share view-only</h2>
-    <p>These people can open this same dashboard link but only <b>see</b> the list and <b>leave notes</b>. They can't send, edit or change anything. They must use a jupitertexas.com Google account.</p>
+    <div class="summary">
+      <b>Link for anyone (works with any Gmail, no login)</b>
+      <p class="time" style="white-space:normal;margin:6px 0 10px">Anyone with this link can see the list and leave notes, nothing else. If it's ever forwarded to the wrong person, make a new link: the old one stops working.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><input id="viewLink" class="inp" readonly style="flex:1;min-width:200px;font-size:12px">
+        <button class="btn gold" onclick="copyViewLink()">Copy link</button></div>
+      <a href="#" class="time" style="color:var(--blue);display:inline-block;margin-top:8px" onclick="renewViewLink();return false;">Make a new link (old one stops working)</a>
+    </div>
+    <p style="margin-top:14px"><b>Or by company account:</b> these people can open this same dashboard link but only <b>see</b> the list and <b>leave notes</b>. They can't send, edit or change anything. They must use a jupitertexas.com Google account.</p>
     <div class="field"><label for="viewersText">Emails (one per line)</label><textarea id="viewersText" class="inp" rows="4" placeholder="boss@jupitertexas.com"></textarea></div>
     <p class="time" style="white-space:normal">Then send them your dashboard link (the one you bookmarked). To preview what they see, add <b>?view=boss</b> to the end of your dashboard link.</p>
     <div class="row-end"><button class="btn" onclick="closeModal('viewersModal')">Close</button><button class="btn gold" onclick="saveViewers()">Save</button></div>
@@ -396,12 +404,14 @@
   }
 
   var VIEWER = '<?= role ?>' === 'viewer';
+  var VIEW_KEY = '<?= viewKey ?>';
+  if (VIEW_KEY.indexOf('<' + '?') === 0) VIEW_KEY = '';
 
   function load() {
-    return call('getDashboard').then(function (data) {
+    return (VIEW_KEY ? call('getDashboardView', VIEW_KEY) : call('getDashboard')).then(function (data) {
       data.rows.forEach(function (r) {
         r.via = r.phase === 'Friends (link)' ? 'WhatsApp' : 'Email';
-        r.notes = r.notes || []; r.noteCount = r.notes.length;
+        r.notes = r.notes || []; r.noteCount = r.notes.length; r.id = r.id || r.token;
       });
       DATA = data; renderAll();
     }).catch(fail);
@@ -427,7 +437,7 @@
     var current = $('phaseFilter').value;
     $('phaseFilter').innerHTML = '<option value="">All phases</option>' + DATA.phases.map(function (p) { return '<option value="' + esc(p) + '">Phase ' + esc(p) + '</option>'; }).join('');
     $('phaseFilter').value = current;
-    $('sheetLink').href = DATA.sheetUrl;
+    if ($('sheetLink')) $('sheetLink').href = DATA.sheetUrl;
     var t = DATA.tracking || { ok: true };
     $('alert').hidden = t.ok || VIEWER;
     $('alertText').textContent = t.message || '';
@@ -518,7 +528,7 @@
     var last = r.notes[r.notes.length - 1];
     return (last ? '<div style="min-width:180px;max-width:240px;font-size:13px;white-space:normal">' + esc(last.text.length > 80 ? last.text.slice(0, 80) + '…' : last.text) + '</div>' +
         '<div class="time">' + esc((last.by || '').split('@')[0]) + ' · ' + when(last.time) + (r.notes.length > 1 ? ' · ' + r.notes.length + ' notes' : '') + '</div>' : '') +
-      '<a href="#" class="time" style="color:var(--blue)" onclick="openNotes(\'' + esc(r.token) + '\');return false;">' + (last ? 'View / add note' : 'Add note') + '</a>';
+      '<a href="#" class="time" style="color:var(--blue)" onclick="openNotes(\'' + esc(r.id) + '\');return false;">' + (last ? 'View / add note' : 'Add note') + '</a>';
   }
 
   function viewerRowHtml(r) {
@@ -535,13 +545,15 @@
 
   var NOTE_TOKEN = '';
   function openNotes(token) {
-    var r = DATA.rows.filter(function (x) { return x.token === token; })[0];
+    var r = DATA.rows.filter(function (x) { return x.id === token; })[0];
     if (!r) return;
     NOTE_TOKEN = token;
     $('notesTitle').textContent = 'Notes: ' + r.name;
     $('notesSub').textContent = r.email ? r.email : '';
     renderNotes(r.notes);
     $('noteText').value = '';
+    $('noteByWrap').hidden = !VIEW_KEY;
+    try { $('noteBy').value = localStorage.getItem('jt-note-by') || ''; } catch (e) {}
     openModal('notesModal');
     setTimeout(function () { $('noteText').focus(); }, 50);
   }
@@ -554,13 +566,26 @@
     var text = $('noteText').value.trim();
     if (!text) { toast('Write a note first.'); return; }
     $('noteSave').disabled = true;
-    call('addNote', NOTE_TOKEN, text).then(function (list) {
+    var by = $('noteBy').value.trim();
+    if (VIEW_KEY && !by) { toast('Please add your name.'); $('noteBy').focus(); return; }
+    try { if (by) localStorage.setItem('jt-note-by', by); } catch (e) {}
+    (VIEW_KEY ? call('addNoteView', VIEW_KEY, NOTE_TOKEN, text, by) : call('addNote', NOTE_TOKEN, text)).then(function (list) {
       renderNotes(list); $('noteText').value = ''; toast('Note saved'); load();
     }).catch(fail).then(function () { $('noteSave').disabled = false; });
   }
 
+  function copyViewLink() {
+    var url = $('viewLink').value; if (!url) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function () { toast('View-only link copied'); }, function () { $('viewLink').select(); });
+    else $('viewLink').select();
+  }
+  function renewViewLink() {
+    if (!confirm('Make a new link? Anyone using the old link will lose access.')) return;
+    call('getViewLink', true).then(function (u) { $('viewLink').value = u; toast('New link made. Send it again.'); }).catch(fail);
+  }
   function openViewers() {
     openModal('viewersModal');
+    call('getViewLink', false).then(function (u) { $('viewLink').value = u || 'Add the Tracking link first (red box at the top).'; }).catch(fail);
     call('getViewers').then(function (list) { $('viewersText').value = list.join('\n'); }).catch(fail);
   }
   function saveViewers() {

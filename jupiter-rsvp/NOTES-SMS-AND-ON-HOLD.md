@@ -62,6 +62,8 @@ Nothing about SMS has been tested against the real Twilio service yet; only simu
 - Viewers open the same dashboard link. `doGet` gives them role 'viewer': no send/edit controls, no Emails / SMS / Maybe reason / Last activity / Check columns, "Phase" shown as **Via** (Email, or WhatsApp for Friends (link)), and a Notes column.
 - Notes are stored in a **Notes** tab (Time, Investor, Email, Token, Note, Written by). The owner sees them in a Notes column, with a "Has notes" filter and in the CSV export. The owner can preview the viewer page with `?view=boss`.
 
+- **Secret view-only link** (for a boss on personal Gmail): `<Tracking URL>?view=boss&key=<VIEW_KEY>`. No login needed. It's created and renewed under Share view-only, and renewing kills the old link. `getDashboardView` sends no RSVP tokens, phones or internal flags. Notes are written with `addNoteView` and tagged "(view-only link)". The Tracking deployment must run v7+ code (PING_REPLY `jupiter-rsvp-ok-v7`).
+
 ## On hold (user asked to finish email invitations first; do nothing until asked)
 
 1. **Confirmation email for every tap:** anyone who taps any option gets a short "we got your answer" email, sent a few minutes later with the calendar invite, once per answer change.

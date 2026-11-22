@@ -719,6 +719,7 @@ function doGet(e) {
         .downloadAsFile('jupiter-holiday-party.ics');
     }
     if (p.invite) return openInvitePage_(p.name);
+    if (p.view === 'boss' && p.key) return viewLinkPage_(p.key);
     if (p.r) return tapPage_(p.t, p.r, p.n);
     if (p.t) return choosePage_(p.t);
   } catch (err) {
@@ -739,6 +740,7 @@ function doGet(e) {
   }
   var page = HtmlService.createTemplateFromFile('Dashboard');
   page.role = role; // 'viewer' = read-only view with notes (e.g. for the boss)
+  page.viewKey = '';
   return page.evaluate()
     .setTitle('Jupiter Holiday Party · RSVPs')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
@@ -1087,7 +1089,7 @@ function sendTestSms(phone) {
 /* Tracking link health check                                          */
 /* ------------------------------------------------------------------ */
 
-var PING_REPLY = 'jupiter-rsvp-ok-v6';
+var PING_REPLY = 'jupiter-rsvp-ok-v7';
 
 /**
  * Opens the Tracking link the way an investor's phone would, and reports in plain English what's wrong.
@@ -1472,6 +1474,70 @@ function setViewers(list) {
     .filter(function (e) { return EMAIL_PATTERN.test(e); });
   PropertiesService.getScriptProperties().setProperty('VIEWERS', clean.join(','));
   return clean;
+}
+
+/* Secret view-only link: works with any Google account or none (the boss's personal Gmail). */
+function viewKeyOk_(key) {
+  var saved = PropertiesService.getScriptProperties().getProperty('VIEW_KEY');
+  return !!saved && String(key || '') === saved;
+}
+
+function viewLinkPage_(key) {
+  if (!viewKeyOk_(key)) {
+    return HtmlService.createHtmlOutput('<div style="font:16px/1.6 -apple-system,Segoe UI,Roboto,sans-serif;max-width:560px;padding:48px 24px">' +
+      '<h2 style="margin:0 0 12px">This link has expired</h2><p>Please ask Jupiter Texas for the current link.</p></div>').setTitle('Jupiter RSVP');
+  }
+  var page = HtmlService.createTemplateFromFile('Dashboard');
+  page.role = 'viewer';
+  page.viewKey = key;
+  return page.evaluate().setTitle('Jupiter Holiday Party · RSVPs').addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
+/** Owner: the current view-only link (made on first use). renew=true makes a new one; the old link stops working. */
+function getViewLink(renew) {
+  requireOwner_();
+  loadSettings_();
+  var props = PropertiesService.getScriptProperties(), key = props.getProperty('VIEW_KEY');
+  if (!key || renew) { key = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '').slice(0, 8); props.setProperty('VIEW_KEY', key); }
+  return CONFIG.API_URL ? CONFIG.API_URL + '?view=boss&key=' + key : '';
+}
+
+/** Dashboard data for the secret link: only what the view-only table shows. No RSVP tokens, phones or internal flags. */
+function getDashboardView(key) {
+  if (!viewKeyOk_(key)) throw new Error('This link has expired.');
+  var guests = readGuests_().guests, notes = readNotes_();
+  var stats = { total: 0, sent: 0, opened: 0, realOpened: 0, yes: 0, maybe: 0, no: 0, noResponse: 0, bounced: 0, headcount: 0 };
+  var rows = guests.map(function (g) {
+    stats.total++;
+    if (g.status === 'Sent' || g.status === 'Bounced') stats.sent++;
+    if (g.status === 'Bounced') stats.bounced++;
+    if (g.opened) stats.opened++;
+    var openedIn = g.sentAt && g.firstOpened ? (new Date(g.firstOpened) - new Date(g.sentAt)) / 1000 : null;
+    var realOpened = !!g.rsvp || (g.opened && openedIn !== null && openedIn >= 60);
+    if (realOpened) stats.realOpened++;
+    if (g.rsvp === 'Yes') { stats.yes++; stats.headcount += g.partySize === '4+' ? 4 : (Number(g.partySize) || 1); }
+    else if (g.rsvp === 'Maybe') stats.maybe++;
+    else if (g.rsvp === 'No') stats.no++;
+    else if (g.status === 'Sent') stats.noResponse++;
+    return {
+      id: 'r' + g.row, name: g.name, email: g.email, phase: g.phase, status: g.status || 'Not sent', sentAt: g.sentAt,
+      delivered: g.opened, realOpened: realOpened, openedAt: realOpened ? (g.rsvp && !(openedIn >= 60) ? g.rsvpAt : g.firstOpened) : '',
+      rsvp: g.rsvp, partySize: g.partySize, rsvpAt: g.rsvpAt, notes: notes[g.token] || []
+    };
+  });
+  return { stats: stats, rows: rows, phases: [], daysLeft: daysUntilEvent_(), updatedAt: new Date().toISOString(), tracking: { ok: true } };
+}
+
+function addNoteView(key, id, text, by) {
+  if (!viewKeyOk_(key)) throw new Error('This link has expired.');
+  text = String(text || '').trim().slice(0, 1000);
+  by = String(by || '').trim().slice(0, 60) || 'Viewer';
+  if (!text) throw new Error('Write a note first.');
+  var row = Number(String(id).replace(/^r/, ''));
+  var data = readGuests_(), g = data.guests.filter(function (x) { return x.row === row; })[0];
+  if (!g) throw new Error('Investor not found. Refresh the page.');
+  notesSheet_().appendRow([new Date(), g.name, g.email, g.token, text, by + ' (view-only link)']);
+  return readNotes_()[g.token] || [];
 }
 
 /* Notes on investors (boss and team), kept in a "Notes" tab. */
@@ -2106,7 +2172,7 @@ function getDashboard() {
       delivered: g.opened, realOpened: opened, openedAt: openedAt, emails: emailCount_(g.emailsSent),
       phone: g.phone, smsStatus: g.smsStatus, smsSentAt: g.smsSentAt,
       autoOpen: g.opened && openedIn !== null && openedIn < 60,
-      name: g.name, email: g.email, phase: g.phase, token: g.token, notes: notes[g.token] || [],
+      id: g.token, name: g.name, email: g.email, phase: g.phase, token: g.token, notes: notes[g.token] || [],
       status: g.status || 'Not sent', sentAt: g.sentAt,
       opened: g.opened, firstOpened: g.firstOpened, openCount: g.openCount,
       rsvp: g.rsvp, partySize: g.partySize, reason: g.reason, rsvpAt: g.rsvpAt,
