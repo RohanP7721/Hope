@@ -58,18 +58,30 @@
   <path d="M60 492 C 110 492, 132 500, 140 540" fill="none" stroke="#0B0B0C" stroke-width="5" stroke-linecap="round"/>
   <path d="M128 528 L141 545 L152 525" fill="none" stroke="#0B0B0C" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
 
-  <!-- direction chevrons: down left side, across bottom, up right side -->
+  <!-- direction chevrons: counter-clockwise lap -->
   <use href="#chev" transform="translate(190 600) rotate(90)"/>
   <use href="#chev" transform="translate(190 690) rotate(90)"/>
   <use href="#chev" transform="translate(190 780) rotate(90)"/>
   <use href="#chev" transform="translate(190 870) rotate(90)"/>
   <use href="#chev" transform="translate(237 1075) rotate(60)"/>
-  <use href="#chev" transform="translate(365 1203) rotate(30)"/>
-  <use href="#chev" transform="translate(540 1250) rotate(0)"/>
-  <use href="#chev" transform="translate(715 1203) rotate(-30)"/>
   <use href="#chev" transform="translate(843 1075) rotate(-60)"/>
   <use href="#chev" transform="translate(890 870) rotate(-90)"/>
   <use href="#chev" transform="translate(890 780) rotate(-90)"/>
+  <use href="#chev" transform="translate(890 600) rotate(-90)"/>
+  <use href="#chev" transform="translate(890 510) rotate(-90)"/>
+  <use href="#chev" transform="translate(843 275) rotate(-120)"/>
+  <use href="#chev" transform="translate(715 147) rotate(-150)"/>
+  <use href="#chev" transform="translate(365 147) rotate(150)"/>
+  <use href="#chev" transform="translate(237 275) rotate(120)"/>
+  <use href="#chev" transform="translate(190 420) rotate(90)"/>
+  <path id="bottomArc" d="M190 900 A350 350 0 0 0 890 900" fill="none"/>
+  <text font-size="27" font-weight="800" font-style="italic" fill="#fff" letter-spacing="3" dominant-baseline="central">
+    <textPath href="#bottomArc" startOffset="50%" text-anchor="middle">600m RUN  »</textPath>
+  </text>
+  <path id="topArc" d="M190 450 A350 350 0 0 1 890 450" fill="none"/>
+  <text font-size="27" font-weight="800" font-style="italic" fill="#fff" letter-spacing="3" dominant-baseline="central">
+    <textPath href="#topArc" startOffset="50%" text-anchor="middle">«  600m RUN</textPath>
+  </text>
 
   <!-- FINISH (right straight) -->
   <rect x="858" y="686" width="64" height="16" fill="url(#checker)"/>
@@ -79,22 +91,23 @@
 
   <!-- TITLE in the top dome -->
   <g>
-    <line x1="410" y1="186" x2="452" y2="186" stroke="#E3241B" stroke-width="4"/>
-    <line x1="628" y1="186" x2="670" y2="186" stroke="#E3241B" stroke-width="4"/>
-    <text x="540" y="198" text-anchor="middle" font-size="34" font-weight="700" fill="#0B0B0C" letter-spacing="8">EVENT</text>
-    <text x="540" y="262" text-anchor="middle" font-size="72" font-weight="900" font-style="italic" fill="#0D2A6B" letter-spacing="1">FORMAT</text>
+    <line x1="410" y1="168" x2="452" y2="168" stroke="#E3241B" stroke-width="4"/>
+    <line x1="628" y1="168" x2="670" y2="168" stroke="#E3241B" stroke-width="4"/>
+    <text x="540" y="180" text-anchor="middle" font-size="34" font-weight="700" fill="#0B0B0C" letter-spacing="8">EVENT</text>
+    <text x="540" y="244" text-anchor="middle" font-size="68" font-weight="900" font-style="italic" fill="#0D2A6B" letter-spacing="1">FORMAT</text>
   </g>
 
   <!-- STATIONS -->
   <g id="stations" font-style="italic"></g>
 
   <!-- bottom dome info -->
-  <text x="540" y="1128" text-anchor="middle" font-size="26" font-weight="700" fill="#0B0B0C" letter-spacing="4">6 STATIONS  ·  30M EACH</text>
-  <line x1="470" y1="1150" x2="610" y2="1150" stroke="#E3241B" stroke-width="4"/>
+  <text x="540" y="1126" text-anchor="middle" font-size="23" font-weight="800" fill="#0B0B0C" letter-spacing="2">7 RUNS · 6 STATIONS · 4.2KM</text>
+  <line x1="480" y1="1146" x2="600" y2="1146" stroke="#E3241B" stroke-width="4"/>
 </svg>
 
 <script>
-  const events = [
+  // Race order: run, station, run, station ... run, finish (13 steps)
+  const stations = [
     "BROAD JUMP BURPEES",
     "WALKING LUNGES",
     "GORILLA WALK",
@@ -102,6 +115,7 @@
     "FROG JUMP",
     "BROAD JUMP BURPEES"
   ];
+  const RUN = "600m RUN";
   const NS = "http://www.w3.org/2000/svg";
   const g = document.getElementById("stations");
   const mk = (tag, attrs, text) => {
@@ -110,24 +124,35 @@
     if (text) el.textContent = text;
     return el;
   };
-  const X = 300, W = 480, H = 62, TOP = 298, STEP = 140;
-  events.forEach((name, i) => {
-    const y = TOP + i * STEP;
-    const row = mk("g", {});
-    row.appendChild(mk("rect", {x: X, y, width: W, height: H, rx: 6, fill: "url(#bar)", filter: "url(#shadow)"}));
-    // number badge
-    row.appendChild(mk("path", {d: `M${X} ${y+6} Q${X} ${y} ${X+6} ${y} H${X+64} L${X+52} ${y+H} H${X+6} Q${X} ${y+H} ${X} ${y+H-6} Z`, fill: "#E3241B"}));
-    row.appendChild(mk("text", {x: X+30, y: y+43, "text-anchor": "middle", "font-size": 32, "font-weight": 900, fill: "#fff"}, String(i+1).padStart(2,"0")));
-    // name
-    row.appendChild(mk("text", {x: X+72, y: y+43, "font-size": 33, "font-weight": 800, fill: "#fff", "letter-spacing": 0.5}, name));
-    // 30M tag
-    row.appendChild(mk("rect", {x: X+W-68, y: y+15, width: 56, height: 32, rx: 4, fill: "none", stroke: "#E3241B", "stroke-width": 2.5}));
-    row.appendChild(mk("text", {x: X+W-40, y: y+40, "text-anchor": "middle", "font-size": 25, "font-weight": 800, fill: "#fff"}, "30M"));
-    // arrows: in from the right, out to the left
-    row.appendChild(mk("use", {href: "#arrowL", transform: `translate(${X+W+10} ${y+H/2})`}));
-    row.appendChild(mk("use", {href: "#arrowL", transform: `translate(${X-40} ${y+H/2})`}));
-    g.appendChild(row);
-  });
+  const CX = 540, BAR_W = 500, BAR_H = 62, RUN_W = 250, RUN_H = 36, GAP = 14;
+  let y = 288, step = 1;
+
+  const runRow = (isLast) => {
+    const x = CX - RUN_W / 2;
+    g.appendChild(mk("rect", {x, y, width: RUN_W, height: RUN_H, rx: RUN_H/2, fill: "#fff", stroke: "#E3241B", "stroke-width": 3}));
+    g.appendChild(mk("circle", {cx: x + 20, cy: y + RUN_H/2, r: 14, fill: "#0B0B0C"}));
+    g.appendChild(mk("text", {x: x + 20, y: y + RUN_H/2 + 6, "text-anchor": "middle", "font-size": 17, "font-weight": 800, "font-style": "normal", fill: "#fff"}, String(step).padStart(2, "0")));
+    g.appendChild(mk("text", {x: x + RUN_W/2 + 16, y: y + RUN_H/2 + 8, "text-anchor": "middle", "font-size": 23, "font-weight": 800, fill: "#E3241B", "letter-spacing": 1}, isLast ? RUN + " » FINISH" : RUN + " »"));
+    y += RUN_H + GAP; step++;
+  };
+
+  const stationRow = (name, i) => {
+    const x = CX - BAR_W / 2;
+    g.appendChild(mk("rect", {x, y, width: BAR_W, height: BAR_H, rx: 6, fill: "url(#bar)", filter: "url(#shadow)"}));
+    g.appendChild(mk("path", {d: `M${x} ${y+6} Q${x} ${y} ${x+6} ${y} H${x+64} L${x+52} ${y+BAR_H} H${x+6} Q${x} ${y+BAR_H} ${x} ${y+BAR_H-6} Z`, fill: "#E3241B"}));
+    g.appendChild(mk("text", {x: x + 30, y: y + 42, "text-anchor": "middle", "font-size": 30, "font-weight": 900, fill: "#fff"}, String(step).padStart(2, "0")));
+    g.appendChild(mk("text", {x: x + 72, y: y + 21, "font-size": 14, "font-weight": 800, "font-style": "normal", fill: "#FF5A4F", "letter-spacing": 3}, "EVENT " + (i + 1)));
+    g.appendChild(mk("text", {x: x + 72, y: y + 50, "font-size": 30, "font-weight": 800, fill: "#fff", "letter-spacing": 0.5}, name));
+    g.appendChild(mk("rect", {x: x + BAR_W - 68, y: y + 15, width: 56, height: 32, rx: 4, fill: "none", stroke: "#E3241B", "stroke-width": 2.5}));
+    g.appendChild(mk("text", {x: x + BAR_W - 40, y: y + 40, "text-anchor": "middle", "font-size": 25, "font-weight": 800, fill: "#fff"}, "30M"));
+    // enter from the track on the right, exit back to the track on the left
+    g.appendChild(mk("use", {href: "#arrowL", transform: `translate(${x + BAR_W + 10} ${y + BAR_H/2})`}));
+    g.appendChild(mk("use", {href: "#arrowL", transform: `translate(${x - 40} ${y + BAR_H/2})`}));
+    y += BAR_H + GAP; step++;
+  };
+
+  stations.forEach((name, i) => { runRow(false); stationRow(name, i); });
+  runRow(true);
 </script>
 </body>
 </html>
