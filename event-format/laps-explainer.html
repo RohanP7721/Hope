@@ -15,80 +15,134 @@
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#FFFFFF"/>
-      <stop offset="1" stop-color="#ECEEF2"/>
+      <stop offset="1" stop-color="#E9ECF1"/>
     </linearGradient>
+    <linearGradient id="redG" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FF3B2F"/>
+      <stop offset="1" stop-color="#C8160E"/>
+    </linearGradient>
+    <linearGradient id="navyG" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1D46A8"/>
+      <stop offset="1" stop-color="#0A2160"/>
+    </linearGradient>
+    <radialGradient id="infield" cx="50%" cy="50%" r="60%">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#EEF0F4"/>
+    </radialGradient>
     <pattern id="checker" width="12" height="12" patternUnits="userSpaceOnUse">
       <rect width="12" height="12" fill="#fff"/>
       <rect width="6" height="6" fill="#111"/>
       <rect x="6" y="6" width="6" height="6" fill="#111"/>
     </pattern>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#0B1B44" flood-opacity="0.18"/>
+    </filter>
+    <filter id="pill" x="-20%" y="-40%" width="140%" height="180%">
+      <feDropShadow dx="0" dy="5" stdDeviation="6" flood-color="#000" flood-opacity="0.22"/>
+    </filter>
+    <filter id="card" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#0B1B44" flood-opacity="0.12"/>
+    </filter>
   </defs>
   <style>
-    .red{fill:#E3241B}.navy{fill:#0D2A6B}.ink{fill:#0B0B0C}.grey{fill:#8A8F98}
+    .red{fill:#E3241B}.navy{fill:#0D2A6B}.ink{fill:#0B0B0C}.grey{fill:#7D838D}.white{fill:#fff}
   </style>
 
   <rect width="1080" height="1350" fill="url(#bg)"/>
+  <!-- speed slashes, top corners -->
+  <g opacity=".9">
+    <path d="M70 70 l26 0 l-18 34 l-26 0 z M106 70 l26 0 l-18 34 l-26 0 z M142 70 l26 0 l-18 34 l-26 0 z" fill="#E3241B"/>
+    <path d="M912 70 l26 0 l-18 34 l-26 0 z M948 70 l26 0 l-18 34 l-26 0 z M984 70 l26 0 l-18 34 l-26 0 z" fill="#E3241B"/>
+  </g>
 
   <!-- TITLE -->
-  <text x="540" y="128" text-anchor="middle" font-size="92" font-weight="900" font-style="italic" class="ink">600M <tspan class="red">=</tspan> <tspan class="navy">1.5 LAPS</tspan></text>
-  <text x="540" y="178" text-anchor="middle" font-size="27" font-weight="700" class="grey" letter-spacing="3">EVERY RUN = ONE FULL LAP + HALF A LAP OF THE 400M TRACK</text>
+  <text x="540" y="138" text-anchor="middle" font-size="104" font-weight="900" font-style="italic" class="ink">600M <tspan class="red">=</tspan> <tspan class="navy">1.5 LAPS</tspan></text>
+  <text x="540" y="190" text-anchor="middle" font-size="28" font-weight="700" class="grey" letter-spacing="3">ONE FULL LAP + HALF A LAP OF THE 400M TRACK</text>
 
-  <!-- TRACK BASE (two lanes) -->
-  <path d="M312 480 A228 228 0 0 1 768 480 L768 700 A228 228 0 0 1 312 700 Z" fill="none" stroke="#DADDE2" stroke-width="96"/>
-  <path d="M312 480 A228 228 0 0 1 768 480 L768 700 A228 228 0 0 1 312 700 Z" fill="none" stroke="#fff" stroke-width="2" stroke-opacity=".8"/>
+  <!-- TRACK -->
+  <g filter="url(#soft)">
+    <path d="M312 500 A228 228 0 0 1 768 500 L768 720 A228 228 0 0 1 312 720 Z" fill="url(#infield)" stroke="#D9DCE2" stroke-width="100"/>
+  </g>
+  <!-- lane lines -->
+  <path d="M262 500 A278 278 0 0 1 818 500 L818 720 A278 278 0 0 1 262 720 Z" fill="none" stroke="#fff" stroke-width="3"/>
+  <path d="M312 500 A228 228 0 0 1 768 500 L768 720 A228 228 0 0 1 312 720 Z" fill="none" stroke="#fff" stroke-width="3"/>
+  <path d="M362 500 A178 178 0 0 1 718 500 L718 720 A178 178 0 0 1 362 720 Z" fill="none" stroke="#fff" stroke-width="3"/>
 
-  <!-- LAP 1 (outer lane, red): start left, all the way round, back to start -->
-  <path id="lap1" d="M290 590 L290 700 A250 250 0 0 0 790 700 L790 480 A250 250 0 0 0 290 480 Z"
-        fill="none" stroke="#E3241B" stroke-width="38" stroke-linejoin="round"/>
-  <!-- HALF LAP (inner lane, navy): start left, round the bottom, stop on the right -->
-  <path id="half" d="M335 590 L335 700 A205 205 0 0 0 745 700 L745 590"
-        fill="none" stroke="#0D2A6B" stroke-width="38" stroke-linecap="butt"/>
+  <!-- LAP 1 (outer lane): start left, full loop, back to start -->
+  <path id="lap1" d="M287 610 L287 720 A253 253 0 0 0 793 720 L793 500 A253 253 0 0 0 287 500 Z"
+        fill="none" stroke="url(#redG)" stroke-width="42" stroke-linejoin="round"/>
+  <!-- HALF LAP (inner lane): start left, round the bottom, stop on the right -->
+  <path id="half" d="M337 610 L337 720 A203 203 0 0 0 743 720 L743 610"
+        fill="none" stroke="url(#navyG)" stroke-width="42"/>
   <g id="chevrons"></g>
 
-  <!-- START line on the left -->
-  <rect x="266" y="584" width="94" height="12" fill="#fff"/>
-  <text x="246" y="566" text-anchor="end" font-size="40" font-weight="800" font-style="italic" class="red" letter-spacing="2">START</text>
-  <text x="246" y="600" text-anchor="end" font-size="24" font-weight="700" class="grey" letter-spacing="2">0M</text>
-  <text x="246" y="628" text-anchor="end" font-size="20" font-weight="700" class="grey" letter-spacing="1">BACK HERE = 400M</text>
+  <!-- start line + 600m finish line -->
+  <rect x="262" y="604" width="100" height="12" fill="#fff"/>
+  <rect x="720" y="603" width="46" height="14" fill="url(#checker)"/>
 
-  <!-- 600M finish on the right -->
-  <rect x="726" y="583" width="38" height="14" fill="url(#checker)"/>
-  <text x="834" y="566" font-size="40" font-weight="800" font-style="italic" class="navy" letter-spacing="2">600M ✓</text>
-  <text x="834" y="600" font-size="24" font-weight="700" class="grey" letter-spacing="2">OFF THE TRACK</text>
-  <text x="834" y="628" font-size="20" font-weight="700" class="grey" letter-spacing="1">INTO NEXT STATION</text>
+  <!-- START badge -->
+  <g filter="url(#pill)">
+    <rect x="60" y="582" width="170" height="56" rx="28" fill="url(#redG)"/>
+  </g>
+  <path d="M84 596 v28 M84 597 h22 l-5 7 l5 7 h-22" fill="#fff" stroke="#fff" stroke-width="3" stroke-linejoin="round"/>
+  <text x="168" y="623" text-anchor="middle" font-size="34" font-weight="800" font-style="italic" class="white" letter-spacing="2">START</text>
+  <path d="M232 610 h20" stroke="#E3241B" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- 600M badge -->
+  <path d="M828 610 h20" stroke="#0D2A6B" stroke-width="4" stroke-linecap="round"/>
+  <g filter="url(#pill)">
+    <rect x="850" y="582" width="176" height="56" rx="28" fill="url(#navyG)"/>
+  </g>
+  <text x="922" y="623" text-anchor="middle" font-size="34" font-weight="800" font-style="italic" class="white" letter-spacing="1">600M</text>
+  <circle cx="992" cy="610" r="17" fill="#fff"/>
+  <path d="M984 610 l6 6 l11 -12" fill="none" stroke="#0D2A6B" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="938" y="672" text-anchor="middle" font-size="22" font-weight="700" class="grey" letter-spacing="2">NEXT STATION</text>
+
+  <!-- lane labels -->
+  <g filter="url(#pill)">
+    <rect x="425" y="226" width="230" height="46" rx="23" fill="#fff"/>
+  </g>
+  <circle cx="452" cy="249" r="9" fill="#E3241B"/>
+  <text x="472" y="259" text-anchor="start" font-size="27" font-weight="800" class="ink" letter-spacing="2">LAP 1 · 400M</text>
+
+  <g filter="url(#pill)">
+    <rect x="410" y="1000" width="260" height="46" rx="23" fill="#fff"/>
+  </g>
+  <circle cx="437" cy="1023" r="9" fill="#0D2A6B"/>
+  <text x="457" y="1033" text-anchor="start" font-size="27" font-weight="800" class="ink" letter-spacing="2">+ ½ LAP · 200M</text>
 
   <!-- INFIELD -->
-  <text x="540" y="430" text-anchor="middle" font-size="30" font-weight="800" class="red" letter-spacing="3">LAP 1 · 400M</text>
-  <text x="540" y="620" text-anchor="middle" font-size="150" font-weight="900" font-style="italic" class="ink">1.5</text>
-  <text x="540" y="668" text-anchor="middle" font-size="34" font-weight="800" class="ink" letter-spacing="10">LAPS</text>
-  <text x="540" y="780" text-anchor="middle" font-size="30" font-weight="800" class="navy" letter-spacing="3">+ ½ LAP · 200M</text>
+  <text x="540" y="650" text-anchor="middle" font-size="190" font-weight="900" font-style="italic" class="ink">1.5</text>
+  <text x="540" y="712" text-anchor="middle" font-size="40" font-weight="800" class="red" letter-spacing="14">LAPS</text>
 
-  <!-- EQUATION ROW -->
-  <g transform="translate(0 1010)">
-    <line x1="120" y1="-30" x2="960" y2="-30" stroke="#D5D8DD" stroke-width="2"/>
+  <!-- EQUATION CARDS -->
+  <g transform="translate(0 1086)">
+    <g filter="url(#card)">
+      <rect x="70" y="0" width="270" height="196" rx="22" fill="#fff"/>
+      <rect x="405" y="0" width="270" height="196" rx="22" fill="#fff"/>
+      <rect x="740" y="0" width="270" height="196" rx="22" fill="url(#redG)"/>
+    </g>
     <!-- full lap -->
-    <path d="M168 60 A62 62 0 0 1 292 60 L292 120 A62 62 0 0 1 168 120 Z" fill="none" stroke="#E3241B" stroke-width="16"/>
-    <text x="230" y="243" text-anchor="middle" font-size="30" font-weight="800" class="ink" letter-spacing="2">1 LAP</text>
-    <text x="230" y="276" text-anchor="middle" font-size="26" font-weight="700" class="red" letter-spacing="2">400M</text>
+    <path d="M114 70 A42 42 0 0 1 198 70 L198 112 A42 42 0 0 1 114 112 Z" fill="none" stroke="url(#redG)" stroke-width="13"/>
+    <text x="276" y="88" text-anchor="middle" font-size="34" font-weight="800" class="ink">1 LAP</text>
+    <text x="276" y="124" text-anchor="middle" font-size="30" font-weight="800" class="red">400M</text>
 
-    <text x="378" y="122" text-anchor="middle" font-size="70" font-weight="900" class="grey">+</text>
+    <text x="372" y="118" text-anchor="middle" font-size="64" font-weight="900" class="grey">+</text>
 
     <!-- half lap -->
-    <path d="M168 60 A62 62 0 0 1 292 60 L292 120 A62 62 0 0 1 168 120 Z" transform="translate(296 0)" fill="none" stroke="#DADDE2" stroke-width="16"/>
-    <path d="M464 90 L464 120 A62 62 0 0 0 588 120 L588 90" fill="none" stroke="#0D2A6B" stroke-width="16"/>
-    <text x="526" y="243" text-anchor="middle" font-size="30" font-weight="800" class="ink" letter-spacing="2">½ LAP</text>
-    <text x="526" y="276" text-anchor="middle" font-size="26" font-weight="700" class="navy" letter-spacing="2">200M</text>
+    <path d="M449 70 A42 42 0 0 1 533 70 L533 112 A42 42 0 0 1 449 112 Z" fill="none" stroke="#DADDE2" stroke-width="13"/>
+    <path d="M449 91 L449 112 A42 42 0 0 0 533 112 L533 91" fill="none" stroke="url(#navyG)" stroke-width="13"/>
+    <text x="611" y="88" text-anchor="middle" font-size="34" font-weight="800" class="ink">½ LAP</text>
+    <text x="611" y="124" text-anchor="middle" font-size="30" font-weight="800" class="navy">200M</text>
 
-    <text x="676" y="122" text-anchor="middle" font-size="70" font-weight="900" class="grey">=</text>
+    <text x="707" y="118" text-anchor="middle" font-size="64" font-weight="900" class="grey">=</text>
 
     <!-- result -->
-    <text x="840" y="132" text-anchor="middle" font-size="110" font-weight="900" font-style="italic" class="ink">600M</text>
-    <text x="840" y="243" text-anchor="middle" font-size="30" font-weight="800" class="ink" letter-spacing="2">EACH RUN</text>
-    <text x="840" y="276" text-anchor="middle" font-size="26" font-weight="700" class="red" letter-spacing="2">× 7 IN THE RACE</text>
+    <text x="875" y="122" text-anchor="middle" font-size="92" font-weight="900" font-style="italic" class="white">600M</text>
+    <text x="875" y="164" text-anchor="middle" font-size="22" font-weight="700" fill="#FFD9D6" letter-spacing="3">EVERY RUN</text>
   </g>
 </svg>
 <script>
-  // white chevrons along each lane, pointing the way people run
   const NS = "http://www.w3.org/2000/svg";
   const host = document.getElementById("chevrons");
   const placeChevrons = (id, every, skipEnds) => {
@@ -104,12 +158,13 @@
       c.setAttribute("stroke-width", "4.5");
       c.setAttribute("stroke-linecap", "round");
       c.setAttribute("stroke-linejoin", "round");
+      c.setAttribute("opacity", ".9");
       c.setAttribute("transform", `translate(${p.x} ${p.y}) rotate(${angle})`);
       host.appendChild(c);
     }
   };
-  placeChevrons("lap1", 120, 60);
-  placeChevrons("half", 120, 60);
+  placeChevrons("lap1", 130, 70);
+  placeChevrons("half", 130, 70);
 </script>
 </body>
 </html>
