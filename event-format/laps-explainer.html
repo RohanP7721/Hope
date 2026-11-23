@@ -1,0 +1,115 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>600m Laps Explainer</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800;1,900&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;padding:0;background:#F3F4F6}
+  svg{display:block}
+  text{font-family:'Barlow Condensed',Arial Narrow,sans-serif}
+</style>
+</head>
+<body>
+<svg id="art" width="1080" height="1350" viewBox="0 0 1080 1350" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#ECEEF2"/>
+    </linearGradient>
+    <pattern id="checker" width="12" height="12" patternUnits="userSpaceOnUse">
+      <rect width="12" height="12" fill="#fff"/>
+      <rect width="6" height="6" fill="#111"/>
+      <rect x="6" y="6" width="6" height="6" fill="#111"/>
+    </pattern>
+  </defs>
+  <style>
+    .red{fill:#E3241B}.navy{fill:#0D2A6B}.ink{fill:#0B0B0C}.grey{fill:#8A8F98}
+  </style>
+
+  <rect width="1080" height="1350" fill="url(#bg)"/>
+
+  <!-- TITLE -->
+  <text x="540" y="128" text-anchor="middle" font-size="92" font-weight="900" font-style="italic" class="ink">600M <tspan class="red">=</tspan> <tspan class="navy">1.5 LAPS</tspan></text>
+  <text x="540" y="178" text-anchor="middle" font-size="27" font-weight="700" class="grey" letter-spacing="3">EVERY RUN = ONE FULL LAP + HALF A LAP OF THE 400M TRACK</text>
+
+  <!-- TRACK BASE (two lanes) -->
+  <path d="M312 480 A228 228 0 0 1 768 480 L768 700 A228 228 0 0 1 312 700 Z" fill="none" stroke="#DADDE2" stroke-width="96"/>
+  <path d="M312 480 A228 228 0 0 1 768 480 L768 700 A228 228 0 0 1 312 700 Z" fill="none" stroke="#fff" stroke-width="2" stroke-opacity=".8"/>
+
+  <!-- LAP 1 (outer lane, red): start left, all the way round, back to start -->
+  <path id="lap1" d="M290 590 L290 700 A250 250 0 0 0 790 700 L790 480 A250 250 0 0 0 290 480 Z"
+        fill="none" stroke="#E3241B" stroke-width="38" stroke-linejoin="round"/>
+  <!-- HALF LAP (inner lane, navy): start left, round the bottom, stop on the right -->
+  <path id="half" d="M335 590 L335 700 A205 205 0 0 0 745 700 L745 590"
+        fill="none" stroke="#0D2A6B" stroke-width="38" stroke-linecap="butt"/>
+  <g id="chevrons"></g>
+
+  <!-- START line on the left -->
+  <rect x="266" y="584" width="94" height="12" fill="#fff"/>
+  <text x="246" y="566" text-anchor="end" font-size="40" font-weight="800" font-style="italic" class="red" letter-spacing="2">START</text>
+  <text x="246" y="600" text-anchor="end" font-size="24" font-weight="700" class="grey" letter-spacing="2">0M</text>
+  <text x="246" y="628" text-anchor="end" font-size="20" font-weight="700" class="grey" letter-spacing="1">BACK HERE = 400M</text>
+
+  <!-- 600M finish on the right -->
+  <rect x="726" y="583" width="38" height="14" fill="url(#checker)"/>
+  <text x="834" y="566" font-size="40" font-weight="800" font-style="italic" class="navy" letter-spacing="2">600M ✓</text>
+  <text x="834" y="600" font-size="24" font-weight="700" class="grey" letter-spacing="2">OFF THE TRACK</text>
+  <text x="834" y="628" font-size="20" font-weight="700" class="grey" letter-spacing="1">INTO NEXT STATION</text>
+
+  <!-- INFIELD -->
+  <text x="540" y="430" text-anchor="middle" font-size="30" font-weight="800" class="red" letter-spacing="3">LAP 1 · 400M</text>
+  <text x="540" y="620" text-anchor="middle" font-size="150" font-weight="900" font-style="italic" class="ink">1.5</text>
+  <text x="540" y="668" text-anchor="middle" font-size="34" font-weight="800" class="ink" letter-spacing="10">LAPS</text>
+  <text x="540" y="780" text-anchor="middle" font-size="30" font-weight="800" class="navy" letter-spacing="3">+ ½ LAP · 200M</text>
+
+  <!-- EQUATION ROW -->
+  <g transform="translate(0 1010)">
+    <line x1="120" y1="-30" x2="960" y2="-30" stroke="#D5D8DD" stroke-width="2"/>
+    <!-- full lap -->
+    <path d="M168 60 A62 62 0 0 1 292 60 L292 120 A62 62 0 0 1 168 120 Z" fill="none" stroke="#E3241B" stroke-width="16"/>
+    <text x="230" y="243" text-anchor="middle" font-size="30" font-weight="800" class="ink" letter-spacing="2">1 LAP</text>
+    <text x="230" y="276" text-anchor="middle" font-size="26" font-weight="700" class="red" letter-spacing="2">400M</text>
+
+    <text x="378" y="122" text-anchor="middle" font-size="70" font-weight="900" class="grey">+</text>
+
+    <!-- half lap -->
+    <path d="M168 60 A62 62 0 0 1 292 60 L292 120 A62 62 0 0 1 168 120 Z" transform="translate(296 0)" fill="none" stroke="#DADDE2" stroke-width="16"/>
+    <path d="M464 90 L464 120 A62 62 0 0 0 588 120 L588 90" fill="none" stroke="#0D2A6B" stroke-width="16"/>
+    <text x="526" y="243" text-anchor="middle" font-size="30" font-weight="800" class="ink" letter-spacing="2">½ LAP</text>
+    <text x="526" y="276" text-anchor="middle" font-size="26" font-weight="700" class="navy" letter-spacing="2">200M</text>
+
+    <text x="676" y="122" text-anchor="middle" font-size="70" font-weight="900" class="grey">=</text>
+
+    <!-- result -->
+    <text x="840" y="132" text-anchor="middle" font-size="110" font-weight="900" font-style="italic" class="ink">600M</text>
+    <text x="840" y="243" text-anchor="middle" font-size="30" font-weight="800" class="ink" letter-spacing="2">EACH RUN</text>
+    <text x="840" y="276" text-anchor="middle" font-size="26" font-weight="700" class="red" letter-spacing="2">× 7 IN THE RACE</text>
+  </g>
+</svg>
+<script>
+  // white chevrons along each lane, pointing the way people run
+  const NS = "http://www.w3.org/2000/svg";
+  const host = document.getElementById("chevrons");
+  const placeChevrons = (id, every, skipEnds) => {
+    const path = document.getElementById(id);
+    const len = path.getTotalLength();
+    for (let d = skipEnds; d < len - skipEnds; d += every) {
+      const p = path.getPointAtLength(d), q = path.getPointAtLength(d + 1);
+      const angle = Math.atan2(q.y - p.y, q.x - p.x) * 180 / Math.PI;
+      const c = document.createElementNS(NS, "path");
+      c.setAttribute("d", "M-6 -9 L5 0 L-6 9");
+      c.setAttribute("fill", "none");
+      c.setAttribute("stroke", "#fff");
+      c.setAttribute("stroke-width", "4.5");
+      c.setAttribute("stroke-linecap", "round");
+      c.setAttribute("stroke-linejoin", "round");
+      c.setAttribute("transform", `translate(${p.x} ${p.y}) rotate(${angle})`);
+      host.appendChild(c);
+    }
+  };
+  placeChevrons("lap1", 120, 60);
+  placeChevrons("half", 120, 60);
+</script>
+</body>
+</html>
